@@ -28,10 +28,10 @@
 
 <div align="center">
 
-| OVERWORLD BIOMES & LANDSCAPES | UNDERGROUND CAVES & DEEPSLATE |
-| :---: | :---: |
-| <img src="assets/screenshots/surface_gameplay.png" alt="Overworld Biomes" width="440" /> | <img src="assets/screenshots/underground_cave_mining.png" alt="Underground Mining" width="440" /> |
-| *Procedural Oak Forest, Grass Hills, Sun/Moon Orbit & Water* | *3D Cave Worms, Deepslate Mining, Tool Viewmodel & 9-Slot Hotbar* |
+| OVERWORLD BIOMES & WILDLIFE | MOBS & SURVIVAL COMBAT | UNDERGROUND CAVES & MINING |
+| :---: | :---: | :---: |
+| <img src="assets/screenshots/surface_gameplay.png" alt="Overworld Biomes" width="300" /> | <img src="assets/screenshots/mobs_and_survival.png" alt="Mobs & Survival" width="300" /> | <img src="assets/screenshots/underground_cave_mining.png" alt="Underground Mining" width="300" /> |
+| *Oak Forests, Hills, Sun/Moon Orbit & Water* | *Natural Mobs, 10 Drumsticks & Hearts HUD* | *3D Caves, Deepslate Mining, Viewmodel & Hotbar* |
 
 </div>
 
@@ -54,34 +54,48 @@
 ### 1. Infinite Procedural World Generation
 - **Dynamic 16x16 Chunk Streaming**: Chunks stream in and out around the player seamlessly in a configurable render distance (2 to 5 chunks, default 49 active column chunks).
 - **5 Diverse Biomes**:
-  - `Plains`: Rolling emerald meadows, dirt strata, and lone trees.
-  - `Oak Forest`: Dense canopies of oak wood trunks and lush leaf clusters.
-  - `Desert`: Sand dunes, hardened sandstone substrata, and towering cacti.
+  - `Plains`: Rolling emerald meadows, dirt strata, poppies, dandelions, and peaceful wildlife.
+  - `Oak Forest`: Dense canopies of oak wood trunks, lush leaf clusters, and rich terrain.
+  - `Desert`: Sand dunes, hardened sandstone substrata, and towering prickly cacti.
   - `Snowy Peaks`: High elevation mountain ridges blanketed in snow and packed ice.
   - `Ocean`: Deep underwater trenches with sand beds and transparent water bodies.
 - **Continuous 3D Caves**: Seeded 3D Perlin noise worms carve caverns, ravines, and tunnel networks through stone and deepslate.
 - **Stratified Ore Distribution**: Mineral ores spawn according to realistic altitude layers (Coal, Iron, Gold, and deep Diamond Ore).
 
-### 2. High-Performance Voxel Mesher
-- **Face Culling**: Hidden and occluded voxel faces between adjacent solid blocks are culled during mesh generation, reducing polygon counts by over 85%.
-- **Separated Water Geometry**: Water surfaces are meshed into an independent buffer geometry with `transparent: true`, `opacity: 0.72`, and `depthWrite: false` so seabed and underwater blocks render properly.
-- **Per-Vertex Ambient Occlusion (AO)**: Corner and edge contact shadows are calculated per-vertex using diagonal flip quad tessellation to prevent lighting distortion.
-- **18x18 Extruded Atlas Bleed Gutters**: Textures are packed into an 8x4 atlas with 1px border gutter padding, eliminating line-bleeding artifacts in mipmaps.
+### 2. Mobs & AI Entity System
+- **6 Canonical 3D Voxel Mob Species**:
+  - `Zombie`: Hostile undead that wanders, tracks, and chases players. Burns in open daylight. Drops rotten flesh.
+  - `Skeleton`: Ranged undead archer armed with bow and arrow, firing ballistic projectiles at range. Burns in daylight. Drops bones and arrows.
+  - `Creeper`: Silent stalking explosive mob that approaches player, hisses, swells, flashes white/green, and detonates TNT blast. Drops gunpowder.
+  - `Pig`: Friendly pink farm animal that wanders grass plains with trot walking animations. Drops raw porkchops.
+  - `Cow`: Iconic spotted bovine mob with horns. Drops raw beef and leather.
+  - `Sheep`: Fluffy woolly animal with head and hooves. Drops wool blocks.
+- **Pathfinding & AI State Machine**: Wander, chase, flee, ranged attack, and fuse countdowns with obstacle step-up jumping.
+- **Natural Spawning System**: Spawns peaceful farm animals on sunlit surface grass, and hostile monsters in dark underground caves or during the night.
+- **Combat Feedback**: Red hurt flash, knockback impulse, procedural groans/hisses/moos, and death drop yields.
 
-### 3. Survival & Creative Game Modes
-- **Health System (20 HP / 10 Hearts)**: Hearts shake upon taking damage, trigger red screen vignette flashes, and play procedural hurt audio.
-- **Fall Damage**: Downward velocity is monitored dynamically; landing after drops greater than 3.5 blocks deducts proportional health.
-- **Water Physics & Oxygen (20 O2 / 10 Bubbles)**:
-  - Buoyancy and water drag adjust gravity automatically.
-  - Submerging your head depletes oxygen bubbles.
-  - Depleted oxygen deals drowning damage every 1.5 seconds.
-- **Day / Night Lighting Orbit**:
-  - Sun and Moon orbit across the sky with shifting directional sunlight, twilight orange horizons, and starry navy night skies.
-  - Placed Torches and Glowstone cast dynamic point light warmth in dark caverns.
-- **Creative Mode**:
-  - Flight toggled via `F` or double-tapping `Space`.
-  - Instant block breaking, invulnerability, and an infinite item catalog.
-- **Interactive TNT**: Right-clicking TNT ignites a 1.2-second fuse that detonates an explosive blast radius, destroying blocks and launching entities.
+### 3. Weapons & Melee Combat
+- **Swords**: Wooden, Stone, Iron, and Diamond Swords with distinct damage ratings (+4 to +7 Attack Damage) and first-person 3D sword viewmodels with crossguards and pommels.
+- **Bow & Projectile Physics**: Ballistic gravity arc trajectories with voxel terrain collision, mob hit detection, and sound effects.
+- **Hit Detection**: Left-click raycast targets mobs within reach before block mining, applying weapon damage and knockback.
+
+### 4. Hunger & Food System
+- **10 Drumstick Bar (20 Hunger)**: Hunger depletes during sprinting and jumping; sprinting is disabled when hunger falls to 6 or below.
+- **Natural Regeneration & Starvation**: When satiated (18+ hunger), health gently regenerates. When hunger reaches 0, starvation damage occurs.
+- **Food Items**: Apples, Bread, Raw/Cooked Porkchops, and Raw/Cooked Beef (Steak). Right-click to eat with crunchy chewing audio.
+
+### 5. Interactive Blocks & Farming
+- **Chest**: Right-click to access item storage.
+- **Furnace**: Right-click to access smelting and cooking for ores and meats.
+- **Bed**: Right-click at night to sleep through the night, fast-forwarding to dawn and setting your respawn point.
+- **Wooden Door**: Toggle open/close with wooden latch sound.
+- **Ladders**: Climbable vertical surface ladders for shaft descents.
+- **Farmland & Farming**: Right-clicking Grass/Dirt with a Hoe tills the soil into moist farmland; planting seeds yields crops.
+- **Flowers**: Red Poppies and Yellow Dandelions render with authentic cross-billboard geometry.
+
+### 6. Procedural C418-Style Ambient Soundtrack
+- **Procedural Ambient Piano**: Synthesizes gentle, reflective ambient piano and Rhodes chord progressions in pentatonic/Lydian harmony ("Wet Hands", "Sweden" inspired) with zero megabytes of audio downloads.
+- **Procedural Soundscape**: Authentic WebAudio synthesis for mob groans, hisses, oinks, moos, arrow shots, footstep surfaces, water splashes, and tool strikes.
 
 <br/>
 
@@ -99,15 +113,17 @@
 
 <br/>
 
-The engine includes **26 canonical block types** generated procedurally without external image files:
+The engine includes **35 canonical block types & functional items** generated procedurally without external image files:
 
 | BLOCK CATEGORY | INCLUDED BLOCK TYPES |
 | :--- | :--- |
 | **Terrain & Rock** | `Grass Block`, `Dirt`, `Stone`, `Cobblestone`, `Deepslate`, `Bedrock`, `Sand`, `Sandstone` |
-| **Nature & Fluids**| `Oak Log`, `Oak Leaves`, `Cactus`, `Water`, `Snow`, `Ice` |
+| **Nature & Fluids**| `Oak Log`, `Oak Leaves`, `Cactus`, `Water`, `Snow`, `Ice`, `Poppy`, `Dandelion` |
 | **Building**       | `Oak Planks`, `Bricks`, `Stone Bricks`, `Glass` |
 | **Mineral Ores**   | `Coal Ore`, `Iron Ore`, `Gold Ore`, `Diamond Ore` |
-| **Functional**     | `Crafting Table`, `Furnace/Torch`, `Glowstone`, `TNT Block` |
+| **Functional & Home** | `Crafting Table`, `Furnace`, `Chest`, `Bed`, `Wooden Door`, `Ladder`, `Farmland`, `Torch`, `Glowstone`, `TNT Block` |
+| **Weapons & Tools**| `Wooden/Stone/Iron/Diamond Swords`, `Bow & Arrows`, `Pickaxes`, `Axes`, `Shovels`, `Wooden Hoe` |
+| **Food & Mob Drops**| `Apple`, `Bread`, `Raw/Cooked Porkchop`, `Steak`, `Rotten Flesh`, `Bone`, `Gunpowder`, `String`, `Feather`, `Leather`, `Wool` |
 
 <br/>
 
@@ -128,7 +144,22 @@ Pressing `E` opens the **2x2 Player Inventory Crafting Grid**, while right-click
 | Oak Planks (x4)   | 1x Oak Log         | Basic construction     |
 | Sticks (x4)       | 2x Oak Planks      | Tool and torch handles |
 | Crafting Table    | 4x Oak Planks      | Unlocks 3x3 workbench  |
+| Furnace           | 8x Cobblestone     | Smelting & cooking     |
+| Chest             | 8x Oak Planks      | Persistent item store  |
+| Bed               | 3x Wool + 3x Plank | Sleep & set spawn point|
+| Wooden Door       | 6x Oak Planks      | Hinged entry door      |
+| Ladders (x3)      | 7x Sticks          | Climbable wall ladders |
 | Torches (x4)      | 1x Coal + 1x Stick | Cave illumination      |
+| Wooden Sword      | 2x Plank + 1x Stk  | +4 Attack Damage       |
+| Stone Sword       | 2x Cobble + 1x Stk | +5 Attack Damage       |
+| Iron Sword        | 2x Iron + 1x Stick | +6 Attack Damage       |
+| Diamond Sword     | 2x Diam + 1x Stick | +7 Attack Damage       |
+| Bow               | 3x Stick + 3x Str  | Ranged projectile shot |
+| Arrows (x4)       | 1x Fthr + 1x Stk   | Bow ammunition         |
+| Wooden Hoe        | 2x Plank + 2x Stk  | Till soil for farming  |
+| Bread             | 3x Wheat           | Restores 5 hunger      |
+| Cooked Porkchop   | 1x Pork + 1x Coal  | Restores 8 hunger      |
+| Steak             | 1x Beef + 1x Coal  | Restores 8 hunger      |
 | Wooden Pickaxe    | 3x Planks + 2x Stk | 2.6x mining speed      |
 | Stone Pickaxe     | 3x Cobble + 2x Stk | 4.2x mining speed      |
 | Iron Pickaxe      | 3x Iron + 2x Stick | 6.2x mining speed      |
@@ -192,11 +223,12 @@ Pressing `E` opens the **2x2 Player Inventory Crafting Grid**, while right-click
 ### Data Flow Overview
 1. **`noise.ts`**: Provides seeded 2D/3D Simplex gradient noise with coordinate hashing and fractal Brownian motion (fBm).
 2. **`world.ts`**: `InfiniteWorld` coordinates 16x16 chunk generation, biome climate maps (temperature, humidity, mountain ridge), 3D cave worms, and serializes player block edits (`exportEdits` / `importEdits`).
-3. **`mesher.ts`**: Builds dual `{ opaque, water }` geometries with greedy face culling, per-vertex AO calculations, and torch geometries.
-4. **`textures.ts`**: Procedurally generates an 8x4 color canvas atlas, emissive canvas atlas, and 3 break-crack overlay textures at runtime.
-5. **`audio.ts`**: Generates procedural sound effects using WebAudio oscillators, bandpass noise filters, and gain envelopes (block hits, stone/wood/grass breaks, water splashes, explosions, and hurt grunts).
-6. **`engine.ts`**: Orchestrates Three.js rendering, camera transforms, raycast voxel targeting, AABB collision resolution, survival physics, and Day/Night sun orbits.
-7. **`Hud.tsx` & `CraftingModal.tsx`**: React 19 interface rendering hearts, bubbles, hotbars, F3 debug telemetry, and workstation recipes.
+3. **`mesher.ts`**: Builds dual `{ opaque, water }` geometries with greedy face culling, per-vertex AO calculations, torch models, cross-billboard flower geometry, and custom height scaling for beds and tilled farmland.
+4. **`textures.ts`**: Procedurally generates an 8x6 color canvas atlas, emissive canvas atlas, and 3 break-crack overlay textures at runtime.
+5. **`mobs.ts`**: `MobManager` drives 6 distinct 3D voxel mob models (Zombie, Skeleton, Creeper, Pig, Cow, Sheep), state machine AI (wander, chase, flee, fuse explosion), ballistic arrow projectiles, daylight burning, and natural spawning.
+6. **`audio.ts`**: Procedural WebAudio sound synthesizer (hits, breaks, footstep surfaces, splashes, explosions, hurt grunts, mob groans, hisses, moos, oinks, arrow twangs, eating chomps) and procedural C418-style ambient soundtrack.
+7. **`engine.ts`**: Orchestrates Three.js rendering, camera transforms, raycast combat & mining, hunger & saturation drain, natural health regen, bed sleep skip, ladder climbing, and day/night orbits.
+8. **`Hud.tsx` & `CraftingModal.tsx`**: React 19 interface rendering 10 hearts, 10 drumsticks, oxygen bubbles, 9-slot hotbar, F3 telemetry, and categorised workstation recipes.
 
 <br/>
 
@@ -233,7 +265,7 @@ Open **http://localhost:5173/** in any WebGL-capable browser.
 ```bash
 npm run build
 ```
-Creates a self-contained, single-file bundle in `dist/index.html` (under 880 kB, 234 kB gzip) with all code, shaders, and procedural logic inlined.
+Creates a self-contained, single-file bundle in `dist/index.html` (under 916 kB, 243 kB gzip) with all code, shaders, textures, audio synthesis, and procedural logic inlined.
 
 <br/>
 
@@ -246,15 +278,16 @@ Creates a self-contained, single-file bundle in `dist/index.html` (under 880 kB,
 ## [08] TECHNICAL SPECIFICATIONS
 
 ```text
-[+] Rendering Engine       : Three.js WebGL Renderer
-[+] Shadow Mapping         : PCF Soft Shadows with Dynamic Sun Target
+[+] Rendering Engine       : Three.js WebGL Renderer (PCF Shadow Maps, ACES Filmic)
 [+] Chunk Dimensions       : 16 x 64 x 16 Voxels per Column
 [+] Sea Level Height       : Y = 22
 [+] Active Render Distance : 7x7 Chunks (49 Chunks / 112x112 Block Viewport)
-[+] Texture Atlas          : 8x4 Procedural Grid (18x18px Padded Cells)
-[+] Sound Synthesizer      : Web Audio API (Zero External MP3/WAV Audio)
-[+] Build Output           : Single-File HTML (~878 kB / ~234 kB gzipped)
-[+] Persistence            : Web Storage API (World Edits, Inventory, Seed, Time)
+[+] Texture Atlas          : 8x6 Procedural Grid (18x18px Padded Gutter Cells)
+[+] Mobs & Entities        : 6 Species (Zombie, Skeleton, Creeper, Pig, Cow, Sheep)
+[+] Sound Synthesizer      : Web Audio API (Zero External MP3/WAV Audio Files)
+[+] Ambient Soundtrack     : Procedural C418-Style Calm Piano Synthesizer
+[+] Build Output           : Single-File HTML (~915 kB / ~243 kB gzipped)
+[+] Persistence            : Web Storage API (World Edits, Inventory, Seed, Time, Spawn)
 ```
 
 <br/>

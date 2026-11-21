@@ -178,6 +178,47 @@ function emitTorch(buf: MeshBuf, x: number, y: number, z: number, tileSet: Block
   }
 }
 
+function emitCross(buf: MeshBuf, x: number, y: number, z: number, tileSet: BlockTileMap) {
+  const uv = tileSet.side;
+  for (let flip = 0; flip < 2; flip++) {
+    const vc = buf.vCount;
+    buf.pos.push(
+      x + 0.15, y, z + 0.15,
+      x + 0.85, y, z + 0.85,
+      x + 0.85, y + 0.95, z + 0.85,
+      x + 0.15, y + 0.95, z + 0.15,
+    );
+    buf.norm.push(0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0);
+    buf.col.push(0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95);
+    buf.uv.push(uv.u0, uv.vBot, uv.u1, uv.vBot, uv.u1, uv.vTop, uv.u0, uv.vTop);
+    if (flip === 0) {
+      buf.idx.push(vc, vc + 1, vc + 2, vc, vc + 2, vc + 3);
+    } else {
+      buf.idx.push(vc + 2, vc + 1, vc, vc + 3, vc + 2, vc);
+    }
+    buf.vCount += 4;
+  }
+
+  for (let flip = 0; flip < 2; flip++) {
+    const vc = buf.vCount;
+    buf.pos.push(
+      x + 0.15, y, z + 0.85,
+      x + 0.85, y, z + 0.15,
+      x + 0.85, y + 0.95, z + 0.15,
+      x + 0.15, y + 0.95, z + 0.85,
+    );
+    buf.norm.push(0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0);
+    buf.col.push(0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95);
+    buf.uv.push(uv.u0, uv.vBot, uv.u1, uv.vBot, uv.u1, uv.vTop, uv.u0, uv.vTop);
+    if (flip === 0) {
+      buf.idx.push(vc, vc + 1, vc + 2, vc, vc + 2, vc + 3);
+    } else {
+      buf.idx.push(vc + 2, vc + 1, vc, vc + 3, vc + 2, vc);
+    }
+    buf.vCount += 4;
+  }
+}
+
 export interface ChunkGeometries {
   opaque: THREE.BufferGeometry | null;
   water: THREE.BufferGeometry | null;
@@ -209,6 +250,11 @@ export function buildChunkGeometries(
 
         if (def.isTorch) {
           emitTorch(opaqueBuf, wx, y, wz, tileSet);
+          continue;
+        }
+
+        if (def.isFlower) {
+          emitCross(opaqueBuf, wx, y, wz, tileSet);
           continue;
         }
 
@@ -251,10 +297,12 @@ export function buildChunkGeometries(
           const uv = tileSet[face.uvKind];
           const aoLevels: [number, number, number, number] = [3, 3, 3, 3];
           const vc = opaqueBuf.vCount;
+          const height = b === BLOCK.BED ? 0.56 : b === BLOCK.FARMLAND ? 0.9375 : 1.0;
 
           for (let c = 0; c < 4; c++) {
             const [vx, vy, vz] = face.corners[c];
-            opaqueBuf.pos.push(wx + vx, y + vy, wz + vz);
+            const actualY = vy === 1 ? y + height : y + vy;
+            opaqueBuf.pos.push(wx + vx, actualY, wz + vz);
             opaqueBuf.norm.push(nx, ny, nz);
             const ao = vertexAO(world, wx, y, wz, nx, ny, nz, vx, vy, vz);
             aoLevels[c] = ao;

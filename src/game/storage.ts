@@ -13,11 +13,13 @@ export interface PlayerSave {
   yaw: number;
   pitch: number;
   health: number; // 0 - 20
+  hunger?: number; // 0 - 20
   oxygen: number; // 0 - 20
   hotbar: Array<{ item: ItemId; count: number } | null>;
   inventory: Record<string, number>;
   selectedSlot: number;
   flying: boolean;
+  spawnPos?: [number, number, number];
 }
 
 export interface WorldSave {
@@ -28,6 +30,7 @@ export interface WorldSave {
   dayTime: number; // 0..24000 (Minecraft day ticks)
   player: PlayerSave;
   edits: Record<string, number>;
+  chests?: Record<string, Array<{ item: ItemId; count: number } | null>>;
   createdAt: number;
   updatedAt: number;
 }
@@ -119,6 +122,7 @@ export function createDefaultWorldSave(
       yaw: 0,
       pitch: 0,
       health: 20,
+      hunger: 20,
       oxygen: 20,
       hotbar,
       inventory:

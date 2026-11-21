@@ -29,7 +29,7 @@ export function CraftingModal({
   onCraft,
   onAddCreativeItem,
 }: CraftingModalProps) {
-  const [filter, setFilter] = useState<"all" | "tools" | "blocks">("all");
+  const [filter, setFilter] = useState<"all" | "tools" | "blocks" | "food">("all");
 
   if (!isOpen) return null;
 
@@ -43,8 +43,9 @@ export function CraftingModal({
 
   // Filter recipes
   const displayRecipes = RECIPES.filter((r) => {
-    if (filter === "tools") return ITEMS[r.out]?.category === "tool";
+    if (filter === "tools") return ITEMS[r.out]?.category === "tool" || ITEMS[r.out]?.category === "weapon";
     if (filter === "blocks") return ITEMS[r.out]?.category === "block";
+    if (filter === "food") return ITEMS[r.out]?.category === "food";
     return true;
   });
 
@@ -139,6 +140,15 @@ export function CraftingModal({
                   }`}
                 >
                   BLOCKS & BUILDING
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFilter("food")}
+                  className={`rounded-xs px-2.5 py-1 text-[9px] ${
+                    filter === "food" ? "bg-[#373737] text-white" : "bg-[#a5a5a5] text-[#222222]"
+                  }`}
+                >
+                  FOOD & COOKING
                 </button>
               </div>
 

@@ -47,6 +47,14 @@ export function Hud({
     return "empty";
   });
 
+  // Hunger drumsticks calculation (10 drumsticks = 20 hunger)
+  const drumsticks = Array.from({ length: 10 }, (_, i) => {
+    const val = hud.hunger - i * 2;
+    if (val >= 2) return "full";
+    if (val === 1) return "half";
+    return "empty";
+  });
+
   // Oxygen bubbles calculation (10 bubbles = 20 oxygen)
   const showOxygen = hud.inWater || hud.oxygen < hud.maxOxygen;
   const bubbles = Array.from({ length: 10 }, (_, i) => {
@@ -170,47 +178,18 @@ export function Hud({
         </div>
       )}
 
-      {/* Survival Status Bars (Health Hearts & Oxygen Bubbles) */}
-      <div className="absolute bottom-20 left-1/2 -translate-x-1/2 flex w-[360px] max-w-[92vw] flex-col gap-1.5">
-        {/* Oxygen Bubbles (shown underwater) */}
-        {showOxygen && (
-          <div className="flex justify-end gap-1 px-1">
-            {bubbles.map((b, i) => (
-              <span
-                key={i}
-                className="relative inline-block h-3.5 w-3.5"
-                title={`Oxygen: ${hud.oxygen}/${hud.maxOxygen}`}
-              >
-                {b === "full" ? (
-                  <svg viewBox="0 0 16 16" className="h-full w-full drop-shadow">
-                    <circle cx="8" cy="8" r="7" fill="#1b85db" stroke="#00356b" strokeWidth="1.5" />
-                    <circle cx="6" cy="5" r="2" fill="#75d6ff" />
-                  </svg>
-                ) : b === "half" ? (
-                  <svg viewBox="0 0 16 16" className="h-full w-full drop-shadow">
-                    <circle cx="8" cy="8" r="4.5" fill="#1b85db" stroke="#00356b" strokeWidth="1.5" />
-                    <circle cx="7" cy="6" r="1.5" fill="#75d6ff" />
-                  </svg>
-                ) : (
-                  <span className="block h-3.5 w-3.5" />
-                )}
-              </span>
-            ))}
-          </div>
-        )}
-
-        {/* Health Hearts (Survival Mode) */}
-        {hud.gameMode === "survival" && (
-          <div className="flex gap-1 px-1">
+      {/* Survival Status Bars (Health Hearts on Left & Hunger Drumsticks on Right) */}
+      {hud.gameMode === "survival" && (
+        <div className="absolute bottom-20 left-1/2 -translate-x-1/2 flex w-[380px] max-w-[94vw] items-end justify-between px-1">
+          {/* Health Hearts (Left) */}
+          <div className="flex gap-1">
             {hearts.map((h, i) => (
               <span
                 key={i}
                 className={`relative inline-block h-4 w-4 ${hud.health <= 4 ? "animate-pulse" : ""}`}
                 title={`Health: ${hud.health}/${hud.maxHealth}`}
               >
-                {/* Heart Container SVG */}
                 <svg viewBox="0 0 16 16" className="h-full w-full drop-shadow-[0_1px_1px_rgba(0,0,0,0.8)]">
-                  {/* Empty heart background */}
                   <path
                     d="M 8,14 L 2,8 C 0,6 0,2 4,1 C 6,1 7,3 8,4 C 9,3 10,1 12,1 C 16,2 16,6 14,8 Z"
                     fill="#2a0d0d"
@@ -233,8 +212,79 @@ export function Hud({
               </span>
             ))}
           </div>
-        )}
-      </div>
+
+          {/* Right Column: Oxygen Bubbles + Hunger Drumsticks */}
+          <div className="flex flex-col items-end gap-1">
+            {showOxygen && (
+              <div className="flex gap-1">
+                {bubbles.map((b, i) => (
+                  <span
+                    key={i}
+                    className="relative inline-block h-3.5 w-3.5"
+                    title={`Oxygen: ${hud.oxygen}/${hud.maxOxygen}`}
+                  >
+                    {b === "full" ? (
+                      <svg viewBox="0 0 16 16" className="h-full w-full drop-shadow">
+                        <circle cx="8" cy="8" r="7" fill="#1b85db" stroke="#00356b" strokeWidth="1.5" />
+                        <circle cx="6" cy="5" r="2" fill="#75d6ff" />
+                      </svg>
+                    ) : b === "half" ? (
+                      <svg viewBox="0 0 16 16" className="h-full w-full drop-shadow">
+                        <circle cx="8" cy="8" r="4.5" fill="#1b85db" stroke="#00356b" strokeWidth="1.5" />
+                        <circle cx="7" cy="6" r="1.5" fill="#75d6ff" />
+                      </svg>
+                    ) : (
+                      <span className="block h-3.5 w-3.5" />
+                    )}
+                  </span>
+                ))}
+              </div>
+            )}
+
+            <div className="flex flex-row-reverse gap-1">
+              {drumsticks.map((d, i) => (
+                <span
+                  key={i}
+                  className={`relative inline-block h-4 w-4 ${hud.hunger <= 4 ? "animate-bounce" : ""}`}
+                  title={`Hunger: ${hud.hunger}/${hud.maxHunger}`}
+                >
+                  <svg viewBox="0 0 16 16" className="h-full w-full drop-shadow-[0_1px_1px_rgba(0,0,0,0.8)]">
+                    <path
+                      d="M12 2 C14 2 15 4 14 6 C13 7.5 11 9 9 10 L7 12 L5 11 L8 8 C9 6 10 3 12 2 Z"
+                      fill="#241b12"
+                      stroke="#120d08"
+                      strokeWidth="1.2"
+                    />
+                    {d === "full" && (
+                      <>
+                        <path
+                          d="M12 3 C13.5 3 14 4.5 13.5 5.5 C12.5 7 10.5 8.5 8.5 9.5 L7.5 8.5 C8.5 6.5 10 3.5 12 3 Z"
+                          fill="#bd6e28"
+                          stroke="#753d10"
+                          strokeWidth="0.8"
+                        />
+                        <circle cx="11.5" cy="4.5" r="1.2" fill="#e89d46" />
+                        <line x1="7" y1="10" x2="4" y2="13" stroke="#f0efe8" strokeWidth="2" strokeLinecap="round" />
+                      </>
+                    )}
+                    {d === "half" && (
+                      <>
+                        <path
+                          d="M12 3 C13.5 3 14 4.5 13.5 5.5 C12.5 7 10.5 8.5 9.5 9 C9.5 7.5 10.5 4.5 12 3 Z"
+                          fill="#bd6e28"
+                          stroke="#753d10"
+                          strokeWidth="0.8"
+                        />
+                        <line x1="7" y1="10" x2="4" y2="13" stroke="#f0efe8" strokeWidth="2" strokeLinecap="round" />
+                      </>
+                    )}
+                  </svg>
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 9-Slot Hotbar */}
       <footer className="pointer-events-auto absolute bottom-2 left-1/2 -translate-x-1/2">

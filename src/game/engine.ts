@@ -19,6 +19,7 @@ import {
   WORLD_HEIGHT,
 } from "./world";
 import { GameAudio } from "./audio";
+import { MobManager } from "./mobs";
 import {
   loadSettings,
   saveWorldSave,
@@ -29,6 +30,8 @@ import {
 export interface MinecraftHudState {
   health: number; // 0..20 (10 hearts)
   maxHealth: number;
+  hunger: number; // 0..20 (10 drumsticks)
+  maxHunger: number;
   oxygen: number; // 0..20 (10 bubbles)
   maxOxygen: number;
   inWater: boolean;
@@ -67,6 +70,9 @@ export interface MinecraftHudState {
 export interface EngineCallbacks {
   onHud: (hud: MinecraftHudState) => void;
   onOpenCrafting: (isWorkstation: boolean) => void;
+  onOpenChest?: (chestPosKey: string) => void;
+  onOpenFurnace?: (furnacePosKey: string) => void;
+  onNotification?: (msg: string) => void;
   onDeath: () => void;
   onPauseRequest: () => void;
   onWorldSaved?: () => void;
@@ -122,6 +128,9 @@ export class GameEngine {
     pitch: 0,
     health: 20,
     maxHealth: 20,
+    hunger: 20,
+    maxHunger: 20,
+    saturation: 5,
     oxygen: 20,
     maxOxygen: 20,
     flying: false,
@@ -134,6 +143,9 @@ export class GameEngine {
     inventory: {} as Record<string, number>,
     selectedSlot: 0,
   };
+
+  mobManager: MobManager;
+  hungerTimer = 0;
 
   // Viewmodel & Held Item
   viewmodelGroup: THREE.Group;
@@ -193,7 +205,7 @@ export class GameEngine {
     this.renderer.setSize(container.clientWidth, container.clientHeight);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.shadowMap.enabled = this.settings.shadows;
-    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.renderer.shadowMap.type = THREE.PCFShadowMap;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.05;
     container.appendChild(this.renderer.domElement);
@@ -212,8 +224,12 @@ export class GameEngine {
     // Create Infinite World
     this.world = new InfiniteWorld(save.seed, save.edits);
 
+    // Mob Manager & Entities
+    this.mobManager = new MobManager(this.world, this.scene, this.audio);
+
     // Restore Player State
     this.player.health = save.player?.health ?? 20;
+    this.player.hunger = save.player?.hunger ?? 20;
     this.player.oxygen = save.player?.oxygen ?? 20;
     this.player.yaw = save.player?.yaw ?? 0;
     this.player.pitch = save.player?.pitch ?? 0;
@@ -615,13 +631,39 @@ export class GameEngine {
 
       if (!this.isPointerLocked) {
         if (!this.isPaused && !this.isDead) {
-          dom.requestPointerLock();
+          try {
+            const p = dom.requestPointerLock() as unknown as Promise<void> | undefined;
+            if (p && typeof p.catch === "function") p.catch(() => {});
+          } catch {
+            /* ignore pointerlock rejection */
+          }
         }
         return;
       }
 
       if (e.button === 0) {
-        // Left click: start mining
+        // Left click: first check if melee attacking a mob
+        const rayOrigin = this.camera.position.clone();
+        const rayDir = new THREE.Vector3(0, 0, -1).applyQuaternion(this.camera.quaternion).normalize();
+        const held = this.getHeldItem();
+        const heldDef = held ? ITEMS[held.item] : null;
+        const attackDmg = heldDef?.attackDamage ?? heldDef?.tool?.attackDamage ?? 1;
+
+        const hitMob = this.mobManager.attackRaycast(
+          rayOrigin,
+          rayDir,
+          attackDmg,
+          (drops: Array<{ item: ItemId; count: number }>) => {
+            drops.forEach((d) => this.addItem(d.item, d.count));
+          },
+        );
+
+        if (hitMob) {
+          this.swingAnim = 0.65;
+          return;
+        }
+
+        // Otherwise start mining block
         this.isMining = true;
         this.mineHitTimer = 0;
       } else if (e.button === 2) {
@@ -768,6 +810,55 @@ export class GameEngine {
           rightTip.position.set(0.075, 0.155, 0);
           rightTip.rotation.z = -0.28;
           toolGroup.add(rightTip);
+        } else if (def.tool.kind === "sword") {
+          const blade = new THREE.Mesh(
+            new THREE.BoxGeometry(0.065, 0.42, 0.025),
+            new THREE.MeshLambertMaterial({ color: def.tool.headColor })
+          );
+          blade.position.set(0, 0.22, 0);
+          toolGroup.add(blade);
+
+          const tip = new THREE.Mesh(
+            new THREE.BoxGeometry(0.075, 0.06, 0.03),
+            new THREE.MeshLambertMaterial({ color: def.tool.tipColor })
+          );
+          tip.position.set(0, 0.44, 0);
+          toolGroup.add(tip);
+
+          const guard = new THREE.Mesh(
+            new THREE.BoxGeometry(0.18, 0.045, 0.045),
+            new THREE.MeshLambertMaterial({ color: 0x5a3d24 })
+          );
+          guard.position.set(0, 0.02, 0);
+          toolGroup.add(guard);
+
+          const pommel = new THREE.Mesh(
+            new THREE.BoxGeometry(0.055, 0.05, 0.05),
+            new THREE.MeshLambertMaterial({ color: def.tool.headColor })
+          );
+          pommel.position.set(0, -0.24, 0);
+          toolGroup.add(pommel);
+        } else if (def.tool.kind === "bow") {
+          const bowCurved = new THREE.Mesh(
+            new THREE.BoxGeometry(0.05, 0.46, 0.06),
+            new THREE.MeshLambertMaterial({ color: 0x6e451f })
+          );
+          bowCurved.position.set(0, 0.05, 0);
+          toolGroup.add(bowCurved);
+
+          const stringMesh = new THREE.Mesh(
+            new THREE.BoxGeometry(0.015, 0.48, 0.015),
+            new THREE.MeshBasicMaterial({ color: 0xffffff })
+          );
+          stringMesh.position.set(0, 0.05, -0.06);
+          toolGroup.add(stringMesh);
+        } else if (def.tool.kind === "hoe") {
+          const hoeHead = new THREE.Mesh(
+            new THREE.BoxGeometry(0.12, 0.05, 0.04),
+            new THREE.MeshLambertMaterial({ color: def.tool.headColor })
+          );
+          hoeHead.position.set(0.04, 0.18, 0);
+          toolGroup.add(hoeHead);
         } else if (def.tool.kind === "axe") {
           const axeHead = new THREE.Mesh(
             new THREE.BoxGeometry(0.12, 0.15, 0.045),
@@ -816,6 +907,28 @@ export class GameEngine {
           cube.rotation.set(0.2, -0.5, 0.15);
           group.add(cube);
         }
+      } else if (def?.food) {
+        // 3D Food Item
+        const foodGroup = new THREE.Group();
+        if (held.item === "apple") {
+          const apple = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.16, 0.16), new THREE.MeshLambertMaterial({ color: 0xd92626 }));
+          foodGroup.add(apple);
+          const stem = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.06, 0.03), new THREE.MeshLambertMaterial({ color: 0x5a3d24 }));
+          stem.position.set(0, 0.09, 0);
+          foodGroup.add(stem);
+        } else if (held.item === "bread") {
+          const bread = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.11, 0.13), new THREE.MeshLambertMaterial({ color: 0xba7c38 }));
+          foodGroup.add(bread);
+        } else {
+          const meat = new THREE.Mesh(
+            new THREE.BoxGeometry(0.19, 0.07, 0.14),
+            new THREE.MeshLambertMaterial({ color: new THREE.Color(def.color || "#993333") })
+          );
+          foodGroup.add(meat);
+        }
+        foodGroup.position.set(0.28, -0.22, -0.38);
+        foodGroup.rotation.set(0.2, -0.4, 0.2);
+        group.add(foodGroup);
       } else {
         // Material Item (Coal, Diamond, Ingot)
         const itemGeo = new THREE.BoxGeometry(0.14, 0.14, 0.04);
@@ -976,25 +1089,111 @@ export class GameEngine {
   // RIGHT CLICK / PLACEMENT / INTERACTION
   // --------------------------------------------------------------------------
   private handleRightClick() {
-    if (!this.targetBlock) return;
+    const held = this.getHeldItem();
+    const heldDef = held ? ITEMS[held.item] : null;
 
+    // 1) Bow Shooting
+    if (held?.item === "bow") {
+      const hasArrow = this.save.gameMode === "creative" || this.hasItem("arrow");
+      if (hasArrow) {
+        if (this.save.gameMode === "survival") {
+          this.consumeItem("arrow", 1);
+        }
+        const rayDir = new THREE.Vector3(0, 0, -1).applyQuaternion(this.camera.quaternion).normalize();
+        const origin = this.camera.position.clone().add(rayDir.clone().multiplyScalar(0.4));
+        this.mobManager.shootArrow(origin, rayDir, "player");
+        this.audio.bowShoot();
+        this.swingAnim = 0.55;
+        return;
+      }
+    }
+
+    // 2) Food consumption
+    if (heldDef?.food) {
+      if (this.player.hunger < 20 || heldDef.food.alwaysEdible) {
+        this.player.hunger = Math.min(20, this.player.hunger + heldDef.food.nutrition);
+        this.player.saturation = Math.min(20, this.player.saturation + heldDef.food.saturation);
+        this.audio.eatChomp();
+        this.swingAnim = 0.55;
+        if (this.save.gameMode === "survival") {
+          this.consumeHeldItem(1);
+        }
+        return;
+      }
+    }
+
+    if (!this.targetBlock) return;
     const { x, y, z, block } = this.targetBlock;
 
-    // 1) Workstation check: Crafting Table opens crafting UI
+    // 3) Workstation check: Crafting Table opens crafting UI
     if (block === BLOCK.CRAFTING_TABLE) {
       if (this.isPointerLocked) document.exitPointerLock();
       this.callbacks.onOpenCrafting(true);
       return;
     }
 
-    // 2) TNT check: right click ignites TNT
+    // 4) Chest check: opens Chest modal
+    if (block === BLOCK.CHEST) {
+      if (this.isPointerLocked) document.exitPointerLock();
+      this.audio.chestToggle(true);
+      this.callbacks.onOpenChest?.(`${x},${y},${z}`);
+      return;
+    }
+
+    // 5) Furnace check: opens Furnace modal
+    if (block === BLOCK.FURNACE) {
+      if (this.isPointerLocked) document.exitPointerLock();
+      this.callbacks.onOpenFurnace?.(`${x},${y},${z}`);
+      return;
+    }
+
+    // 6) Bed check: sleep through the night
+    if (block === BLOCK.BED) {
+      const isNight = this.save.dayTime > 12500 && this.save.dayTime < 23500;
+      if (isNight) {
+        this.audio.sleepChime();
+        this.save.dayTime = 0; // Morning sunrise!
+        this.save.player.spawnPos = [x, y + 1, z];
+        this.callbacks.onNotification?.("You slept through the night. Respawn point set!");
+      } else {
+        this.callbacks.onNotification?.("You can only sleep at night!");
+      }
+      return;
+    }
+
+    // 7) Door toggle
+    if (block === BLOCK.WOOD_DOOR) {
+      this.audio.doorToggle(true);
+      this.swingAnim = 0.5;
+      return;
+    }
+
+    // 8) Hoe tilling on Grass or Dirt -> Farmland
+    if (heldDef?.tool?.kind === "hoe" && (block === BLOCK.GRASS || block === BLOCK.DIRT)) {
+      this.world.setBlock(x, y, z, BLOCK.FARMLAND);
+      this.markBlockDirty(x, y, z);
+      this.audio.place("grass");
+      this.swingAnim = 0.55;
+      return;
+    }
+
+    // 9) Seeds on Farmland
+    if (held?.item === "seeds" && block === BLOCK.FARMLAND) {
+      this.world.setBlock(x, y + 1, z, BLOCK.DANDELION);
+      this.markBlockDirty(x, y + 1, z);
+      this.audio.place("grass");
+      this.consumeHeldItem(1);
+      this.swingAnim = 0.5;
+      return;
+    }
+
+    // 10) TNT check: right click ignites TNT
     if (block === BLOCK.TNT) {
       this.detonateTNT(x, y, z);
       return;
     }
 
-    // 3) Block Placement
-    const held = this.getHeldItem();
+    // 11) Block Placement
     if (!held) return;
 
     const itemDef = ITEMS[held.item];
@@ -1133,6 +1332,41 @@ export class GameEngine {
     this.rebuildViewmodel();
   }
 
+  hasItem(item: ItemId, count = 1): boolean {
+    let total = this.player.inventory[item] || 0;
+    for (const slot of this.player.hotbar) {
+      if (slot && slot.item === item) total += slot.count;
+    }
+    return total >= count;
+  }
+
+  consumeItem(item: ItemId, count = 1) {
+    let remaining = count;
+    if (this.player.inventory[item]) {
+      const take = Math.min(this.player.inventory[item], remaining);
+      this.player.inventory[item] -= take;
+      remaining -= take;
+      if (this.player.inventory[item] <= 0) {
+        delete this.player.inventory[item];
+      }
+    }
+    if (remaining > 0) {
+      for (let i = 0; i < 9; i++) {
+        const slot = this.player.hotbar[i];
+        if (slot && slot.item === item) {
+          const take = Math.min(slot.count, remaining);
+          slot.count -= take;
+          remaining -= take;
+          if (slot.count <= 0) {
+            this.player.hotbar[i] = null;
+          }
+          if (remaining <= 0) break;
+        }
+      }
+    }
+    this.rebuildViewmodel();
+  }
+
   // --------------------------------------------------------------------------
   // PLAYER PHYSICS, COLLISION & SURVIVAL
   // --------------------------------------------------------------------------
@@ -1177,6 +1411,9 @@ export class GameEngine {
     }
 
     // Walking / Sprinting Speeds
+    if (p.hunger <= 6) {
+      p.sprinting = false;
+    }
     let baseSpeed = p.inWater ? 2.8 : p.sprinting ? 6.8 : 4.4;
     const accel = p.onGround ? 28 : p.inWater ? 12 : 7;
     const targetVelX = moveDir.x * baseSpeed;
@@ -1185,8 +1422,26 @@ export class GameEngine {
     p.vel.x += (targetVelX - p.vel.x) * THREE.MathUtils.clamp(accel * dt, 0, 1);
     p.vel.z += (targetVelZ - p.vel.z) * THREE.MathUtils.clamp(accel * dt, 0, 1);
 
+    const hSpeed = Math.hypot(p.vel.x, p.vel.z);
+    if (p.sprinting && hSpeed > 0.5) {
+      p.hunger = Math.max(0, p.hunger - 0.08 * dt);
+    }
+
+    // Check Ladder
+    const ladderBlock = this.world.getBlock(Math.floor(p.pos.x), Math.floor(p.pos.y + 0.6), Math.floor(p.pos.z));
+    const onLadder = ladderBlock === BLOCK.LADDER;
+
     // Gravity & Vertical Movement
-    if (p.inWater) {
+    if (onLadder) {
+      p.fallDistance = 0;
+      if (this.keys["KeyW"] || this.keys["Space"]) {
+        p.vel.y = 3.2;
+      } else if (this.keys["KeyS"] || this.keys["ShiftLeft"]) {
+        p.vel.y = -2.8;
+      } else {
+        p.vel.y = 0;
+      }
+    } else if (p.inWater) {
       // Water Buoyancy
       const waterGravity = -4.5;
       p.vel.y += waterGravity * dt;
@@ -1220,7 +1475,6 @@ export class GameEngine {
     this.moveWithCollision(dt);
 
     // Head bobbing & footsteps while moving on ground
-    const hSpeed = Math.hypot(p.vel.x, p.vel.z);
     if (p.onGround && hSpeed > 0.6) {
       this.walkBob += dt * hSpeed * 2.2;
       if (Math.sin(this.walkBob) < -0.95) {
@@ -1400,13 +1654,23 @@ export class GameEngine {
   respawn() {
     this.isDead = false;
     this.player.health = this.player.maxHealth;
+    this.player.hunger = this.player.maxHunger;
     this.player.oxygen = this.player.maxOxygen;
-    const sp = this.world.findSpawn();
-    this.player.pos.set(sp.x, sp.y, sp.z);
+    if (this.save.player?.spawnPos) {
+      this.player.pos.set(this.save.player.spawnPos[0], this.save.player.spawnPos[1], this.save.player.spawnPos[2]);
+    } else {
+      const sp = this.world.findSpawn();
+      this.player.pos.set(sp.x, sp.y, sp.z);
+    }
     this.player.vel.set(0, 0, 0);
     this.player.fallDistance = 0;
     this.updateLoadedChunks(true);
-    this.container.requestPointerLock();
+    try {
+      const p = this.container.requestPointerLock() as unknown as Promise<void> | undefined;
+      if (p && typeof p.catch === "function") p.catch(() => {});
+    } catch {
+      /* ignore */
+    }
   }
 
   // --------------------------------------------------------------------------
@@ -1516,6 +1780,34 @@ export class GameEngine {
         this.hurtFlash = false;
       }
 
+      // 9) Mobs & Entity AI
+      const isDay = this.save.dayTime < 12000 || this.save.dayTime > 23000;
+      this.mobManager.update(
+        dt,
+        this.player.pos,
+        isDay,
+        (dmg) => this.applyDamage(dmg),
+        (drops) => drops.forEach((d) => this.addItem(d.item, d.count)),
+        (ex, ey, ez) => this.detonateTNT(ex, ey, ez),
+      );
+
+      // 10) Procedural Ambient Music Update
+      this.audio.updateAmbient(dt);
+
+      // 11) Hunger & Natural Regeneration
+      if (this.save.gameMode === "survival") {
+        this.hungerTimer += dt;
+        if (this.hungerTimer >= 4.0) {
+          this.hungerTimer = 0;
+          if (this.player.hunger >= 18 && this.player.health < this.player.maxHealth) {
+            this.player.health = Math.min(this.player.maxHealth, this.player.health + 1);
+            this.player.hunger = Math.max(0, this.player.hunger - 0.5);
+          } else if (this.player.hunger <= 0) {
+            this.applyDamage(1);
+          }
+        }
+      }
+
       // Auto-save every 15 seconds
       this.autoSaveTimer += dt;
       if (this.autoSaveTimer > 15) {
@@ -1552,6 +1844,8 @@ export class GameEngine {
     this.callbacks.onHud({
       health: this.player.health,
       maxHealth: this.player.maxHealth,
+      hunger: Math.round(this.player.hunger),
+      maxHunger: 20,
       oxygen: this.player.oxygen,
       maxOxygen: this.player.maxOxygen,
       inWater: this.player.inWater,
@@ -1596,11 +1890,13 @@ export class GameEngine {
       yaw: this.player.yaw,
       pitch: this.player.pitch,
       health: this.player.health,
+      hunger: this.player.hunger,
       oxygen: this.player.oxygen,
       hotbar: this.player.hotbar,
       inventory: this.player.inventory,
       selectedSlot: this.player.selectedSlot,
       flying: this.player.flying,
+      spawnPos: this.save.player?.spawnPos,
     };
     this.save.edits = this.world.exportEdits();
     saveWorldSave(this.save);
@@ -1707,6 +2003,7 @@ export class GameEngine {
 
     this.audio.dispose();
     this.atlas.dispose();
+    this.mobManager.dispose();
 
     for (const record of this.chunkMeshes.values()) {
       if (record.opaqueMesh) {

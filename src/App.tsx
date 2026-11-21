@@ -24,6 +24,8 @@ type Screen = "menu" | "playing" | "paused" | "dead";
 const INITIAL_HUD: MinecraftHudState = {
   health: 20,
   maxHealth: 20,
+  hunger: 20,
+  maxHunger: 20,
   oxygen: 20,
   maxOxygen: 20,
   inWater: false,
@@ -61,6 +63,7 @@ export default function App() {
   const [screen, setScreen] = useState<Screen>("menu");
   const [hud, setHud] = useState<MinecraftHudState>(INITIAL_HUD);
   const [settings, setSettings] = useState<GameSettings>(() => loadSettings());
+  const [toast, setToast] = useState<string | null>(null);
 
   // Crafting Modal state
   const [isCraftingOpen, setIsCraftingOpen] = useState(false);
@@ -110,6 +113,18 @@ export default function App() {
             setIsWorkstation(workstation);
             setIsCraftingOpen(true);
           },
+          onOpenChest: () => {
+            setIsWorkstation(true);
+            setIsCraftingOpen(true);
+          },
+          onOpenFurnace: () => {
+            setIsWorkstation(true);
+            setIsCraftingOpen(true);
+          },
+          onNotification: (msg) => {
+            setToast(msg);
+            setTimeout(() => setToast(null), 3600);
+          },
           onDeath: () => {
             setScreen("dead");
           },
@@ -136,7 +151,12 @@ export default function App() {
     if (screen === "paused") {
       gameRef.current?.setPaused(false);
       setScreen("playing");
-      hostRef.current?.requestPointerLock();
+      try {
+        const p = hostRef.current?.requestPointerLock() as unknown as Promise<void> | undefined;
+        if (p && typeof p.catch === "function") p.catch(() => {});
+      } catch {
+        /* ignore */
+      }
     }
   }, [screen]);
 
@@ -171,7 +191,12 @@ export default function App() {
   const handleCloseCrafting = useCallback(() => {
     setIsCraftingOpen(false);
     if (screen === "playing") {
-      hostRef.current?.requestPointerLock();
+      try {
+        const p = hostRef.current?.requestPointerLock() as unknown as Promise<void> | undefined;
+        if (p && typeof p.catch === "function") p.catch(() => {});
+      } catch {
+        /* ignore */
+      }
     }
   }, [screen]);
 
@@ -187,6 +212,15 @@ export default function App() {
 
   return (
     <div className="relative h-screen w-screen overflow-hidden bg-black select-none">
+      {/* Toast Notification Banner */}
+      {toast && (
+        <div className="pointer-events-none fixed top-6 left-1/2 -translate-x-1/2 z-50 animate-bounce">
+          <div className="rounded border-2 border-black/80 bg-black/85 px-4 py-2 font-pixel text-[12px] tracking-wider text-amber-300 shadow-[0_4px_16px_rgba(0,0,0,0.8)]">
+            {toast}
+          </div>
+        </div>
+      )}
+
       {/* 3D WebGL Canvas Host Container */}
       <div
         ref={hostRef}

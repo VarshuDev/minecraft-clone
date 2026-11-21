@@ -26,6 +26,14 @@ export const BLOCK = {
   CACTUS: 24,
   CRAFTING_TABLE: 25,
   TORCH: 26,
+  FURNACE: 27,
+  CHEST: 28,
+  BED: 29,
+  WOOD_DOOR: 30,
+  LADDER: 31,
+  FARMLAND: 32,
+  POPPY: 33,
+  DANDELION: 34,
 } as const;
 
 export type BlockNum = (typeof BLOCK)[keyof typeof BLOCK];
@@ -57,6 +65,14 @@ export type ItemId =
   | "block_cactus"
   | "block_crafting_table"
   | "block_torch"
+  | "block_furnace"
+  | "block_chest"
+  | "block_bed"
+  | "block_door"
+  | "block_ladder"
+  | "block_farmland"
+  | "block_poppy"
+  | "block_dandelion"
   | "coal"
   | "iron_ingot"
   | "gold_ingot"
@@ -68,9 +84,31 @@ export type ItemId =
   | "diamond_pick"
   | "wood_axe"
   | "stone_axe"
-  | "wood_shovel";
+  | "wood_shovel"
+  | "wood_sword"
+  | "stone_sword"
+  | "iron_sword"
+  | "diamond_sword"
+  | "bow"
+  | "arrow"
+  | "wood_hoe"
+  | "apple"
+  | "bread"
+  | "raw_beef"
+  | "cooked_beef"
+  | "raw_porkchop"
+  | "cooked_porkchop"
+  | "wheat"
+  | "seeds"
+  | "rotten_flesh"
+  | "bone"
+  | "gunpowder"
+  | "string"
+  | "feather"
+  | "leather"
+  | "wool";
 
-export type ToolKind = "pickaxe" | "axe" | "shovel";
+export type ToolKind = "pickaxe" | "axe" | "shovel" | "sword" | "hoe" | "bow";
 
 export interface BlockDef {
   id: BlockNum;
@@ -87,6 +125,8 @@ export interface BlockDef {
   emitsLight?: boolean;
   lightColor?: number;
   isTorch?: boolean;
+  isFlower?: boolean;
+  isLadder?: boolean;
   sound: "grass" | "stone" | "wood" | "sand" | "glass" | "water";
   colors: { top: string; left: string; right: string };
 }
@@ -412,16 +452,128 @@ export const BLOCK_DEFS: Record<BlockNum, BlockDef> = {
     sound: "wood",
     colors: { top: "#ffe880", left: "#ff9e3d", right: "#8a5a34" },
   },
+  [BLOCK.FURNACE]: {
+    id: BLOCK.FURNACE,
+    name: "Furnace",
+    hardness: 1.6,
+    preferredTool: "pickaxe",
+    drop: "block_furnace",
+    shards: ["#63676e", "#474b52", "#82878f"],
+    solid: true,
+    transparent: false,
+    sound: "stone",
+    colors: { top: "#787d86", left: "#60646c", right: "#4b4f57" },
+  },
+  [BLOCK.CHEST]: {
+    id: BLOCK.CHEST,
+    name: "Chest",
+    hardness: 1.2,
+    preferredTool: "axe",
+    drop: "block_chest",
+    shards: ["#946433", "#73481f", "#b88347"],
+    solid: true,
+    transparent: false,
+    sound: "wood",
+    colors: { top: "#b88347", left: "#946433", right: "#73481f" },
+  },
+  [BLOCK.BED]: {
+    id: BLOCK.BED,
+    name: "Bed",
+    hardness: 0.5,
+    preferredTool: "axe",
+    drop: "block_bed",
+    shards: ["#d93838", "#ffffff", "#8f5727"],
+    solid: true,
+    transparent: false,
+    sound: "wood",
+    colors: { top: "#d93838", left: "#ba2727", right: "#8f5727" },
+  },
+  [BLOCK.WOOD_DOOR]: {
+    id: BLOCK.WOOD_DOOR,
+    name: "Wooden Door",
+    hardness: 1.0,
+    preferredTool: "axe",
+    drop: "block_door",
+    shards: ["#a8703b", "#825329", "#c69b5e"],
+    solid: true,
+    transparent: true,
+    sound: "wood",
+    colors: { top: "#a8703b", left: "#825329", right: "#c69b5e" },
+  },
+  [BLOCK.LADDER]: {
+    id: BLOCK.LADDER,
+    name: "Ladder",
+    hardness: 0.4,
+    preferredTool: "axe",
+    drop: "block_ladder",
+    shards: ["#a8703b", "#825329"],
+    solid: false,
+    transparent: true,
+    isLadder: true,
+    sound: "wood",
+    colors: { top: "#a8703b", left: "#825329", right: "#825329" },
+  },
+  [BLOCK.FARMLAND]: {
+    id: BLOCK.FARMLAND,
+    name: "Farmland",
+    hardness: 0.6,
+    preferredTool: "shovel",
+    drop: "block_dirt",
+    shards: ["#5e3a20", "#472b17"],
+    solid: true,
+    transparent: false,
+    sound: "grass",
+    colors: { top: "#4d2e19", left: "#5e3a20", right: "#472b17" },
+  },
+  [BLOCK.POPPY]: {
+    id: BLOCK.POPPY,
+    name: "Poppy",
+    hardness: 0.05,
+    drop: "block_poppy",
+    shards: ["#e03131", "#2f9e44"],
+    solid: false,
+    transparent: true,
+    isFlower: true,
+    sound: "grass",
+    colors: { top: "#e03131", left: "#2f9e44", right: "#2f9e44" },
+  },
+  [BLOCK.DANDELION]: {
+    id: BLOCK.DANDELION,
+    name: "Dandelion",
+    hardness: 0.05,
+    drop: "block_dandelion",
+    shards: ["#ffd43b", "#2f9e44"],
+    solid: false,
+    transparent: true,
+    isFlower: true,
+    sound: "grass",
+    colors: { top: "#ffd43b", left: "#2f9e44", right: "#2f9e44" },
+  },
 };
+
+export interface FoodDef {
+  nutrition: number; // 0..20
+  saturation: number;
+  alwaysEdible?: boolean;
+}
 
 export interface ItemDef {
   id: ItemId;
   name: string;
   short: string;
   blockId?: BlockNum;
-  tool?: { kind: ToolKind; speed: number; headColor: number; tipColor: number; uiColor: string };
+  attackDamage?: number;
+  tool?: {
+    kind: ToolKind;
+    speed: number;
+    attackDamage?: number;
+    headColor: number;
+    tipColor: number;
+    uiColor: string;
+  };
+  food?: FoodDef;
   color: string;
-  category: "block" | "material" | "tool";
+  category: "block" | "material" | "tool" | "food" | "weapon";
 }
 
 export const ITEMS: Record<ItemId, ItemDef> = {
@@ -449,6 +601,14 @@ export const ITEMS: Record<ItemId, ItemDef> = {
   block_cactus: { id: "block_cactus", name: "Cactus", short: "CACT", blockId: BLOCK.CACTUS, color: "#428a3d", category: "block" },
   block_crafting_table: { id: "block_crafting_table", name: "Crafting Table", short: "CRAFT", blockId: BLOCK.CRAFTING_TABLE, color: "#b8834b", category: "block" },
   block_torch: { id: "block_torch", name: "Torch", short: "TORCH", blockId: BLOCK.TORCH, color: "#ffb84d", category: "block" },
+  block_furnace: { id: "block_furnace", name: "Furnace", short: "FURN", blockId: BLOCK.FURNACE, color: "#60646c", category: "block" },
+  block_chest: { id: "block_chest", name: "Chest", short: "CHEST", blockId: BLOCK.CHEST, color: "#946433", category: "block" },
+  block_bed: { id: "block_bed", name: "Bed", short: "BED", blockId: BLOCK.BED, color: "#d93838", category: "block" },
+  block_door: { id: "block_door", name: "Wooden Door", short: "DOOR", blockId: BLOCK.WOOD_DOOR, color: "#a8703b", category: "block" },
+  block_ladder: { id: "block_ladder", name: "Ladder", short: "LADR", blockId: BLOCK.LADDER, color: "#c69b5e", category: "block" },
+  block_farmland: { id: "block_farmland", name: "Farmland", short: "FARM", blockId: BLOCK.FARMLAND, color: "#4d2e19", category: "block" },
+  block_poppy: { id: "block_poppy", name: "Poppy", short: "POPPY", blockId: BLOCK.POPPY, color: "#e03131", category: "block" },
+  block_dandelion: { id: "block_dandelion", name: "Dandelion", short: "DAND", blockId: BLOCK.DANDELION, color: "#ffd43b", category: "block" },
   coal: { id: "coal", name: "Coal", short: "COAL", color: "#3b3f47", category: "material" },
   iron_ingot: { id: "iron_ingot", name: "Iron Ingot", short: "IRON", color: "#e6d8c3", category: "material" },
   gold_ingot: { id: "gold_ingot", name: "Gold Ingot", short: "GOLD", color: "#ffcf5c", category: "material" },
@@ -460,7 +620,7 @@ export const ITEMS: Record<ItemId, ItemDef> = {
     short: "W.PICK",
     color: "#c69b5e",
     category: "tool",
-    tool: { kind: "pickaxe", speed: 2.6, headColor: 0xc69b5e, tipColor: 0x99723d, uiColor: "#d6ad72" },
+    tool: { kind: "pickaxe", speed: 2.6, attackDamage: 2, headColor: 0xc69b5e, tipColor: 0x99723d, uiColor: "#d6ad72" },
   },
   stone_pick: {
     id: "stone_pick",
@@ -468,7 +628,7 @@ export const ITEMS: Record<ItemId, ItemDef> = {
     short: "S.PICK",
     color: "#9aa0a8",
     category: "tool",
-    tool: { kind: "pickaxe", speed: 4.2, headColor: 0x9aa0a8, tipColor: 0x6c727a, uiColor: "#b8bec7" },
+    tool: { kind: "pickaxe", speed: 4.2, attackDamage: 3, headColor: 0x9aa0a8, tipColor: 0x6c727a, uiColor: "#b8bec7" },
   },
   iron_pick: {
     id: "iron_pick",
@@ -476,7 +636,7 @@ export const ITEMS: Record<ItemId, ItemDef> = {
     short: "I.PICK",
     color: "#e6d8c3",
     category: "tool",
-    tool: { kind: "pickaxe", speed: 6.2, headColor: 0xebd9be, tipColor: 0xbda482, uiColor: "#f0e2cc" },
+    tool: { kind: "pickaxe", speed: 6.2, attackDamage: 4, headColor: 0xebd9be, tipColor: 0xbda482, uiColor: "#f0e2cc" },
   },
   diamond_pick: {
     id: "diamond_pick",
@@ -484,7 +644,7 @@ export const ITEMS: Record<ItemId, ItemDef> = {
     short: "D.PICK",
     color: "#5ce8ff",
     category: "tool",
-    tool: { kind: "pickaxe", speed: 9.5, headColor: 0x5ce8ff, tipColor: 0x22a0c7, uiColor: "#6beeff" },
+    tool: { kind: "pickaxe", speed: 9.5, attackDamage: 5, headColor: 0x5ce8ff, tipColor: 0x22a0c7, uiColor: "#6beeff" },
   },
   wood_axe: {
     id: "wood_axe",
@@ -492,7 +652,7 @@ export const ITEMS: Record<ItemId, ItemDef> = {
     short: "W.AXE",
     color: "#c69b5e",
     category: "tool",
-    tool: { kind: "axe", speed: 3.4, headColor: 0xc69b5e, tipColor: 0x99723d, uiColor: "#d6ad72" },
+    tool: { kind: "axe", speed: 3.4, attackDamage: 3, headColor: 0xc69b5e, tipColor: 0x99723d, uiColor: "#d6ad72" },
   },
   stone_axe: {
     id: "stone_axe",
@@ -500,7 +660,7 @@ export const ITEMS: Record<ItemId, ItemDef> = {
     short: "S.AXE",
     color: "#9aa0a8",
     category: "tool",
-    tool: { kind: "axe", speed: 5.5, headColor: 0x9aa0a8, tipColor: 0x6c727a, uiColor: "#b8bec7" },
+    tool: { kind: "axe", speed: 5.5, attackDamage: 4, headColor: 0x9aa0a8, tipColor: 0x6c727a, uiColor: "#b8bec7" },
   },
   wood_shovel: {
     id: "wood_shovel",
@@ -508,8 +668,72 @@ export const ITEMS: Record<ItemId, ItemDef> = {
     short: "SHOVEL",
     color: "#c69b5e",
     category: "tool",
-    tool: { kind: "shovel", speed: 3.5, headColor: 0xc69b5e, tipColor: 0x99723d, uiColor: "#d6ad72" },
+    tool: { kind: "shovel", speed: 3.5, attackDamage: 1, headColor: 0xc69b5e, tipColor: 0x99723d, uiColor: "#d6ad72" },
   },
+  wood_sword: {
+    id: "wood_sword",
+    name: "Wooden Sword",
+    short: "W.SWD",
+    color: "#c69b5e",
+    category: "weapon",
+    tool: { kind: "sword", speed: 1.5, attackDamage: 4, headColor: 0xc69b5e, tipColor: 0x99723d, uiColor: "#d6ad72" },
+  },
+  stone_sword: {
+    id: "stone_sword",
+    name: "Stone Sword",
+    short: "S.SWD",
+    color: "#9aa0a8",
+    category: "weapon",
+    tool: { kind: "sword", speed: 1.5, attackDamage: 5, headColor: 0x9aa0a8, tipColor: 0x6c727a, uiColor: "#b8bec7" },
+  },
+  iron_sword: {
+    id: "iron_sword",
+    name: "Iron Sword",
+    short: "I.SWD",
+    color: "#e6d8c3",
+    category: "weapon",
+    tool: { kind: "sword", speed: 1.5, attackDamage: 6, headColor: 0xebd9be, tipColor: 0xbda482, uiColor: "#f0e2cc" },
+  },
+  diamond_sword: {
+    id: "diamond_sword",
+    name: "Diamond Sword",
+    short: "D.SWD",
+    color: "#5ce8ff",
+    category: "weapon",
+    tool: { kind: "sword", speed: 1.5, attackDamage: 7, headColor: 0x5ce8ff, tipColor: 0x22a0c7, uiColor: "#6beeff" },
+  },
+  bow: {
+    id: "bow",
+    name: "Bow",
+    short: "BOW",
+    color: "#8a5323",
+    category: "weapon",
+    tool: { kind: "bow", speed: 1.0, attackDamage: 6, headColor: 0x8a5323, tipColor: 0xeeeeee, uiColor: "#e6b07c" },
+  },
+  arrow: { id: "arrow", name: "Arrow", short: "ARROW", color: "#d9d7ce", category: "material" },
+  wood_hoe: {
+    id: "wood_hoe",
+    name: "Wooden Hoe",
+    short: "W.HOE",
+    color: "#c69b5e",
+    category: "tool",
+    tool: { kind: "hoe", speed: 2.0, attackDamage: 1, headColor: 0xc69b5e, tipColor: 0x99723d, uiColor: "#d6ad72" },
+  },
+  apple: { id: "apple", name: "Apple", short: "APPLE", color: "#e03131", category: "food", food: { nutrition: 4, saturation: 2.4 } },
+  bread: { id: "bread", name: "Bread", short: "BREAD", color: "#d89c47", category: "food", food: { nutrition: 5, saturation: 6.0 } },
+  raw_porkchop: { id: "raw_porkchop", name: "Raw Porkchop", short: "PORK", color: "#f783ac", category: "food", food: { nutrition: 3, saturation: 1.8 } },
+  cooked_porkchop: { id: "cooked_porkchop", name: "Cooked Porkchop", short: "C.PORK", color: "#b36336", category: "food", food: { nutrition: 8, saturation: 12.8 } },
+  raw_beef: { id: "raw_beef", name: "Raw Beef", short: "BEEF", color: "#c92a2a", category: "food", food: { nutrition: 3, saturation: 1.8 } },
+  cooked_beef: { id: "cooked_beef", name: "Steak", short: "STEAK", color: "#7a371e", category: "food", food: { nutrition: 8, saturation: 12.8 } },
+  wheat: { id: "wheat", name: "Wheat", short: "WHEAT", color: "#fab005", category: "material" },
+  seeds: { id: "seeds", name: "Wheat Seeds", short: "SEED", color: "#82c91e", category: "material" },
+  rotten_flesh: { id: "rotten_flesh", name: "Rotten Flesh", short: "FLESH", color: "#804c2b", category: "food", food: { nutrition: 2, saturation: 0.8 } },
+  bone: { id: "bone", name: "Bone", short: "BONE", color: "#e9ecef", category: "material" },
+  gunpowder: { id: "gunpowder", name: "Gunpowder", short: "POWDER", color: "#495057", category: "material" },
+  string: { id: "string", name: "String", short: "STRING", color: "#f8f9fa", category: "material" },
+  feather: { id: "feather", name: "Feather", short: "FEATHR", color: "#ffffff", category: "material" },
+  leather: { id: "leather", name: "Leather", short: "LTHR", color: "#874f28", category: "material" },
+  wool: { id: "wool", name: "Wool", short: "WOOL", color: "#f1f3f5", category: "material" },
 };
 
 export interface Recipe {
@@ -524,7 +748,22 @@ export const RECIPES: Recipe[] = [
   { id: "planks", out: "block_planks", count: 4, inputs: [{ item: "block_log", count: 1 }], note: "Building wood" },
   { id: "sticks", out: "stick", count: 4, inputs: [{ item: "block_planks", count: 2 }], note: "Tool handles" },
   { id: "craft_table", out: "block_crafting_table", count: 1, inputs: [{ item: "block_planks", count: 4 }], note: "Workstation" },
+  { id: "furnace", out: "block_furnace", count: 1, inputs: [{ item: "block_cobble", count: 8 }], note: "Smelting & cooking" },
+  { id: "chest", out: "block_chest", count: 1, inputs: [{ item: "block_planks", count: 8 }], note: "Item storage" },
+  { id: "bed", out: "block_bed", count: 1, inputs: [{ item: "wool", count: 3 }, { item: "block_planks", count: 3 }], note: "Sleep through night" },
+  { id: "door", out: "block_door", count: 1, inputs: [{ item: "block_planks", count: 6 }], note: "Hinged wooden door" },
+  { id: "ladder", out: "block_ladder", count: 3, inputs: [{ item: "stick", count: 7 }], note: "Climbable ladders" },
   { id: "torches", out: "block_torch", count: 4, inputs: [{ item: "coal", count: 1 }, { item: "stick", count: 1 }], note: "Cave light" },
+  { id: "wood_sword", out: "wood_sword", count: 1, inputs: [{ item: "block_planks", count: 2 }, { item: "stick", count: 1 }], note: "+4 Attack Damage" },
+  { id: "stone_sword", out: "stone_sword", count: 1, inputs: [{ item: "block_cobble", count: 2 }, { item: "stick", count: 1 }], note: "+5 Attack Damage" },
+  { id: "iron_sword", out: "iron_sword", count: 1, inputs: [{ item: "iron_ingot", count: 2 }, { item: "stick", count: 1 }], note: "+6 Attack Damage" },
+  { id: "diamond_sword", out: "diamond_sword", count: 1, inputs: [{ item: "diamond", count: 2 }, { item: "stick", count: 1 }], note: "+7 Attack Damage" },
+  { id: "bow", out: "bow", count: 1, inputs: [{ item: "stick", count: 3 }, { item: "string", count: 3 }], note: "Ranged arrow launcher" },
+  { id: "arrows", out: "arrow", count: 4, inputs: [{ item: "feather", count: 1 }, { item: "stick", count: 1 }, { item: "coal", count: 1 }], note: "Ammunition" },
+  { id: "wood_hoe", out: "wood_hoe", count: 1, inputs: [{ item: "block_planks", count: 2 }, { item: "stick", count: 2 }], note: "Till soil for farming" },
+  { id: "bread", out: "bread", count: 1, inputs: [{ item: "wheat", count: 3 }], note: "Restores 5 hunger" },
+  { id: "cooked_pork", out: "cooked_porkchop", count: 1, inputs: [{ item: "raw_porkchop", count: 1 }, { item: "coal", count: 1 }], note: "Restores 8 hunger" },
+  { id: "cooked_beef", out: "cooked_beef", count: 1, inputs: [{ item: "raw_beef", count: 1 }, { item: "coal", count: 1 }], note: "Restores 8 hunger" },
   { id: "wood_pick", out: "wood_pick", count: 1, inputs: [{ item: "block_planks", count: 3 }, { item: "stick", count: 2 }], note: "2.6x mine stone" },
   { id: "wood_axe", out: "wood_axe", count: 1, inputs: [{ item: "block_planks", count: 3 }, { item: "stick", count: 2 }], note: "3.4x chop wood" },
   { id: "wood_shovel", out: "wood_shovel", count: 1, inputs: [{ item: "block_planks", count: 1 }, { item: "stick", count: 2 }], note: "3.5x dig soil" },
@@ -536,7 +775,7 @@ export const RECIPES: Recipe[] = [
   { id: "bricks", out: "block_bricks", count: 4, inputs: [{ item: "block_dirt", count: 2 }, { item: "coal", count: 1 }], note: "Baked brick" },
   { id: "glass", out: "block_glass", count: 4, inputs: [{ item: "block_sand", count: 2 }, { item: "coal", count: 1 }], note: "Clear window" },
   { id: "glowstone", out: "block_glowstone", count: 2, inputs: [{ item: "gold_ingot", count: 1 }, { item: "block_glass", count: 1 }], note: "Bright lamp" },
-  { id: "tnt", out: "block_tnt", count: 2, inputs: [{ item: "block_sand", count: 2 }, { item: "coal", count: 2 }], note: "Explosive blast" },
+  { id: "tnt", out: "block_tnt", count: 2, inputs: [{ item: "block_sand", count: 2 }, { item: "gunpowder", count: 2 }], note: "Explosive blast" },
 ];
 
 export const CREATIVE_CATALOG: ItemId[] = [
@@ -556,36 +795,49 @@ export const CREATIVE_CATALOG: ItemId[] = [
   "block_snow",
   "block_ice",
   "block_torch",
+  "block_furnace",
+  "block_chest",
+  "block_bed",
+  "block_door",
+  "block_ladder",
   "block_glowstone",
   "block_tnt",
   "block_crafting_table",
   "block_cactus",
+  "block_poppy",
+  "block_dandelion",
   "block_coal_ore",
   "block_iron_ore",
   "block_gold_ore",
   "block_diamond_ore",
+  "diamond_sword",
   "diamond_pick",
+  "bow",
+  "arrow",
+  "apple",
+  "cooked_beef",
+  "bread",
 ];
 
 export const DEFAULT_CREATIVE_HOTBAR: ItemId[] = [
-  "block_grass",
+  "diamond_sword",
+  "diamond_pick",
   "block_planks",
   "block_stone_bricks",
-  "block_bricks",
   "block_glass",
-  "block_log",
   "block_torch",
-  "block_glowstone",
+  "block_chest",
   "block_tnt",
+  "bow",
 ];
 
 export const DEFAULT_SURVIVAL_HOTBAR: Array<ItemId | null> = [
+  "wood_sword",
   "wood_pick",
   "block_torch",
   "block_planks",
   "block_cobble",
-  "block_dirt",
-  null,
+  "apple",
   null,
   null,
   null,
