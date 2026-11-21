@@ -1,0 +1,176 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 200" width="100%" height="100%">
+  <defs>
+    <linearGradient id="cardGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#18233a" />
+      <stop offset="100%" stop-color="#0f1626" />
+    </linearGradient>
+
+    <filter id="cardGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="2.5" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+
+    <style>
+      @keyframes heartBeat {
+        0%, 100% { transform: scale(1); }
+        15% { transform: scale(1.22); }
+        30% { transform: scale(1); }
+        45% { transform: scale(1.18); }
+      }
+      @keyframes bubbleFloat {
+        0%, 100% { transform: translateY(0px); opacity: 0.8; }
+        50% { transform: translateY(-7px); opacity: 1; }
+      }
+      @keyframes chunkScan {
+        0%, 100% { stroke-dashoffset: 0; }
+        50% { stroke-dashoffset: 40; }
+      }
+      @keyframes toolStrike {
+        0%, 100% { transform: rotate(0deg); }
+        35% { transform: rotate(-32deg); }
+        50% { transform: rotate(12deg); }
+      }
+      @keyframes treeSway {
+        0%, 100% { transform: skewX(0deg); }
+        50% { transform: skewX(2.5deg); }
+      }
+      @keyframes sparkFly {
+        0%, 100% { opacity: 0; transform: translate(0, 0) scale(0.5); }
+        50% { opacity: 1; transform: translate(6px, -8px) scale(1.2); }
+      }
+
+      .beat { transform-origin: center; animation: heartBeat 1.4s ease-in-out infinite; }
+      .bubble { animation: bubbleFloat 2.2s ease-in-out infinite; }
+      .chunk-line { stroke-dasharray: 6 3; animation: chunkScan 3s linear infinite; }
+      .tool-anim { transform-origin: 20px 30px; animation: toolStrike 1.8s ease-in-out infinite; }
+      .tree-anim { transform-origin: bottom center; animation: treeSway 3.2s ease-in-out infinite; }
+      .spark { animation: sparkFly 1.8s ease-in-out infinite; }
+    </style>
+  </defs>
+
+  <!-- Background Canvas -->
+  <rect width="900" height="200" fill="#080c16" rx="8" />
+
+  <!-- 4 Feature Cards Grid -->
+  <!-- Card 1: Infinite Procedural World -->
+  <g transform="translate(18, 16)">
+    <rect width="204" height="168" rx="6" fill="url(#cardGrad)" stroke="#2b436e" stroke-width="1.5" />
+    <rect x="0" y="0" width="204" height="5" fill="#4dabf7" rx="2" />
+    
+    <!-- Animated Chunk Mesh Graphic -->
+    <g transform="translate(62, 22)">
+      <!-- 4x4 Voxel Grid Isometric Wireframe -->
+      <polygon points="40,0 80,20 40,40 0,20" fill="#132440" stroke="#3b69a8" stroke-width="1.5" />
+      <line x1="20" y1="10" x2="60" y2="30" stroke="#3b69a8" stroke-width="1" class="chunk-line" />
+      <line x1="20" y1="30" x2="60" y2="10" stroke="#3b69a8" stroke-width="1" class="chunk-line" />
+      <!-- Elevated Block -->
+      <polygon points="40,12 60,22 40,32 20,22" fill="#5c9cf5" stroke="#2b69cb" stroke-width="1" />
+      <polygon points="20,22 40,32 40,48 20,38" fill="#326ec2" />
+      <polygon points="40,32 60,22 60,38 40,48" fill="#245191" />
+      <!-- Scanner Ray -->
+      <line x1="0" y1="20" x2="80" y2="20" stroke="#80d5ff" stroke-width="1.5" opacity="0.75" class="chunk-line" />
+    </g>
+
+    <text x="102" y="104" font-family="'Impact', 'Arial Black', sans-serif" font-size="14" fill="#e1eeff" text-anchor="middle" letter-spacing="1">INFINITE CHUNKS</text>
+    <text x="102" y="124" font-family="'Courier New', monospace" font-size="10" fill="#7ba5db" text-anchor="middle">16x16 Chunk Streaming</text>
+    <text x="102" y="138" font-family="'Courier New', monospace" font-size="10" fill="#7ba5db" text-anchor="middle">Greedy Face Culling</text>
+    <text x="102" y="152" font-family="'Courier New', monospace" font-size="10" fill="#52ffb8" text-anchor="middle" font-weight="bold">Vertex Ambient Occl.</text>
+  </g>
+
+  <!-- Card 2: 5 Procedural Biomes -->
+  <g transform="translate(236, 16)">
+    <rect width="204" height="168" rx="6" fill="url(#cardGrad)" stroke="#27563d" stroke-width="1.5" />
+    <rect x="0" y="0" width="204" height="5" fill="#40c057" rx="2" />
+    
+    <!-- Biome Graphics (Tree & Cactus & Peak) -->
+    <g transform="translate(48, 20)">
+      <!-- Mountain Peak in background -->
+      <polygon points="68,14 88,48 48,48" fill="#2b4740" />
+      <polygon points="68,14 76,26 60,26" fill="#eaf6ff" />
+      
+      <!-- Animated Oak Tree -->
+      <g class="tree-anim" transform="translate(18, 6)">
+        <rect x="18" y="24" width="6" height="22" fill="#70441e" />
+        <!-- Foliage Canopies -->
+        <rect x="4" y="8" width="34" height="18" rx="3" fill="#4ca82b" stroke="#2a6614" stroke-width="1" />
+        <rect x="8" y="2" width="26" height="14" rx="2" fill="#62c439" />
+      </g>
+
+      <!-- Desert Cactus -->
+      <g transform="translate(74, 18)" shape-rendering="crispEdges">
+        <rect x="6" y="8" width="5" height="24" fill="#38852c" />
+        <rect x="0" y="14" width="6" height="4" fill="#38852c" />
+        <rect x="0" y="10" width="4" height="6" fill="#38852c" />
+        <rect x="11" y="18" width="6" height="4" fill="#38852c" />
+        <rect x="13" y="14" width="4" height="6" fill="#38852c" />
+      </g>
+    </g>
+
+    <text x="102" y="104" font-family="'Impact', 'Arial Black', sans-serif" font-size="14" fill="#e3fae8" text-anchor="middle" letter-spacing="1">5 DIVERSE BIOMES</text>
+    <text x="102" y="124" font-family="'Courier New', monospace" font-size="10" fill="#80cf96" text-anchor="middle">Plains &amp; Oak Forest</text>
+    <text x="102" y="138" font-family="'Courier New', monospace" font-size="10" fill="#80cf96" text-anchor="middle">Desert Dunes &amp; Cacti</text>
+    <text x="102" y="152" font-family="'Courier New', monospace" font-size="10" fill="#80cf96" text-anchor="middle">Snowy Peaks &amp; Ocean</text>
+  </g>
+
+  <!-- Card 3: Survival, Health & 3D Caves -->
+  <g transform="translate(454, 16)">
+    <rect width="204" height="168" rx="6" fill="url(#cardGrad)" stroke="#6e2b34" stroke-width="1.5" />
+    <rect x="0" y="0" width="204" height="5" fill="#fa5252" rx="2" />
+    
+    <!-- Animated Heart & Oxygen Bubbles -->
+    <g transform="translate(56, 20)">
+      <!-- Animated Heart -->
+      <g class="beat" transform="translate(24, 20)">
+        <path d="M 0,-8 C -6,-16 -18,-10 -18,0 C -18,12 0,22 0,22 C 0,22 18,12 18,0 C 18,-10 6,-16 0,-8 Z"
+              fill="#e03131" stroke="#8f1111" stroke-width="1.5" filter="url(#cardGlow)" />
+        <circle cx="-6" cy="-4" r="3.5" fill="#ff8787" />
+      </g>
+
+      <!-- Animated Bubbles -->
+      <g class="bubble" transform="translate(68, 12)">
+        <circle cx="0" cy="14" r="7" fill="#1c7ed6" stroke="#0e4f8a" stroke-width="1.2" />
+        <circle cx="-2" cy="12" r="2" fill="#a5d8ff" />
+      </g>
+      <g class="bubble" transform="translate(74, 30)" style="animation-delay: -1.1s;">
+        <circle cx="0" cy="0" r="4.5" fill="#228be6" stroke="#0e4f8a" stroke-width="1" />
+      </g>
+    </g>
+
+    <text x="102" y="104" font-family="'Impact', 'Arial Black', sans-serif" font-size="14" fill="#ffe3e3" text-anchor="middle" letter-spacing="1">SURVIVAL SYSTEM</text>
+    <text x="102" y="124" font-family="'Courier New', monospace" font-size="10" fill="#ffa8a8" text-anchor="middle">10 Hearts / Fall Damage</text>
+    <text x="102" y="138" font-family="'Courier New', monospace" font-size="10" fill="#ffa8a8" text-anchor="middle">Underwater Oxygen Meter</text>
+    <text x="102" y="152" font-family="'Courier New', monospace" font-size="10" fill="#ffa8a8" text-anchor="middle">Day &amp; Night Sun Orbit</text>
+  </g>
+
+  <!-- Card 4: Mining, Tools & Crafting -->
+  <g transform="translate(672, 16)">
+    <rect width="204" height="168" rx="6" fill="url(#cardGrad)" stroke="#6e562b" stroke-width="1.5" />
+    <rect x="0" y="0" width="204" height="5" fill="#fcc419" rx="2" />
+    
+    <!-- Animated Striking Tool & Sparks -->
+    <g transform="translate(64, 18)">
+      <!-- Voxel Block being mined -->
+      <rect x="42" y="26" width="22" height="22" fill="#525760" stroke="#2f3237" stroke-width="1.2" />
+      <polygon points="42,26 50,18 72,18 64,26" fill="#696f7a" />
+      <polygon points="64,26 72,18 72,40 64,48" fill="#3b3e45" />
+
+      <!-- Striking Pickaxe -->
+      <g class="tool-anim" transform="translate(18, 8)">
+        <rect x="18" y="6" width="4" height="34" rx="1" fill="#875323" stroke="#4a2a0d" stroke-width="1" transform="rotate(-35 20 20)" />
+        <path d="M 6 12 C 14 4, 28 4, 36 12 L 32 16 C 26 12, 16 12, 10 16 Z" fill="#38d9a9" stroke="#12785c" stroke-width="1.2" />
+      </g>
+
+      <!-- Flying Sparks -->
+      <circle cx="44" cy="24" r="2" fill="#ffd43b" class="spark" filter="url(#cardGlow)" />
+      <circle cx="48" cy="20" r="1.5" fill="#ff922b" class="spark" style="animation-delay: -0.9s;" />
+    </g>
+
+    <text x="102" y="104" font-family="'Impact', 'Arial Black', sans-serif" font-size="14" fill="#fff3bf" text-anchor="middle" letter-spacing="1">CRAFTING &amp; MINING</text>
+    <text x="102" y="124" font-family="'Courier New', monospace" font-size="10" fill="#ffd43b" text-anchor="middle">2x2 &amp; 3x3 Workbenches</text>
+    <text x="102" y="138" font-family="'Courier New', monospace" font-size="10" fill="#ffd43b" text-anchor="middle">4 Pickaxe Tiers (9.5x)</text>
+    <text x="102" y="152" font-family="'Courier New', monospace" font-size="10" fill="#ffd43b" text-anchor="middle">Explosive Detonating TNT</text>
+  </g>
+</svg>

@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 110" width="100%" height="100%">
+  <defs>
+    <style>
+      @keyframes floatSword {
+        0%, 100% { transform: translateY(0) rotate(45deg); }
+        50% { transform: translateY(-6px) rotate(48deg); }
+      }
+      @keyframes emeraldPulse {
+        0%, 100% { fill: #40c057; filter: drop-shadow(0 0 3px #40c057); }
+        50% { fill: #b2f2bb; filter: drop-shadow(0 0 10px #69db7c); }
+      }
+      .sword-float { transform-origin: 30px 30px; animation: floatSword 3s ease-in-out infinite; }
+      .em-pulse { animation: emeraldPulse 2s ease-in-out infinite; }
+      .f-txt { font-family: 'Courier New', monospace; font-weight: bold; }
+    </style>
+  </defs>
+
+  <rect width="900" height="110" fill="#080c16" rx="8" stroke="#1d263b" stroke-width="1.5" />
+
+  <!-- Animated Diamond Sword on left -->
+  <g class="sword-float" transform="translate(60, 20)">
+    <!-- Blade -->
+    <rect x="26" y="6" width="6" height="34" fill="#3bc9db" stroke="#1098ad" stroke-width="1" />
+    <polygon points="26,6 32,6 29,0" fill="#66d9e8" />
+    <!-- Crossguard -->
+    <rect x="18" y="40" width="22" height="5" rx="1" fill="#15aabf" />
+    <!-- Grip & Pommel -->
+    <rect x="27" y="45" width="4" height="14" fill="#795027" />
+    <rect x="26" y="59" width="6" height="4" fill="#15aabf" />
+  </g>
+
+  <!-- Center Text -->
+  <text x="450" y="42" class="f-txt" font-size="13" fill="#ffffff" text-anchor="middle" letter-spacing="2">
+    MINECRAFT 3D · BROWSER EDITION
+  </text>
+  <text x="450" y="64" class="f-txt" font-size="10" fill="#8ce99a" text-anchor="middle" letter-spacing="1">
+    CRAFTED WITH TYPESCRIPT · THREE.JS · REACT 19 · WEBAUDIO
+  </text>
+  <text x="450" y="86" class="f-txt" font-size="9" fill="#868e96" text-anchor="middle">
+    BUILT FOR HIGH-PERFORMANCE 60 FPS IN ANY MODERN BROWSER
+  </text>
+
+  <!-- Animated Emerald Crest on right -->
+  <g transform="translate(800, 30)">
+    <polygon points="20,0 40,15 40,45 20,60 0,45 0,15" fill="#13381a" stroke="#2b8a3e" stroke-width="1.5" />
+    <polygon points="20,8 32,19 32,41 20,52 8,41 8,19" class="em-pulse" />
+  </g>
+</svg>

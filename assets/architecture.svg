@@ -1,0 +1,114 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 200" width="100%" height="100%">
+  <defs>
+    <linearGradient id="pipeGrad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#121826" />
+      <stop offset="50%" stop-color="#1c253b" />
+      <stop offset="100%" stop-color="#121826" />
+    </linearGradient>
+
+    <linearGradient id="blockGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#212f4d" />
+      <stop offset="100%" stop-color="#141c2e" />
+    </linearGradient>
+
+    <filter id="nodeGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="3" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+
+    <style>
+      @keyframes flowSignal {
+        0% { stroke-dashoffset: 40; }
+        100% { stroke-dashoffset: 0; }
+      }
+      @keyframes pulseNode {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.02); }
+      }
+
+      .flow-line { stroke-dasharray: 8 6; animation: flowSignal 1.2s linear infinite; }
+      .p-node { transform-origin: center; animation: pulseNode 3s ease-in-out infinite; }
+      .code-font { font-family: 'Courier New', monospace; font-weight: bold; }
+    </style>
+  </defs>
+
+  <rect width="900" height="200" fill="url(#pipeGrad)" rx="8" stroke="#1f2d47" stroke-width="1.5" />
+
+  <text x="450" y="24" class="code-font" font-size="12" fill="#52ffb8" text-anchor="middle" letter-spacing="2">
+    ARCHITECTURE &amp; ENGINE DATA PIPELINE
+  </text>
+
+  <!-- Connective Data Flow Lines -->
+  <line x1="160" y1="105" x2="190" y2="105" stroke="#4dabf7" stroke-width="2.5" class="flow-line" />
+  <line x1="330" y1="105" x2="360" y2="105" stroke="#51cf66" stroke-width="2.5" class="flow-line" />
+  <line x1="500" y1="105" x2="530" y2="105" stroke="#ffd43b" stroke-width="2.5" class="flow-line" />
+  <line x1="670" y1="105" x2="700" y2="105" stroke="#ff922b" stroke-width="2.5" class="flow-line" />
+
+  <!-- Node 1: Procedural Noise Generator -->
+  <g class="p-node" transform="translate(20, 48)">
+    <rect width="140" height="114" rx="5" fill="url(#blockGrad)" stroke="#334e7a" stroke-width="1.5" />
+    <rect x="0" y="0" width="140" height="4" fill="#339af0" rx="1" />
+    <text x="70" y="26" class="code-font" font-size="10.5" fill="#a5d8ff" text-anchor="middle">NOISE GEN</text>
+    <text x="70" y="44" class="code-font" font-size="8.5" fill="#74c0fc" text-anchor="middle">noise.ts</text>
+    <line x1="15" y1="52" x2="125" y2="52" stroke="#233554" />
+    <text x="70" y="70" class="code-font" font-size="8" fill="#d0ebff" text-anchor="middle">Seeded Simplex 2D</text>
+    <text x="70" y="84" class="code-font" font-size="8" fill="#d0ebff" text-anchor="middle">3D Cave Worms</text>
+    <text x="70" y="98" class="code-font" font-size="8" fill="#d0ebff" text-anchor="middle">fBm Octave Layers</text>
+  </g>
+
+  <!-- Node 2: Infinite Chunk World -->
+  <g class="p-node" transform="translate(190, 48)" style="animation-delay: -0.6s;">
+    <rect width="140" height="114" rx="5" fill="url(#blockGrad)" stroke="#2b6e4e" stroke-width="1.5" />
+    <rect x="0" y="0" width="140" height="4" fill="#51cf66" rx="1" />
+    <text x="70" y="26" class="code-font" font-size="10.5" fill="#b2f2bb" text-anchor="middle">INFINITE WORLD</text>
+    <text x="70" y="44" class="code-font" font-size="8.5" fill="#8ce99a" text-anchor="middle">world.ts</text>
+    <line x1="15" y1="52" x2="125" y2="52" stroke="#234a36" />
+    <text x="70" y="70" class="code-font" font-size="8" fill="#ebfbee" text-anchor="middle">16x16 Chunk Map</text>
+    <text x="70" y="84" class="code-font" font-size="8" fill="#ebfbee" text-anchor="middle">5 Biome Blending</text>
+    <text x="70" y="98" class="code-font" font-size="8" fill="#ebfbee" text-anchor="middle">Edit Persistence</text>
+  </g>
+
+  <!-- Node 3: Face-Culled Mesher -->
+  <g class="p-node" transform="translate(360, 48)" style="animation-delay: -1.2s;">
+    <rect width="140" height="114" rx="5" fill="url(#blockGrad)" stroke="#7a692b" stroke-width="1.5" />
+    <rect x="0" y="0" width="140" height="4" fill="#fcc419" rx="1" />
+    <text x="70" y="26" class="code-font" font-size="10.5" fill="#ffec99" text-anchor="middle">VOXEL MESHER</text>
+    <text x="70" y="44" class="code-font" font-size="8.5" fill="#ffe066" text-anchor="middle">mesher.ts &amp; tex.ts</text>
+    <line x1="15" y1="52" x2="125" y2="52" stroke="#4d4218" />
+    <text x="70" y="70" class="code-font" font-size="8" fill="#fff9db" text-anchor="middle">Face Culling</text>
+    <text x="70" y="84" class="code-font" font-size="8" fill="#fff9db" text-anchor="middle">Vertex AO Shading</text>
+    <text x="70" y="98" class="code-font" font-size="8" fill="#fff9db" text-anchor="middle">Padded 18px Atlas</text>
+  </g>
+
+  <!-- Node 4: Three.js Render & Physics -->
+  <g class="p-node" transform="translate(530, 48)" style="animation-delay: -1.8s;">
+    <rect width="140" height="114" rx="5" fill="url(#blockGrad)" stroke="#7a472b" stroke-width="1.5" />
+    <rect x="0" y="0" width="140" height="4" fill="#ff922b" rx="1" />
+    <text x="70" y="26" class="code-font" font-size="10.5" fill="#ffd8a8" text-anchor="middle">RENDER &amp; PHYS</text>
+    <text x="70" y="44" class="code-font" font-size="8.5" fill="#ffc078" text-anchor="middle">engine.ts</text>
+    <line x1="15" y1="52" x2="125" y2="52" stroke="#4d2c18" />
+    <text x="70" y="70" class="code-font" font-size="8" fill="#fff4e6" text-anchor="middle">PCF Soft Shadows</text>
+    <text x="70" y="84" class="code-font" font-size="8" fill="#fff4e6" text-anchor="middle">Day/Night Cycle</text>
+    <text x="70" y="98" class="code-font" font-size="8" fill="#fff4e6" text-anchor="middle">AABB Vox Collision</text>
+  </g>
+
+  <!-- Node 5: UI & WebAudio -->
+  <g class="p-node" transform="translate(700, 48)" style="animation-delay: -2.4s;">
+    <rect width="180" height="114" rx="5" fill="url(#blockGrad)" stroke="#752b7a" stroke-width="1.5" />
+    <rect x="0" y="0" width="180" height="4" fill="#cc5de8" rx="1" />
+    <text x="90" y="26" class="code-font" font-size="10.5" fill="#f3d9fa" text-anchor="middle">HUD &amp; WEBAUDIO</text>
+    <text x="90" y="44" class="code-font" font-size="8.5" fill="#e599f7" text-anchor="middle">Hud.tsx &amp; audio.ts</text>
+    <line x1="15" y1="52" x2="165" y2="52" stroke="#4c194f" />
+    <text x="90" y="70" class="code-font" font-size="8" fill="#f8f0fc" text-anchor="middle">Pixel Hearts &amp; Oxygen</text>
+    <text x="90" y="84" class="code-font" font-size="8" fill="#f8f0fc" text-anchor="middle">9-Slot Hotbar &amp; Crafting</text>
+    <text x="90" y="98" class="code-font" font-size="8" fill="#f8f0fc" text-anchor="middle">Procedural Synth Audio</text>
+  </g>
+
+  <!-- Bottom Spec Status -->
+  <text x="450" y="184" class="code-font" font-size="9.5" fill="#868e96" text-anchor="middle">
+    ZERO EXTERNAL IMAGES · ZERO EXTERNAL MP3s · 100% CLIENT-SIDE TYPESCRIPT + THREE.JS + REACT 19
+  </text>
+</svg>

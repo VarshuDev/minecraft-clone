@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 50" width="100%" height="100%">
+  <defs>
+    <style>
+      @keyframes badgeGlow {
+        0%, 100% { filter: drop-shadow(0 0 2px rgba(82,255,184,0.3)); }
+        50% { filter: drop-shadow(0 0 6px rgba(82,255,184,0.8)); }
+      }
+      .badge-glow { animation: badgeGlow 2.5s ease-in-out infinite; }
+      .pill-txt { font-family: 'Courier New', monospace; font-size: 10px; font-weight: bold; }
+    </style>
+  </defs>
+
+  <rect width="900" height="50" fill="#080d1a" rx="6" stroke="#1d263b" stroke-width="1.2" />
+
+  <!-- Badge 1: 60 FPS Engine -->
+  <g transform="translate(18, 11)" class="badge-glow">
+    <rect width="162" height="28" rx="4" fill="#0a1a14" stroke="#258257" stroke-width="1.2" />
+    <circle cx="14" cy="14" r="4.5" fill="#44ff95" />
+    <text x="26" y="18" class="pill-txt" fill="#99fadc">FPS: 60 SOLID</text>
+  </g>
+
+  <!-- Badge 2: Infinite Chunks -->
+  <g transform="translate(192, 11)">
+    <rect width="180" height="28" rx="4" fill="#0f192b" stroke="#2c518c" stroke-width="1.2" />
+    <polygon points="12,14 16,8 20,14 16,20" fill="#4dabf7" />
+    <text x="28" y="18" class="pill-txt" fill="#badcfc">WORLD: INFINITE</text>
+  </g>
+
+  <!-- Badge 3: Procedural Audio -->
+  <g transform="translate(384, 11)">
+    <rect width="170" height="28" rx="4" fill="#1e180d" stroke="#876b25" stroke-width="1.2" />
+    <circle cx="14" cy="14" r="4.5" fill="#ffd43b" />
+    <text x="26" y="18" class="pill-txt" fill="#ffe066">AUDIO: SYNTHESIS</text>
+  </g>
+
+  <!-- Badge 4: Zero Asset Bundle -->
+  <g transform="translate(566, 11)">
+    <rect width="170" height="28" rx="4" fill="#1d0e19" stroke="#822e6b" stroke-width="1.2" />
+    <rect x="10" y="10" width="8" height="8" fill="#f783ac" />
+    <text x="26" y="18" class="pill-txt" fill="#fcc2d7">BUNDLE: 0 ASSETS</text>
+  </g>
+
+  <!-- Badge 5: MIT License -->
+  <g transform="translate(748, 11)">
+    <rect width="134" height="28" rx="4" fill="#141517" stroke="#373a40" stroke-width="1.2" />
+    <polygon points="14,9 19,19 9,19" fill="#adb5bd" />
+    <text x="26" y="18" class="pill-txt" fill="#dee2e6">LICENSE: MIT</text>
+  </g>
+</svg>

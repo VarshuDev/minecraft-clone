@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 24" width="100%" height="100%">
+  <defs>
+    <style>
+      @keyframes pulseGlint {
+        0%, 100% { fill: #51cf66; opacity: 0.6; }
+        50% { fill: #63e6be; opacity: 1; }
+      }
+      @keyframes pulseCyan {
+        0%, 100% { fill: #339af0; opacity: 0.6; }
+        50% { fill: #66d9e8; opacity: 1; }
+      }
+      .g-glint { animation: pulseGlint 2s ease-in-out infinite; }
+      .c-glint { animation: pulseCyan 2s ease-in-out infinite; animation-delay: -1s; }
+    </style>
+  </defs>
+  <rect width="900" height="4" y="10" fill="#212529" shape-rendering="crispEdges" />
+  <rect x="0" y="8" width="900" height="2" fill="#343a40" shape-rendering="crispEdges" />
+  <rect x="0" y="14" width="900" height="2" fill="#141517" shape-rendering="crispEdges" />
+  <!-- Center Minecraft Crest -->
+  <g transform="translate(434, 0)">
+    <polygon points="16,0 32,12 16,24 0,12" fill="#2b8a3e" stroke="#1b4d24" stroke-width="1.5" />
+    <polygon points="16,4 26,12 16,20 6,12" class="g-glint" />
+  </g>
+  <rect x="220" y="9" width="30" height="4" class="c-glint" />
+  <rect x="650" y="9" width="30" height="4" class="c-glint" />
+  <rect x="100" y="10" width="16" height="2" class="g-glint" />
+  <rect x="780" y="10" width="16" height="2" class="g-glint" />
+</svg>
