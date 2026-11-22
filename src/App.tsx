@@ -12,12 +12,13 @@ import {
   type GameSettings,
   type WorldSave,
 } from "@/game/storage";
-import { type GameModeId, type ItemId } from "@/game/blocks";
+import { type GameModeId, type ItemId, type EnchantmentId } from "@/game/blocks";
 import { StartScreen } from "@/components/StartScreen";
 import { Hud } from "@/components/Hud";
 import { CraftingModal } from "@/components/CraftingModal";
 import { ChestModal } from "@/components/ChestModal";
 import { FurnaceModal } from "@/components/FurnaceModal";
+import { EnchantingModal } from "@/components/EnchantingModal";
 import { DeathScreen, PauseScreen } from "@/components/Overlays";
 import { TouchControls } from "@/components/TouchControls";
 import { ChatOverlay, type ChatMessage } from "@/components/ChatOverlay";
@@ -74,11 +75,13 @@ export default function App() {
   const [settings, setSettings] = useState<GameSettings>(() => loadSettings());
   const [toast, setToast] = useState<string | null>(null);
 
-  // Crafting, Chest, Furnace Modal states
+  // Crafting, Chest, Furnace, Enchanting Modal states
   const [isCraftingOpen, setIsCraftingOpen] = useState(false);
   const [isWorkstation, setIsWorkstation] = useState(false);
   const [chestPosKey, setChestPosKey] = useState<string | null>(null);
   const [furnacePosKey, setFurnacePosKey] = useState<string | null>(null);
+  const [isEnchantingOpen, setIsEnchantingOpen] = useState(false);
+  const [enchantingBookshelfCount, setEnchantingBookshelfCount] = useState(0);
 
   // Chat & Command Console state
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -115,6 +118,7 @@ export default function App() {
       setIsCraftingOpen(false);
       setChestPosKey(null);
       setFurnacePosKey(null);
+      setIsEnchantingOpen(false);
 
       // Clean up previous engine
       if (gameRef.current) {
@@ -136,6 +140,10 @@ export default function App() {
           },
           onOpenFurnace: (posKey) => {
             setFurnacePosKey(posKey);
+          },
+          onOpenEnchanting: (bookshelfCount) => {
+            setEnchantingBookshelfCount(bookshelfCount);
+            setIsEnchantingOpen(true);
           },
           onOpenChat: (initialText) => {
             setIsChatOpen(true);
@@ -250,6 +258,38 @@ export default function App() {
       }
     }
   }, [screen]);
+
+  const handleCloseEnchanting = useCallback(() => {
+    setIsEnchantingOpen(false);
+    if (screen === "playing") {
+      try {
+        const p = hostRef.current?.requestPointerLock() as unknown as Promise<void> | undefined;
+        if (p && typeof p.catch === "function") p.catch(() => {});
+      } catch {
+        /* ignore */
+      }
+    }
+  }, [screen]);
+
+  const handleEnchant = useCallback(
+    (
+      slotIndex: number,
+      enchantmentId: EnchantmentId,
+      level: number,
+      xpLevelCost: number,
+      lapisCost: number,
+    ) => {
+      if (!gameRef.current) return false;
+      return gameRef.current.enchantItem(
+        slotIndex,
+        enchantmentId,
+        level,
+        xpLevelCost,
+        lapisCost,
+      );
+    },
+    [],
+  );
 
   const handleSaveChest = useCallback((posKey: string, slots: any) => {
     gameRef.current?.setChestSlots(posKey, slots);
@@ -441,6 +481,19 @@ export default function App() {
           onClose={handleCloseFurnace}
           onUpdateFurnace={handleUpdateFurnace}
           onUpdatePlayerInventory={handleUpdatePlayerInventory}
+        />
+      )}
+
+      {/* Enchanting Table Modal */}
+      {isEnchantingOpen && (
+        <EnchantingModal
+          isOpen={true}
+          bookshelfCount={enchantingBookshelfCount}
+          playerLevel={hud.level}
+          hotbar={hud.hotbar}
+          inventory={hud.inventory}
+          onClose={handleCloseEnchanting}
+          onEnchant={handleEnchant}
         />
       )}
 

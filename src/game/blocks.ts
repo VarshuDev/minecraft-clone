@@ -53,11 +53,34 @@ export const BLOCK = {
   NETHER_PORTAL: 51,
   GRAVEL: 52,
   QUARTZ_BLOCK: 53,
+  ENCHANTING_TABLE: 54,
+  BOOKSHELF: 55,
+  LAPIS_ORE: 56,
 } as const;
 
 export type BlockNum = (typeof BLOCK)[keyof typeof BLOCK];
 
 export type GameModeId = "survival" | "creative";
+
+export type EnchantmentId =
+  | "sharpness"
+  | "fire_aspect"
+  | "knockback"
+  | "efficiency"
+  | "fortune"
+  | "protection"
+  | "unbreaking";
+
+export interface EnchantmentOffer {
+  id: EnchantmentId;
+  name: string;
+  level: number;
+  costXp: number; // XP levels consumed (1, 2, or 3)
+  minPlayerLevel: number; // Min required player level to unlock
+  lapisCost: number; // 1, 2, or 3 Lapis Lazuli
+  runeName: string; // Cryptic standard galactic rune phrase
+  description: string;
+}
 
 export type ItemId =
   | "block_grass"
@@ -152,7 +175,12 @@ export type ItemId =
   | "block_soul_sand"
   | "block_gravel"
   | "block_quartz"
-  | "block_lava";
+  | "block_lava"
+  | "block_enchanting_table"
+  | "block_bookshelf"
+  | "block_lapis_ore"
+  | "item_lapis"
+  | "item_book";
 
 export type ToolKind = "pickaxe" | "axe" | "shovel" | "sword" | "hoe" | "bow";
 export type ArmorSlot = "head" | "chest" | "legs" | "feet";
@@ -847,6 +875,44 @@ export const BLOCK_DEFS: Record<BlockNum, BlockDef> = {
     sound: "stone",
     colors: { top: "#f2f0ec", left: "#e3e0d8", right: "#d1cec4" },
   },
+  [BLOCK.ENCHANTING_TABLE]: {
+    id: BLOCK.ENCHANTING_TABLE,
+    name: "Enchanting Table",
+    hardness: 5.0,
+    preferredTool: "pickaxe",
+    drop: "block_enchanting_table",
+    shards: ["#16111f", "#8a1a2e", "#29b6f6", "#ffd700"],
+    solid: true,
+    transparent: true,
+    emitsLight: true,
+    lightColor: 0xaa44ff,
+    sound: "stone",
+    colors: { top: "#8a1a2e", left: "#16111f", right: "#110b1a" },
+  },
+  [BLOCK.BOOKSHELF]: {
+    id: BLOCK.BOOKSHELF,
+    name: "Bookshelf",
+    hardness: 1.5,
+    preferredTool: "axe",
+    drop: "item_book",
+    shards: ["#c69b5e", "#8b1e22", "#2e6930", "#1e4bb5"],
+    solid: true,
+    transparent: false,
+    sound: "wood",
+    colors: { top: "#c69b5e", left: "#9e5c30", right: "#7d4826" },
+  },
+  [BLOCK.LAPIS_ORE]: {
+    id: BLOCK.LAPIS_ORE,
+    name: "Lapis Lazuli Ore",
+    hardness: 3.0,
+    preferredTool: "pickaxe",
+    drop: "item_lapis",
+    shards: ["#7a8088", "#1e4ec8", "#3f6fe0", "#ffd700"],
+    solid: true,
+    transparent: false,
+    sound: "stone",
+    colors: { top: "#1e4ec8", left: "#727880", right: "#5b6068" },
+  },
 };
 
 export interface FoodDef {
@@ -1246,6 +1312,44 @@ export const ITEMS: Record<ItemId, ItemDef> = {
     color: "#ff5722",
     category: "block",
   },
+  block_enchanting_table: {
+    id: "block_enchanting_table",
+    name: "Enchanting Table",
+    short: "ENCH",
+    blockId: BLOCK.ENCHANTING_TABLE,
+    color: "#8a1a2e",
+    category: "block",
+  },
+  block_bookshelf: {
+    id: "block_bookshelf",
+    name: "Bookshelf",
+    short: "SHELF",
+    blockId: BLOCK.BOOKSHELF,
+    color: "#a07844",
+    category: "block",
+  },
+  block_lapis_ore: {
+    id: "block_lapis_ore",
+    name: "Lapis Lazuli Ore",
+    short: "L.ORE",
+    blockId: BLOCK.LAPIS_ORE,
+    color: "#1e4ec8",
+    category: "block",
+  },
+  item_lapis: {
+    id: "item_lapis",
+    name: "Lapis Lazuli",
+    short: "LAPIS",
+    color: "#1f4fc9",
+    category: "material",
+  },
+  item_book: {
+    id: "item_book",
+    name: "Book",
+    short: "BOOK",
+    color: "#8b4226",
+    category: "material",
+  },
 };
 
 export interface Recipe {
@@ -1305,6 +1409,9 @@ export const RECIPES: Recipe[] = [
   { id: "flint_and_steel", out: "flint_and_steel", count: 1, inputs: [{ item: "iron_ingot", count: 1 }, { item: "flint", count: 1 }], note: "Ignite Nether Portals & fire" },
   { id: "quartz_block", out: "block_quartz", count: 1, inputs: [{ item: "quartz", count: 4 }], note: "Pristine white building block" },
   { id: "golden_sword", out: "golden_sword", count: 1, inputs: [{ item: "gold_ingot", count: 2 }, { item: "stick", count: 1 }], note: "+5 Attack Damage" },
+  { id: "book", out: "item_book", count: 1, inputs: [{ item: "wheat", count: 3 }, { item: "leather", count: 1 }], note: "Spell & enchanting book" },
+  { id: "bookshelf", out: "block_bookshelf", count: 1, inputs: [{ item: "block_planks", count: 6 }, { item: "item_book", count: 3 }], note: "Boosts enchanting table power" },
+  { id: "enchant_table", out: "block_enchanting_table", count: 1, inputs: [{ item: "block_obsidian", count: 4 }, { item: "diamond", count: 2 }, { item: "item_book", count: 1 }], note: "Enchant tools & armor" },
 ];
 
 export interface SmeltingRecipe {
@@ -1318,6 +1425,7 @@ export const SMELTING_RECIPES: SmeltingRecipe[] = [
   { input: "block_gold_ore", output: "gold_ingot", xp: 1.5 },
   { input: "block_redstone_ore", output: "redstone_dust", xp: 0.7 },
   { input: "block_quartz_ore", output: "quartz", xp: 1.0 },
+  { input: "block_lapis_ore", output: "item_lapis", xp: 1.0 },
   { input: "block_sand", output: "block_glass", xp: 0.2 },
   { input: "block_cobble", output: "block_stone", xp: 0.2 },
   { input: "raw_beef", output: "cooked_beef", xp: 0.5 },
@@ -1399,6 +1507,11 @@ export const CREATIVE_CATALOG: ItemId[] = [
   "golden_sword",
   "quartz",
   "flint",
+  "block_enchanting_table",
+  "block_bookshelf",
+  "block_lapis_ore",
+  "item_lapis",
+  "item_book",
 ];
 
 export const DEFAULT_CREATIVE_HOTBAR: ItemId[] = [

@@ -327,7 +327,14 @@ export function buildChunkGeometries(
           const uv = tileSet[face.uvKind];
           const aoLevels: [number, number, number, number] = [3, 3, 3, 3];
           const vc = opaqueBuf.vCount;
-          const height = b === BLOCK.BED ? 0.56 : (b === BLOCK.FARMLAND || b === BLOCK.FARMLAND_MOIST) ? 0.9375 : 1.0;
+          const height =
+            b === BLOCK.BED
+              ? 0.56
+              : b === BLOCK.FARMLAND || b === BLOCK.FARMLAND_MOIST
+                ? 0.9375
+                : b === BLOCK.ENCHANTING_TABLE
+                  ? 0.75
+                  : 1.0;
           const isEmissiveBlock =
             b === BLOCK.LAVA ||
             b === BLOCK.NETHER_PORTAL ||

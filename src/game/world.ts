@@ -176,8 +176,10 @@ export class InfiniteWorld {
             const oreH = hashCoords(wx, y, wz, this.seed + 701);
             if (y <= 11 && oreH < 0.014) b = BLOCK.DIAMOND_ORE;
             else if (y <= 16 && oreH < 0.032) b = BLOCK.GOLD_ORE;
-            else if (y <= 26 && oreH < 0.072) b = BLOCK.IRON_ORE;
-            else if (y <= 34 && oreH < 0.115) b = BLOCK.COAL_ORE;
+            else if (y >= 6 && y <= 24 && oreH < 0.046) b = BLOCK.LAPIS_ORE;
+            else if (y <= 18 && oreH < 0.062) b = BLOCK.REDSTONE_ORE;
+            else if (y <= 26 && oreH < 0.076) b = BLOCK.IRON_ORE;
+            else if (y <= 34 && oreH < 0.118) b = BLOCK.COAL_ORE;
           }
 
           data[localIdx(lx, y, lz)] = b;

@@ -15,13 +15,19 @@ export interface PlayerSave {
   health: number; // 0 - 20
   hunger?: number; // 0 - 20
   oxygen: number; // 0 - 20
-  hotbar: Array<{ item: ItemId; count: number } | null>;
+  hotbar: Array<{ item: ItemId; count: number; enchantments?: Record<string, number> } | null>;
   inventory: Record<string, number>;
   armor?: {
     head: ItemId | null;
     chest: ItemId | null;
     legs: ItemId | null;
     feet: ItemId | null;
+  };
+  armorEnchantments?: {
+    head?: Record<string, number>;
+    chest?: Record<string, number>;
+    legs?: Record<string, number>;
+    feet?: Record<string, number>;
   };
   xp?: number;
   level?: number;

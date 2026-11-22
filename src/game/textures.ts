@@ -902,6 +902,105 @@ function quartzTopTile(): TilePair {
   return { albedo: c };
 }
 
+function enchantTopTile(): TilePair {
+  const { c, ctx } = makeCanvas();
+  const em = makeCanvas();
+  noiseFill(ctx, ["#16111f", "#1e1429", "#110b1a", "#221630"], 801);
+  for (let y = 2; y <= 13; y++) {
+    for (let x = 2; x <= 13; x++) {
+      const isStitch = (x + y) % 3 === 0;
+      px(ctx, x, y, isStitch ? "#a02238" : "#80162a");
+    }
+  }
+  px(ctx, 7, 7, "#ffd700", 2, 2);
+  px(ctx, 6, 7, "#29b6f6");
+  px(ctx, 9, 7, "#29b6f6");
+  px(ctx, 7, 6, "#29b6f6");
+  px(ctx, 7, 9, "#29b6f6");
+  px(ctx, 2, 2, "#29b6f6", 2, 2);
+  px(ctx, 12, 2, "#29b6f6", 2, 2);
+  px(ctx, 2, 12, "#29b6f6", 2, 2);
+  px(ctx, 12, 12, "#29b6f6", 2, 2);
+
+  em.ctx.fillStyle = "#000000";
+  em.ctx.fillRect(0, 0, 16, 16);
+  px(em.ctx, 7, 7, "#ffe066", 2, 2);
+  px(em.ctx, 2, 2, "#40c4ff", 2, 2);
+  px(em.ctx, 12, 2, "#40c4ff", 2, 2);
+  px(em.ctx, 2, 12, "#40c4ff", 2, 2);
+  px(em.ctx, 12, 12, "#40c4ff", 2, 2);
+  shadeEdge(ctx);
+  return { albedo: c, emissive: em.c };
+}
+
+function enchantSideTile(): TilePair {
+  const { c, ctx } = makeCanvas();
+  noiseFill(ctx, ["#16111f", "#1e1429", "#110b1a", "#221630"], 811);
+  for (let y = 0; y < 4; y++) {
+    for (let x = 0; x < 16; x++) {
+      px(ctx, x, y, (x + y) % 2 === 0 ? "#8a1a2e" : "#731425");
+    }
+  }
+  px(ctx, 0, 4, "#29b6f6", 2, 1);
+  px(ctx, 14, 4, "#29b6f6", 2, 1);
+  px(ctx, 0, 3, "#540d1a", 16, 1);
+  shadeEdge(ctx);
+  return { albedo: c };
+}
+
+function bookshelfTile(): TilePair {
+  const { c, ctx } = makeCanvas();
+  noiseFill(ctx, ["#a07844", "#8c6536", "#b0854d"], 821);
+  px(ctx, 0, 0, "#6a4a24", 16, 2);
+  px(ctx, 0, 7, "#6a4a24", 16, 2);
+  px(ctx, 0, 14, "#6a4a24", 16, 2);
+  const topBooks = [
+    { x: 1, w: 2, c: "#8b1e22" },
+    { x: 3, w: 1, c: "#eee8db" },
+    { x: 4, w: 2, c: "#206629" },
+    { x: 6, w: 2, c: "#b37a22" },
+    { x: 8, w: 1, c: "#eee8db" },
+    { x: 9, w: 3, c: "#1a3d8b" },
+    { x: 12, w: 2, c: "#7b268f" },
+    { x: 14, w: 1, c: "#8b1e22" },
+  ];
+  for (const b of topBooks) {
+    px(ctx, b.x, 2, b.c, b.w, 5);
+    px(ctx, b.x, 3, "rgba(255,255,255,0.15)", b.w, 1);
+  }
+  const botBooks = [
+    { x: 1, w: 3, c: "#1a3d8b" },
+    { x: 4, w: 2, c: "#b37a22" },
+    { x: 6, w: 1, c: "#eee8db" },
+    { x: 7, w: 2, c: "#8b1e22" },
+    { x: 9, w: 2, c: "#206629" },
+    { x: 11, w: 1, c: "#eee8db" },
+    { x: 12, w: 3, c: "#6d3b1e" },
+  ];
+  for (const b of botBooks) {
+    px(ctx, b.x, 9, b.c, b.w, 5);
+    px(ctx, b.x, 10, "rgba(255,255,255,0.15)", b.w, 1);
+  }
+  shadeEdge(ctx);
+  return { albedo: c };
+}
+
+function lapisOreTile(): TilePair {
+  const { c, ctx } = makeCanvas();
+  noiseFill(ctx, stonePalette, 831);
+  const r = rng(832);
+  for (let i = 0; i < 9; i++) {
+    const x = Math.floor(r() * 14);
+    const y = Math.floor(r() * 14);
+    px(ctx, x, y, "#183f9e", 2, 2);
+    px(ctx, x + 1, y, "#2458d6", 1, 1);
+    px(ctx, x, y + 1, "#457cf5", 1, 1);
+    if (i % 3 === 0) px(ctx, x + 1, y + 1, "#ffd700", 1, 1);
+  }
+  shadeEdge(ctx);
+  return { albedo: c };
+}
+
 function crackTex(stage: number) {
   const { c, ctx } = makeCanvas(16, 16);
   ctx.clearRect(0, 0, 16, 16);
@@ -1032,7 +1131,11 @@ type TileKey =
   | "netherPortal"
   | "gravel"
   | "quartzBlock"
-  | "quartzTop";
+  | "quartzTop"
+  | "enchantTop"
+  | "enchantSide"
+  | "bookshelf"
+  | "lapisOre";
 
 const ATLAS_COLS = 8;
 const ATLAS_ROWS = 10;
@@ -1104,6 +1207,10 @@ export function createBlockAtlas(): BlockAtlas {
     gravel: gravelTile(),
     quartzBlock: quartzBlockTile(),
     quartzTop: quartzTopTile(),
+    enchantTop: enchantTopTile(),
+    enchantSide: enchantSideTile(),
+    bookshelf: bookshelfTile(),
+    lapisOre: lapisOreTile(),
   };
 
   const W = ATLAS_COLS * CELL;
@@ -1210,6 +1317,9 @@ export function createBlockAtlas(): BlockAtlas {
     [BLOCK.NETHER_PORTAL]: u("netherPortal"),
     [BLOCK.GRAVEL]: u("gravel"),
     [BLOCK.QUARTZ_BLOCK]: { top: uvByKey.quartzTop, bottom: uvByKey.quartzTop, side: uvByKey.quartzBlock },
+    [BLOCK.ENCHANTING_TABLE]: { top: uvByKey.enchantTop, bottom: uvByKey.obsidian, side: uvByKey.enchantSide },
+    [BLOCK.BOOKSHELF]: { top: uvByKey.planks, bottom: uvByKey.planks, side: uvByKey.bookshelf },
+    [BLOCK.LAPIS_ORE]: u("lapisOre"),
   };
 
   const crackTextures = [crackTex(0), crackTex(1), crackTex(2)];

@@ -33,15 +33,23 @@ export function Hud({
 
   // Show held item tooltip on slot change
   useEffect(() => {
+    const held = hud.hotbar[hud.selectedSlot];
     if (hud.heldName) {
-      setTooltipName(hud.heldName);
+      let title = hud.heldName;
+      if (held?.enchantments && Object.keys(held.enchantments).length > 0) {
+        const lore = Object.entries(held.enchantments)
+          .map(([id, lvl]) => `${id.charAt(0).toUpperCase() + id.slice(1).replace("_", " ")} ${["I", "II", "III", "IV", "V"][Number(lvl) - 1] || lvl}`)
+          .join(", ");
+        title += ` ✨ (${lore})`;
+      }
+      setTooltipName(title);
       setTooltipVisible(true);
       const timer = setTimeout(() => setTooltipVisible(false), 2400);
       return () => clearTimeout(timer);
     } else {
       setTooltipVisible(false);
     }
-  }, [hud.selectedSlot, hud.heldName]);
+  }, [hud.selectedSlot, hud.heldName, hud.hotbar]);
 
   // Hearts calculation (10 hearts = 20 HP)
   const hearts = Array.from({ length: 10 }, (_, i) => {
@@ -431,14 +439,18 @@ export function Hud({
 
                 {/* Item representation */}
                 {slot && def ? (
-                  <div className="flex flex-col items-center justify-center">
+                  <div className="relative flex flex-col items-center justify-center">
                     <div
-                      className="h-5 w-5 sm:h-6 sm:w-6 rounded-xs shadow-sm"
+                      className="relative h-5 w-5 sm:h-6 sm:w-6 overflow-hidden rounded-xs shadow-sm"
                       style={{
                         backgroundColor: def.color || "#888888",
                         border: "1px solid rgba(0,0,0,0.4)",
                       }}
-                    />
+                    >
+                      {slot.enchantments && Object.keys(slot.enchantments).length > 0 && (
+                        <div className="absolute inset-0 animate-pulse bg-gradient-to-tr from-purple-600/60 via-fuchsia-400/50 to-cyan-400/40" />
+                      )}
+                    </div>
                     {slot.count > 1 && (
                       <span className="absolute bottom-0.5 right-1 text-[9px] font-bold text-white drop-shadow-[0_1px_2px_rgba(0,0,0,1)]">
                         {slot.count}

@@ -53,6 +53,11 @@
 | <img src="assets/screenshots/nether_dimension.png" alt="The Nether Dimension" width="440" /> | <img src="assets/screenshots/nether_portal_overworld.png" alt="Nether Portal in Overworld" width="440" /> |
 | *Netherrack Caverns, Lava Oceans, Soul Sand & Nether Mobs* | *4x5 Obsidian Portal Frame, Flint & Steel Ignition & Travel* |
 
+| ENCHANTING TABLE & 3D SPELLBOOK | INTERACTIVE ENCHANTING UI & RUNES |
+| :---: | :---: |
+| <img src="assets/screenshots/enchanting_table_world.png" alt="Enchanting Table & 3D Spellbook" width="440" /> | <img src="assets/screenshots/enchanting_table_ui.png" alt="Enchanting UI & Runes" width="440" /> |
+| *Floating 3D Spellbook, Drifting Runic Particles & Bookshelves* | *Standard Galactic Alphabet Runes, 3 Tiers, Lapis & XP Costs* |
+
 </div>
 
 <br/>
@@ -204,6 +209,31 @@
   - `Zombie Pigman`: Neutral mob with half-pig half-zombie skin wielding a 3D Golden Sword. Peaceful until attacked, then rallies in relentless aggressive pursuit. Drops gold ingots and rotten flesh.
   - `Ghast`: Floating 1.5-meter flying ghost with red crying eyes and 9 swaying dangling tentacles that drifts through Nether caverns. Drops gunpowder.
 
+### 16. Enchanting, Bookshelf Magic & Runic Power
+- **Enchanting Table Workstation**:
+  - Crafted with Obsidian, Diamonds, and a Book. Features authentic 3/4-height meshing (`0.75`) and procedural obsidian base with crimson diamond-pattern cloth drape and glowing cyan corners.
+  - **3D Floating Spellbook**: Procedural 3D open book model floats and hovers above nearby Enchanting Tables, automatically rotating to face the player.
+  - **Drifting Runic Glyphs**: Surrounding bookshelves channel arcane power, casting glowing cyan and gold runic particles drifting toward the open spellbook.
+- **Bookshelf Influence (0 to 15 Power)**:
+  - Scans a $5 \times 3 \times 5$ cuboid centered on the enchanting table for placed `Bookshelf` blocks.
+  - Power scales up to 15 bookshelves, elevating maximum enchantment offers from Level 6 up to **Level 30**!
+- **Authentic Enchanting Modal & Runes**:
+  - Features authentic **Standard Galactic Alphabet** cryptic runes, 3 dynamic tier offers, bookshelf power indicator (`0 / 15`), and real-time lapis counter.
+  - Requires both player XP levels and **Lapis Lazuli** gems (`1 Lapis + 1 LVL` for Tier 1, up to `3 Lapis + 3 LVL` for Tier 3).
+- **7 Canonical Enchantments**:
+  - `Sharpness` (I–V): Adds $+1.25 \times \text{level}$ melee damage to swords.
+  - `Fire Aspect` (I–II): Sets hit targets ablaze with burning fire ticks and hurt flashes.
+  - `Knockback` (I–II): Significantly amplifies knockback impulse applied to hit mobs.
+  - `Efficiency` (I–V): Accelerates tool mining speed by $1 + \text{level} \times 0.35$.
+  - `Fortune` (I–III): Multiplies mineral drop yields from Coal, Diamond, Redstone, Lapis, and Quartz up to $3\times$.
+  - `Protection` (I–IV): Adds $+4\%$ damage reduction per level to equipped armor pieces.
+  - `Unbreaking` (I–III): Multiplies tool durability and lifespan.
+- **Visual Glint & Audio Synthesis**:
+  - Enchanted tools in first-person view shine with an animated, pulsating purple iridescent shimmer (`#7b1fa2`).
+  - Procedural enchanting audio: ascending pentatonic glockenspiel arpeggio (`audio.enchant()`) and parchment flutter bell chimes (`audio.spellBookOpen()`).
+- **Natural Lapis Lazuli Ores**:
+  - Deep underground Lapis Lazuli veins spawn naturally in stone/deepslate layers ($Y = 6..24$). Mining yields 4–9 royal blue Lapis Lazuli gems (boosted by Fortune).
+
 <br/>
 
 <div align="center">
@@ -220,21 +250,21 @@
 
 <br/>
 
-The engine includes **60+ canonical block types & functional items** generated procedurally without external image files:
+The engine includes **65+ canonical block types & functional items** generated procedurally without external image files:
 
 | BLOCK CATEGORY | INCLUDED BLOCK TYPES |
 | :--- | :--- |
 | **Terrain & Rock** | `Grass Block`, `Dirt`, `Stone`, `Cobblestone`, `Deepslate`, `Bedrock`, `Sand`, `Sandstone`, `Gravel` |
 | **The Nether**     | `Netherrack`, `Lava (Fluid)`, `Obsidian`, `Nether Quartz Ore`, `Soul Sand`, `Nether Portal`, `Block of Quartz` |
 | **Nature & Fluids**| `Oak Log`, `Oak Leaves`, `Cactus`, `Water (Fluid)`, `Snow`, `Ice`, `Poppy`, `Dandelion` |
-| **Building**       | `Oak Planks`, `Bricks`, `Stone Bricks`, `Glass`, `Block of Quartz` |
-| **Mineral Ores**   | `Coal Ore`, `Iron Ore`, `Gold Ore`, `Diamond Ore`, `Redstone Ore`, `Nether Quartz Ore` |
+| **Building**       | `Oak Planks`, `Bricks`, `Stone Bricks`, `Glass`, `Block of Quartz`, `Bookshelf` |
+| **Mineral Ores**   | `Coal Ore`, `Iron Ore`, `Gold Ore`, `Diamond Ore`, `Redstone Ore`, `Nether Quartz Ore`, `Lapis Lazuli Ore` |
 | **Agriculture**    | `Farmland`, `Moist Farmland`, `Wheat Crops (Stages 1-4)`, `Wheat Seeds`, `Wheat`, `Bone Meal` |
 | **Redstone Power** | `Redstone Wire`, `Redstone Torch`, `Lever`, `Redstone Lamp (Unlit/Lit)`, `TNT Block` |
-| **Functional & Home** | `Crafting Table`, `Furnace`, `Chest`, `Bed`, `Wooden Door`, `Ladder`, `Torch`, `Glowstone` |
+| **Functional & Home** | `Crafting Table`, `Furnace`, `Chest`, `Bed`, `Wooden Door`, `Ladder`, `Torch`, `Glowstone`, `Enchanting Table` |
 | **Armor & Defense**| `Iron Helmet/Chestplate/Leggings/Boots`, `Diamond Helmet/Chestplate/Leggings/Boots`, `Leather Tunic/Boots` |
 | **Weapons & Tools**| `Wooden/Stone/Iron/Diamond Swords`, `Golden Sword`, `Bow & Arrows`, `Pickaxes`, `Axes`, `Shovels`, `Wooden Hoe`, `Flint and Steel` |
-| **Food & Mob Drops**| `Apple`, `Bread`, `Raw/Cooked Porkchop`, `Steak`, `Rotten Flesh`, `Bone`, `Gunpowder`, `String`, `Feather`, `Leather`, `Wool`, `Flint`, `Quartz`, `Gold Ingot` |
+| **Food & Mob Drops**| `Apple`, `Bread`, `Raw/Cooked Porkchop`, `Steak`, `Rotten Flesh`, `Bone`, `Gunpowder`, `String`, `Feather`, `Leather`, `Wool`, `Flint`, `Quartz`, `Gold Ingot`, `Lapis Lazuli`, `Book` |
 
 <br/>
 
@@ -300,6 +330,9 @@ Pressing `E` opens the **2x2 Player Inventory Crafting Grid**, while right-click
 | Flint and Steel   | 1x Iron + 1x Flint | Ignites Nether Portals |
 | Golden Sword      | 2x Gold + 1x Stick | +5 Attack Damage       |
 | Block of Quartz   | 4x Nether Quartz   | Smooth white building  |
+| Book              | 3x Wheat + 1x Leath| Arcane crafting item    |
+| Bookshelf         | 6x Plank + 3x Book | Empowers Enchanting    |
+| Enchanting Table  | 4x Obsid+2x Dia+1xB| Arcane weapon/armor buff|
 +-------------------+--------------------+------------------------+
 ```
 
@@ -320,6 +353,7 @@ Right-click any placed **Furnace** to smelt raw minerals, meats, and materials u
 | Cobblestone       | Smooth Stone       | 1/8 Coal (+0.2 XP)      |
 | Dirt              | Baked Bricks       | 1/8 Coal (+0.3 XP)      |
 | Nether Quartz Ore | Nether Quartz      | 1/8 Coal (+1.0 XP)      |
+| Lapis Lazuli Ore  | Lapis Lazuli       | 1/8 Coal (+1.0 XP)      |
 +-------------------+--------------------+-------------------------+
 ```
 
@@ -437,7 +471,7 @@ Creates a self-contained, single-file bundle in `dist/index.html` (under 916 kB,
 [+] Mobs & Entities        : 8 Species (Zombie, Skeleton, Creeper, Pig, Cow, Sheep, Zombie Pigman, Ghast)
 [+] Sound Synthesizer      : Web Audio API (Zero External MP3/WAV Audio Files)
 [+] Ambient Soundtrack     : Procedural C418-Style Calm Piano Synthesizer
-[+] Build Output           : Single-File HTML (~1,006 kB / ~264 kB gzipped)
+[+] Build Output           : Single-File HTML (~1,033 kB / ~271 kB gzipped)
 [+] Persistence            : Web Storage API (Multi-World Edits, Dimensions, Inventory, Seed)
 ```
 

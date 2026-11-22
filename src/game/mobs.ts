@@ -18,6 +18,8 @@ export interface MobEntity {
   isHostile: boolean;
   onGround: boolean;
   hurtTimer: number; // >0 means flashing red
+  burnTimer?: number;
+  burnTickTimer?: number;
   dead: boolean;
   deathTimer: number;
 
@@ -622,6 +624,16 @@ export class MobManager {
         }
       }
 
+      // Fire Aspect / Burn Tick
+      if (mob.burnTimer && mob.burnTimer > 0) {
+        mob.burnTimer -= dt;
+        mob.burnTickTimer = (mob.burnTickTimer || 0) + dt;
+        if (mob.burnTickTimer >= 0.6) {
+          mob.burnTickTimer = 0;
+          this.applyDamageToMob(mob, 1, onMobDefeated);
+        }
+      }
+
       // Distance to player
       const distToPlayer = mob.pos.distanceTo(playerPos);
 
@@ -901,6 +913,7 @@ export class MobManager {
     direction: THREE.Vector3,
     damage: number,
     onMobDefeated: (drops: Array<{ item: ItemId; count: number }>, pos: THREE.Vector3, xp: number) => void,
+    enchantments?: Record<string, number>,
   ): boolean {
     let closestMob: MobEntity | null = null;
     let closestDist = 4.2;
@@ -925,9 +938,15 @@ export class MobManager {
 
     if (closestMob) {
       this.applyDamageToMob(closestMob, damage, onMobDefeated);
-      // Knockback
-      closestMob.vel.addScaledVector(direction, 6.5);
+      // Knockback multiplier
+      const kbMult = enchantments?.knockback ? 1.0 + enchantments.knockback * 0.75 : 1.0;
+      closestMob.vel.addScaledVector(direction, 6.5 * kbMult);
       closestMob.vel.y = 4.2;
+      // Fire aspect
+      if (enchantments?.fire_aspect) {
+        closestMob.burnTimer = enchantments.fire_aspect * 3.5;
+        closestMob.burnTickTimer = 0;
+      }
       return true;
     }
     return false;

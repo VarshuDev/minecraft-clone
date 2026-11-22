@@ -451,4 +451,90 @@ export class GameAudio {
       osc2.stop(noteTime + 3.9);
     });
   }
+
+  spellBookOpen() {
+    if (!this.ctx || !this.master || this.muted) return;
+    const ctx = this.ctx;
+    const master = this.master;
+    const t0 = ctx.currentTime;
+
+    const len = 0.22;
+    const buf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * len), ctx.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < data.length; i++) {
+      data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (data.length * 0.35));
+    }
+    const noise = ctx.createBufferSource();
+    noise.buffer = buf;
+    const filter = ctx.createBiquadFilter();
+    filter.type = "bandpass";
+    filter.frequency.setValueAtTime(1200, t0);
+    filter.Q.setValueAtTime(1.8, t0);
+
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.08, t0);
+    gain.gain.exponentialRampToValueAtTime(0.001, t0 + len);
+
+    noise.connect(filter);
+    filter.connect(gain);
+    gain.connect(master);
+    noise.start(t0);
+
+    const bell = ctx.createOscillator();
+    const bGain = ctx.createGain();
+    bell.type = "sine";
+    bell.frequency.setValueAtTime(880, t0);
+    bGain.gain.setValueAtTime(0.035, t0);
+    bGain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.45);
+    bell.connect(bGain);
+    bGain.connect(master);
+    bell.start(t0);
+    bell.stop(t0 + 0.5);
+  }
+
+  enchant() {
+    if (!this.ctx || !this.master || this.muted) return;
+    const ctx = this.ctx;
+    const master = this.master;
+    const t0 = ctx.currentTime;
+
+    const freqs = [523.25, 659.25, 783.99, 987.77, 1174.66, 1567.98];
+    freqs.forEach((f, i) => {
+      const t = t0 + i * 0.07;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const filter = ctx.createBiquadFilter();
+
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(f, t);
+      osc.frequency.exponentialRampToValueAtTime(f * 1.015, t + 0.5);
+
+      filter.type = "bandpass";
+      filter.frequency.setValueAtTime(f * 1.2, t);
+      filter.Q.setValueAtTime(3.0, t);
+
+      gain.gain.setValueAtTime(0.0001, t);
+      gain.gain.exponentialRampToValueAtTime(0.09, t + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t + 1.2);
+
+      osc.connect(filter);
+      filter.connect(gain);
+      gain.connect(master);
+
+      osc.start(t);
+      osc.stop(t + 1.25);
+    });
+
+    const shimmer = ctx.createOscillator();
+    const sGain = ctx.createGain();
+    shimmer.type = "triangle";
+    shimmer.frequency.setValueAtTime(1046.5, t0);
+    shimmer.frequency.exponentialRampToValueAtTime(2093.0, t0 + 0.6);
+    sGain.gain.setValueAtTime(0.04, t0);
+    sGain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.85);
+    shimmer.connect(sGain);
+    sGain.connect(master);
+    shimmer.start(t0);
+    shimmer.stop(t0 + 0.9);
+  }
 }

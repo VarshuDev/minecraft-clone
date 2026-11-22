@@ -7,6 +7,7 @@ import {
   SMELTING_RECIPES,
   getFuelBurnTime,
   type BlockNum,
+  type EnchantmentId,
   type GameModeId,
   type ItemDef,
   type ItemId,
@@ -40,7 +41,7 @@ export interface MinecraftHudState {
   maxOxygen: number;
   inWater: boolean;
   gameMode: GameModeId;
-  hotbar: Array<{ item: ItemId; count: number } | null>;
+  hotbar: Array<{ item: ItemId; count: number; enchantments?: Record<string, number> } | null>;
   selectedSlot: number;
   heldItem: ItemId | null;
   heldDef: ItemDef | null;
@@ -87,6 +88,7 @@ export interface EngineCallbacks {
   onOpenCrafting: (isWorkstation: boolean) => void;
   onOpenChest?: (chestPosKey: string) => void;
   onOpenFurnace?: (furnacePosKey: string) => void;
+  onOpenEnchanting?: (bookshelfCount: number) => void;
   onOpenChat?: (initialText?: string) => void;
   onChatMessage?: (msg: { id: string; text: string; type: "chat" | "system" | "command" | "error" }) => void;
   onNotification?: (msg: string) => void;
@@ -162,7 +164,7 @@ export class GameEngine {
     headInWater: false,
     fallDistance: 0,
     sprinting: false,
-    hotbar: [] as Array<{ item: ItemId; count: number } | null>,
+    hotbar: [] as Array<{ item: ItemId; count: number; enchantments?: Record<string, number> } | null>,
     inventory: {} as Record<string, number>,
     armor: {
       head: null as ItemId | null,
@@ -212,6 +214,10 @@ export class GameEngine {
   // Crops & Agriculture Simulation
   activeCrops: Set<string> = new Set();
   cropTimer = 0;
+
+  // Enchanting Table Floating Spellbook & Glyphs
+  spellbookMesh: THREE.Group | null = null;
+  enchantGlyphTimer = 0;
 
   // Targeting & Mining
   targetBlock: { x: number; y: number; z: number; block: BlockNum } | null = null;
@@ -1161,7 +1167,10 @@ export class GameEngine {
         const rayDir = new THREE.Vector3(0, 0, -1).applyQuaternion(this.camera.quaternion).normalize();
         const held = this.getHeldItem();
         const heldDef = held ? ITEMS[held.item] : null;
-        const attackDmg = heldDef?.attackDamage ?? heldDef?.tool?.attackDamage ?? 1;
+        let attackDmg = heldDef?.attackDamage ?? heldDef?.tool?.attackDamage ?? 1;
+        if (held?.enchantments?.sharpness) {
+          attackDmg += held.enchantments.sharpness * 1.25;
+        }
 
         const hitMob = this.mobManager.attackRaycast(
           rayOrigin,
@@ -1171,6 +1180,7 @@ export class GameEngine {
             drops.forEach((d) => this.addItem(d.item, d.count));
             if (pos && xp) this.spawnXpOrbs(pos.x, pos.y, pos.z, xp);
           },
+          held?.enchantments,
         );
 
         if (hitMob) {
@@ -1628,6 +1638,13 @@ export class GameEngine {
       if (def?.category === "tool" && def.tool) {
         // 3D Tool Model (Pickaxe / Axe / Shovel)
         const toolGroup = new THREE.Group();
+        const isEnchanted = !!(held?.enchantments && Object.keys(held.enchantments).length > 0);
+        const makeMat = (col: number) =>
+          new THREE.MeshLambertMaterial({
+            color: col,
+            emissive: isEnchanted ? new THREE.Color(0x7b1fa2) : new THREE.Color(0x000000),
+            emissiveIntensity: isEnchanted ? 0.75 : 0,
+          });
 
         // Wooden handle
         const handleGeo = new THREE.BoxGeometry(0.035, 0.44, 0.035);
@@ -1640,7 +1657,7 @@ export class GameEngine {
           // Central crosshead
           const headCenter = new THREE.Mesh(
             new THREE.BoxGeometry(0.08, 0.055, 0.045),
-            new THREE.MeshLambertMaterial({ color: def.tool.headColor })
+            makeMat(def.tool.headColor)
           );
           headCenter.position.set(0, 0.17, 0);
           toolGroup.add(headCenter);
@@ -1648,7 +1665,7 @@ export class GameEngine {
           // Left curved tip
           const leftTip = new THREE.Mesh(
             new THREE.BoxGeometry(0.08, 0.05, 0.04),
-            new THREE.MeshLambertMaterial({ color: def.tool.tipColor })
+            makeMat(def.tool.tipColor)
           );
           leftTip.position.set(-0.075, 0.155, 0);
           leftTip.rotation.z = 0.28;
@@ -1657,7 +1674,7 @@ export class GameEngine {
           // Right curved tip
           const rightTip = new THREE.Mesh(
             new THREE.BoxGeometry(0.08, 0.05, 0.04),
-            new THREE.MeshLambertMaterial({ color: def.tool.tipColor })
+            makeMat(def.tool.tipColor)
           );
           rightTip.position.set(0.075, 0.155, 0);
           rightTip.rotation.z = -0.28;
@@ -1665,14 +1682,14 @@ export class GameEngine {
         } else if (def.tool.kind === "sword") {
           const blade = new THREE.Mesh(
             new THREE.BoxGeometry(0.065, 0.42, 0.025),
-            new THREE.MeshLambertMaterial({ color: def.tool.headColor })
+            makeMat(def.tool.headColor)
           );
           blade.position.set(0, 0.22, 0);
           toolGroup.add(blade);
 
           const tip = new THREE.Mesh(
             new THREE.BoxGeometry(0.075, 0.06, 0.03),
-            new THREE.MeshLambertMaterial({ color: def.tool.tipColor })
+            makeMat(def.tool.tipColor)
           );
           tip.position.set(0, 0.44, 0);
           toolGroup.add(tip);
@@ -1686,7 +1703,7 @@ export class GameEngine {
 
           const pommel = new THREE.Mesh(
             new THREE.BoxGeometry(0.055, 0.05, 0.05),
-            new THREE.MeshLambertMaterial({ color: def.tool.headColor })
+            makeMat(def.tool.headColor)
           );
           pommel.position.set(0, -0.24, 0);
           toolGroup.add(pommel);
@@ -1707,21 +1724,21 @@ export class GameEngine {
         } else if (def.tool.kind === "hoe") {
           const hoeHead = new THREE.Mesh(
             new THREE.BoxGeometry(0.12, 0.05, 0.04),
-            new THREE.MeshLambertMaterial({ color: def.tool.headColor })
+            makeMat(def.tool.headColor)
           );
           hoeHead.position.set(0.04, 0.18, 0);
           toolGroup.add(hoeHead);
         } else if (def.tool.kind === "axe") {
           const axeHead = new THREE.Mesh(
             new THREE.BoxGeometry(0.12, 0.15, 0.045),
-            new THREE.MeshLambertMaterial({ color: def.tool.headColor })
+            makeMat(def.tool.headColor)
           );
           axeHead.position.set(0.05, 0.16, 0);
           toolGroup.add(axeHead);
         } else {
           const shovelHead = new THREE.Mesh(
             new THREE.BoxGeometry(0.09, 0.16, 0.035),
-            new THREE.MeshLambertMaterial({ color: def.tool.headColor })
+            makeMat(def.tool.headColor)
           );
           shovelHead.position.set(0, 0.17, 0);
           toolGroup.add(shovelHead);
@@ -1896,6 +1913,9 @@ export class GameEngine {
           speed = 1.2;
         }
       }
+      if (held.enchantments?.efficiency) {
+        speed *= 1.0 + held.enchantments.efficiency * 0.35;
+      }
     }
 
     // In water penalty if not on ground
@@ -1941,18 +1961,32 @@ export class GameEngine {
 
     // Give drop in survival mode
     if (this.save.gameMode === "survival") {
+      const held = this.getHeldItem();
+      const isOre =
+        block === BLOCK.COAL_ORE ||
+        block === BLOCK.DIAMOND_ORE ||
+        block === BLOCK.REDSTONE_ORE ||
+        block === BLOCK.NETHER_QUARTZ_ORE ||
+        block === BLOCK.LAPIS_ORE;
+      let dropCount = 1;
+      if (held?.enchantments?.fortune && isOre) {
+        dropCount = 1 + Math.floor(Math.random() * (held.enchantments.fortune + 1));
+      }
+
       if (block === BLOCK.WHEAT_3) {
         this.addItem("wheat", 1);
         this.addItem("seeds", 1 + Math.floor(Math.random() * 3));
         this.spawnXpOrbs(x + 0.5, y + 0.5, z + 0.5, 1);
       } else if (def.drop) {
-        this.addItem(def.drop, 1);
+        this.addItem(def.drop, dropCount);
       }
       if (block === BLOCK.COAL_ORE) this.spawnXpOrbs(x + 0.5, y + 0.5, z + 0.5, 1);
       else if (block === BLOCK.IRON_ORE) this.spawnXpOrbs(x + 0.5, y + 0.5, z + 0.5, 2);
       else if (block === BLOCK.GOLD_ORE) this.spawnXpOrbs(x + 0.5, y + 0.5, z + 0.5, 3);
       else if (block === BLOCK.DIAMOND_ORE) this.spawnXpOrbs(x + 0.5, y + 0.5, z + 0.5, 5);
       else if (block === BLOCK.REDSTONE_ORE) this.spawnXpOrbs(x + 0.5, y + 0.5, z + 0.5, 4);
+      else if (block === BLOCK.NETHER_QUARTZ_ORE) this.spawnXpOrbs(x + 0.5, y + 0.5, z + 0.5, 3);
+      else if (block === BLOCK.LAPIS_ORE) this.spawnXpOrbs(x + 0.5, y + 0.5, z + 0.5, 4);
     }
 
     // Recheck targeting
@@ -2026,6 +2060,26 @@ export class GameEngine {
     if (block === BLOCK.FURNACE) {
       if (this.isPointerLocked) document.exitPointerLock();
       this.callbacks.onOpenFurnace?.(`${x},${y},${z}`);
+      return;
+    }
+
+    // 5.5) Enchanting Table check: opens Enchanting modal
+    if (block === BLOCK.ENCHANTING_TABLE) {
+      if (this.isPointerLocked) document.exitPointerLock();
+      let bookshelfCount = 0;
+      for (let dx = -2; dx <= 2; dx++) {
+        for (let dz = -2; dz <= 2; dz++) {
+          for (let dy = -1; dy <= 1; dy++) {
+            if (dx === 0 && dz === 0) continue;
+            if (this.world.getBlock(x + dx, y + dy, z + dz) === BLOCK.BOOKSHELF) {
+              bookshelfCount++;
+            }
+          }
+        }
+      }
+      bookshelfCount = Math.min(15, bookshelfCount);
+      this.audio.spellBookOpen();
+      this.callbacks.onOpenEnchanting?.(bookshelfCount);
       return;
     }
 
@@ -2547,10 +2601,106 @@ export class GameEngine {
     }
   }
 
+  private updateEnchantingTables(dt: number, now: number) {
+    const px = Math.floor(this.player.pos.x);
+    const py = Math.floor(this.player.pos.y);
+    const pz = Math.floor(this.player.pos.z);
+    const radius = 7;
+
+    let nearestTable: { x: number; y: number; z: number; dist: number } | null = null;
+    for (let dx = -radius; dx <= radius; dx++) {
+      for (let dz = -radius; dz <= radius; dz++) {
+        for (let dy = -3; dy <= 3; dy++) {
+          const bx = px + dx;
+          const by = py + dy;
+          const bz = pz + dz;
+          if (by >= 0 && by < WORLD_HEIGHT && this.world.getBlock(bx, by, bz) === BLOCK.ENCHANTING_TABLE) {
+            const dist = Math.hypot(dx, dy, dz);
+            if (!nearestTable || dist < nearestTable.dist) {
+              nearestTable = { x: bx, y: by, z: bz, dist };
+            }
+          }
+        }
+      }
+    }
+
+    if (nearestTable) {
+      if (!this.spellbookMesh) {
+        this.spellbookMesh = this.createSpellbookMesh();
+        this.scene.add(this.spellbookMesh);
+      }
+      this.spellbookMesh.visible = true;
+      const bob = Math.sin(now * 0.003) * 0.035;
+      this.spellbookMesh.position.set(nearestTable.x + 0.5, nearestTable.y + 0.88 + bob, nearestTable.z + 0.5);
+
+      const angle = Math.atan2(this.player.pos.x - (nearestTable.x + 0.5), this.player.pos.z - (nearestTable.z + 0.5));
+      this.spellbookMesh.rotation.y = angle;
+
+      // Spawn drifting runic glyph particles
+      this.enchantGlyphTimer += dt;
+      if (this.enchantGlyphTimer >= 0.35) {
+        this.enchantGlyphTimer = 0;
+        const glyphColors = ["#40c4ff", "#80d8ff", "#a7ffeb", "#b388ff", "#ffd54f"];
+        const randCol = glyphColors[Math.floor(Math.random() * glyphColors.length)];
+        const rx = (Math.random() - 0.5) * 1.6;
+        const rz = (Math.random() - 0.5) * 1.6;
+        this.shards.push({
+          pos: new THREE.Vector3(nearestTable.x + 0.5 + rx, nearestTable.y + 0.8 + Math.random() * 0.4, nearestTable.z + 0.5 + rz),
+          vel: new THREE.Vector3(-rx * 0.6, 0.4 + Math.random() * 0.3, -rz * 0.6),
+          color: new THREE.Color(randCol),
+          life: 0,
+          maxLife: 0.9,
+          size: 0.1,
+        });
+      }
+    } else {
+      if (this.spellbookMesh) {
+        this.spellbookMesh.visible = false;
+      }
+    }
+  }
+
+  private createSpellbookMesh(): THREE.Group {
+    const bookGroup = new THREE.Group();
+    const coverMat = new THREE.MeshLambertMaterial({ color: 0x6e1022 });
+    const pageMat = new THREE.MeshLambertMaterial({ color: 0xfaf4e6 });
+    const goldMat = new THREE.MeshLambertMaterial({ color: 0xffd700 });
+
+    const leftWing = new THREE.Group();
+    const leftCover = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.02, 0.26), coverMat);
+    leftCover.position.set(-0.09, 0, 0);
+    leftWing.add(leftCover);
+
+    const leftPages = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.04, 0.24), pageMat);
+    leftPages.position.set(-0.08, 0.025, 0);
+    leftWing.add(leftPages);
+
+    leftWing.rotation.z = 0.38;
+    bookGroup.add(leftWing);
+
+    const rightWing = new THREE.Group();
+    const rightCover = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.02, 0.26), coverMat);
+    rightCover.position.set(0.09, 0, 0);
+    rightWing.add(rightCover);
+
+    const rightPages = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.04, 0.24), pageMat);
+    rightPages.position.set(0.08, 0.025, 0);
+    rightWing.add(rightPages);
+
+    rightWing.rotation.z = -0.38;
+    bookGroup.add(rightWing);
+
+    const spine = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.03, 0.27), goldMat);
+    spine.position.set(0, -0.015, 0);
+    bookGroup.add(spine);
+
+    return bookGroup;
+  }
+
   // --------------------------------------------------------------------------
   // INVENTORY & ITEM MANAGEMENT
   // --------------------------------------------------------------------------
-  getHeldItem(): { item: ItemId; count: number } | null {
+  getHeldItem(): { item: ItemId; count: number; enchantments?: Record<string, number> } | null {
     return this.player.hotbar[this.player.selectedSlot] ?? null;
   }
 
@@ -2948,9 +3098,16 @@ export class GameEngine {
   applyDamage(amount: number) {
     if (this.save.gameMode === "creative" || this.isDead) return;
 
-    // Apply Armor reduction (up to 80% reduction for 20 armor points)
+    // Apply Armor reduction (up to 80% reduction for 20 armor points) + Protection enchantment
     const armorPoints = this.getArmorPoints();
-    const reduction = armorPoints * 0.04;
+    let protBonus = 0;
+    if (this.save.player.armorEnchantments) {
+      for (const slotKey of ["head", "chest", "legs", "feet"] as const) {
+        const prot = this.save.player.armorEnchantments[slotKey]?.protection;
+        if (prot) protBonus += prot * 0.04;
+      }
+    }
+    const reduction = Math.min(0.88, armorPoints * 0.04 + protBonus);
     const finalAmount = Math.max(1, Math.round(amount * (1 - reduction)));
 
     this.player.health = Math.max(0, this.player.health - finalAmount);
@@ -2963,6 +3120,40 @@ export class GameEngine {
       if (this.isPointerLocked) document.exitPointerLock();
       this.callbacks.onDeath();
     }
+  }
+
+  enchantItem(
+    slotIndex: number,
+    enchantmentId: EnchantmentId,
+    level: number,
+    xpLevelCost: number,
+    lapisCost: number,
+  ): boolean {
+    if (this.player.level < xpLevelCost && this.save.gameMode !== "creative") {
+      this.callbacks.onNotification?.("Not enough XP levels to enchant!");
+      return false;
+    }
+    if (!this.hasItem("item_lapis", lapisCost) && this.save.gameMode !== "creative") {
+      this.callbacks.onNotification?.(`Requires ${lapisCost} Lapis Lazuli!`);
+      return false;
+    }
+
+    if (this.save.gameMode !== "creative") {
+      this.consumeItem("item_lapis", lapisCost);
+      this.player.level = Math.max(0, this.player.level - xpLevelCost);
+    }
+
+    const slot = this.player.hotbar[slotIndex];
+    if (slot) {
+      slot.enchantments = { ...(slot.enchantments || {}), [enchantmentId]: level };
+    }
+
+    this.audio.enchant();
+    const eyeY = this.player.pos.y + 1.2;
+    this.spawnBlockShards(this.player.pos.x, eyeY, this.player.pos.z, ["#aa33ff", "#40c4ff", "#ffd700", "#ffffff"], 24);
+    this.rebuildViewmodel();
+    this.saveCurrentWorld();
+    return true;
   }
 
   respawn() {
@@ -3166,6 +3357,7 @@ export class GameEngine {
       this.updateXpOrbs(dt);
       this.updateFurnaces(dt);
       this.updateCrops(dt);
+      this.updateEnchantingTables(dt, now);
 
       // 11) Procedural Ambient Music Update
       this.audio.updateAmbient(dt);
@@ -3419,6 +3611,11 @@ export class GameEngine {
       }
     }
     this.chunkMeshes.clear();
+
+    if (this.spellbookMesh) {
+      this.scene.remove(this.spellbookMesh);
+      this.spellbookMesh = null;
+    }
 
     this.renderer.dispose();
     if (this.renderer.domElement.parentElement) {
