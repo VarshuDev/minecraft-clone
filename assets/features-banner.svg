@@ -16,13 +16,17 @@
     <style>
       @keyframes heartBeat {
         0%, 100% { transform: scale(1); }
-        15% { transform: scale(1.22); }
+        15% { transform: scale(1.18); }
         30% { transform: scale(1); }
-        45% { transform: scale(1.18); }
+        45% { transform: scale(1.12); }
       }
-      @keyframes bubbleFloat {
+      @keyframes bubbleFloat1 {
+        0%, 100% { transform: translateY(0px); opacity: 0.85; }
+        50% { transform: translateY(-6px); opacity: 1; }
+      }
+      @keyframes bubbleFloat2 {
         0%, 100% { transform: translateY(0px); opacity: 0.8; }
-        50% { transform: translateY(-7px); opacity: 1; }
+        50% { transform: translateY(-8px); opacity: 1; }
       }
       @keyframes chunkScan {
         0%, 100% { stroke-dashoffset: 0; }
@@ -30,8 +34,8 @@
       }
       @keyframes toolStrike {
         0%, 100% { transform: rotate(0deg); }
-        35% { transform: rotate(-32deg); }
-        50% { transform: rotate(12deg); }
+        35% { transform: rotate(-28deg); }
+        50% { transform: rotate(14deg); }
       }
       @keyframes treeSway {
         0%, 100% { transform: skewX(0deg); }
@@ -42,11 +46,12 @@
         50% { opacity: 1; transform: translate(6px, -8px) scale(1.2); }
       }
 
-      .beat { transform-origin: center; animation: heartBeat 1.4s ease-in-out infinite; }
-      .bubble { animation: bubbleFloat 2.2s ease-in-out infinite; }
+      .beat { transform-origin: 18px 18px; animation: heartBeat 1.4s ease-in-out infinite; }
+      .bubble-1 { animation: bubbleFloat1 2.2s ease-in-out infinite; }
+      .bubble-2 { animation: bubbleFloat2 2.2s ease-in-out infinite 0.7s; }
       .chunk-line { stroke-dasharray: 6 3; animation: chunkScan 3s linear infinite; }
-      .tool-anim { transform-origin: 20px 30px; animation: toolStrike 1.8s ease-in-out infinite; }
-      .tree-anim { transform-origin: bottom center; animation: treeSway 3.2s ease-in-out infinite; }
+      .tool-anim { transform-origin: 20px 20px; animation: toolStrike 1.8s ease-in-out infinite; }
+      .tree-anim { transform-origin: 21px 46px; animation: treeSway 3.2s ease-in-out infinite; }
       .spark { animation: sparkFly 1.8s ease-in-out infinite; }
     </style>
   </defs>
@@ -91,12 +96,14 @@
       <polygon points="68,14 88,48 48,48" fill="#2b4740" />
       <polygon points="68,14 76,26 60,26" fill="#eaf6ff" />
       
-      <!-- Animated Oak Tree -->
-      <g class="tree-anim" transform="translate(18, 6)">
-        <rect x="18" y="24" width="6" height="22" fill="#70441e" />
-        <!-- Foliage Canopies -->
-        <rect x="4" y="8" width="34" height="18" rx="3" fill="#4ca82b" stroke="#2a6614" stroke-width="1" />
-        <rect x="8" y="2" width="26" height="14" rx="2" fill="#62c439" />
+      <!-- Animated Oak Tree (nested to protect translation) -->
+      <g transform="translate(18, 6)">
+        <g class="tree-anim">
+          <rect x="18" y="24" width="6" height="22" fill="#70441e" />
+          <!-- Foliage Canopies -->
+          <rect x="4" y="8" width="34" height="18" rx="3" fill="#4ca82b" stroke="#2a6614" stroke-width="1" />
+          <rect x="8" y="2" width="26" height="14" rx="2" fill="#62c439" />
+        </g>
       </g>
 
       <!-- Desert Cactus -->
@@ -120,22 +127,71 @@
     <rect width="204" height="168" rx="6" fill="url(#cardGrad)" stroke="#6e2b34" stroke-width="1.5" />
     <rect x="0" y="0" width="204" height="5" fill="#fa5252" rx="2" />
     
-    <!-- Animated Heart & Oxygen Bubbles -->
-    <g transform="translate(56, 20)">
-      <!-- Animated Heart -->
-      <g class="beat" transform="translate(24, 20)">
-        <path d="M 0,-8 C -6,-16 -18,-10 -18,0 C -18,12 0,22 0,22 C 0,22 18,12 18,0 C 18,-10 6,-16 0,-8 Z"
-              fill="#e03131" stroke="#8f1111" stroke-width="1.5" filter="url(#cardGlow)" />
-        <circle cx="-6" cy="-4" r="3.5" fill="#ff8787" />
+    <!-- Authentic Pixel-Art Minecraft Heart & Oxygen Bubbles (Cleanly Separated) -->
+    <g transform="translate(24, 20)">
+      <!-- Authentic Minecraft 9x9 Pixel Heart (Nested static translation + inner pulse) -->
+      <g transform="translate(22, 14)">
+        <g class="beat" shape-rendering="crispEdges">
+          <!-- Black Outline (4px pixel scale) -->
+          <rect x="4" y="0" width="8" height="4" fill="#180404" />
+          <rect x="20" y="0" width="8" height="4" fill="#180404" />
+          <rect x="0" y="4" width="4" height="16" fill="#180404" />
+          <rect x="12" y="4" width="8" height="4" fill="#180404" />
+          <rect x="28" y="4" width="4" height="16" fill="#180404" />
+          <rect x="4" y="20" width="4" height="4" fill="#180404" />
+          <rect x="24" y="20" width="4" height="4" fill="#180404" />
+          <rect x="8" y="24" width="4" height="4" fill="#180404" />
+          <rect x="20" y="24" width="4" height="4" fill="#180404" />
+          <rect x="12" y="28" width="8" height="4" fill="#180404" />
+          <rect x="14" y="32" width="4" height="4" fill="#180404" />
+
+          <!-- Heart Red Body -->
+          <rect x="4" y="4" width="8" height="16" fill="#e01010" />
+          <rect x="12" y="8" width="8" height="20" fill="#e01010" />
+          <rect x="20" y="4" width="8" height="16" fill="#e01010" />
+          <rect x="8" y="20" width="16" height="4" fill="#e01010" />
+
+          <!-- Dark Red Shading (Bottom & Right) -->
+          <rect x="24" y="8" width="4" height="12" fill="#990808" />
+          <rect x="20" y="20" width="4" height="4" fill="#990808" />
+          <rect x="16" y="24" width="4" height="4" fill="#990808" />
+
+          <!-- White Glint Reflection Pixel (Iconic Minecraft Specular) -->
+          <rect x="8" y="8" width="4" height="4" fill="#ffffff" />
+        </g>
       </g>
 
-      <!-- Animated Bubbles -->
-      <g class="bubble" transform="translate(68, 12)">
-        <circle cx="0" cy="14" r="7" fill="#1c7ed6" stroke="#0e4f8a" stroke-width="1.2" />
-        <circle cx="-2" cy="12" r="2" fill="#a5d8ff" />
+      <!-- Authentic Minecraft Oxygen Bubbles (Safely separated on right at X=88 & X=118) -->
+      <!-- Bubble 1: Main Bubble -->
+      <g transform="translate(86, 20)">
+        <g class="bubble-1" shape-rendering="crispEdges">
+          <!-- Dark blue rim -->
+          <rect x="4" y="0" width="12" height="4" fill="#091b33" />
+          <rect x="4" y="16" width="12" height="4" fill="#091b33" />
+          <rect x="0" y="4" width="4" height="12" fill="#091b33" />
+          <rect x="16" y="4" width="4" height="12" fill="#091b33" />
+          <!-- Blue Body -->
+          <rect x="4" y="4" width="12" height="12" fill="#1971c2" />
+          <rect x="4" y="4" width="8" height="8" fill="#339af0" />
+          <!-- White Bubble Glint -->
+          <rect x="4" y="4" width="4" height="4" fill="#ffffff" />
+          <rect x="6" y="12" width="6" height="3" fill="#0d4d8c" />
+        </g>
       </g>
-      <g class="bubble" transform="translate(74, 30)" style="animation-delay: -1.1s;">
-        <circle cx="0" cy="0" r="4.5" fill="#228be6" stroke="#0e4f8a" stroke-width="1" />
+
+      <!-- Bubble 2: Small Floating Bubble -->
+      <g transform="translate(118, 12)">
+        <g class="bubble-2" shape-rendering="crispEdges">
+          <!-- Dark rim -->
+          <rect x="3" y="0" width="8" height="3" fill="#091b33" />
+          <rect x="3" y="11" width="8" height="3" fill="#091b33" />
+          <rect x="0" y="3" width="3" height="8" fill="#091b33" />
+          <rect x="11" y="3" width="3" height="8" fill="#091b33" />
+          <!-- Light Blue Body -->
+          <rect x="3" y="3" width="8" height="8" fill="#228be6" />
+          <!-- Glint -->
+          <rect x="3" y="3" width="3" height="3" fill="#ffffff" />
+        </g>
       </g>
     </g>
 
@@ -157,10 +213,12 @@
       <polygon points="42,26 50,18 72,18 64,26" fill="#696f7a" />
       <polygon points="64,26 72,18 72,40 64,48" fill="#3b3e45" />
 
-      <!-- Striking Pickaxe -->
-      <g class="tool-anim" transform="translate(18, 8)">
-        <rect x="18" y="6" width="4" height="34" rx="1" fill="#875323" stroke="#4a2a0d" stroke-width="1" transform="rotate(-35 20 20)" />
-        <path d="M 6 12 C 14 4, 28 4, 36 12 L 32 16 C 26 12, 16 12, 10 16 Z" fill="#38d9a9" stroke="#12785c" stroke-width="1.2" />
+      <!-- Striking Pickaxe (nested to protect translation) -->
+      <g transform="translate(18, 8)">
+        <g class="tool-anim">
+          <rect x="18" y="6" width="4" height="34" rx="1" fill="#875323" stroke="#4a2a0d" stroke-width="1" transform="rotate(-35 20 20)" />
+          <path d="M 6 12 C 14 4, 28 4, 36 12 L 32 16 C 26 12, 16 12, 10 16 Z" fill="#38d9a9" stroke="#12785c" stroke-width="1.2" />
+        </g>
       </g>
 
       <!-- Flying Sparks -->

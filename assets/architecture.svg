@@ -24,13 +24,33 @@
         0% { stroke-dashoffset: 40; }
         100% { stroke-dashoffset: 0; }
       }
-      @keyframes pulseNode {
-        0%, 100% { transform: scale(1); }
-        50% { transform: scale(1.02); }
+      @keyframes glowNode1 {
+        0%, 100% { stroke: #334e7a; }
+        50% { stroke: #4dabf7; }
+      }
+      @keyframes glowNode2 {
+        0%, 100% { stroke: #2b6e4e; }
+        50% { stroke: #51cf66; }
+      }
+      @keyframes glowNode3 {
+        0%, 100% { stroke: #7a692b; }
+        50% { stroke: #fcc419; }
+      }
+      @keyframes glowNode4 {
+        0%, 100% { stroke: #7a472b; }
+        50% { stroke: #ff922b; }
+      }
+      @keyframes glowNode5 {
+        0%, 100% { stroke: #752b7a; }
+        50% { stroke: #cc5de8; }
       }
 
       .flow-line { stroke-dasharray: 8 6; animation: flowSignal 1.2s linear infinite; }
-      .p-node { transform-origin: center; animation: pulseNode 3s ease-in-out infinite; }
+      .glow-1 { animation: glowNode1 3s ease-in-out infinite; }
+      .glow-2 { animation: glowNode2 3s ease-in-out infinite 0.6s; }
+      .glow-3 { animation: glowNode3 3s ease-in-out infinite 1.2s; }
+      .glow-4 { animation: glowNode4 3s ease-in-out infinite 1.8s; }
+      .glow-5 { animation: glowNode5 3s ease-in-out infinite 2.4s; }
       .code-font { font-family: 'Courier New', monospace; font-weight: bold; }
     </style>
   </defs>
@@ -48,8 +68,8 @@
   <line x1="670" y1="105" x2="700" y2="105" stroke="#ff922b" stroke-width="2.5" class="flow-line" />
 
   <!-- Node 1: Procedural Noise Generator -->
-  <g class="p-node" transform="translate(20, 48)">
-    <rect width="140" height="114" rx="5" fill="url(#blockGrad)" stroke="#334e7a" stroke-width="1.5" />
+  <g transform="translate(20, 48)">
+    <rect width="140" height="114" rx="5" fill="url(#blockGrad)" stroke="#334e7a" stroke-width="1.5" class="glow-1" />
     <rect x="0" y="0" width="140" height="4" fill="#339af0" rx="1" />
     <text x="70" y="26" class="code-font" font-size="10.5" fill="#a5d8ff" text-anchor="middle">NOISE GEN</text>
     <text x="70" y="44" class="code-font" font-size="8.5" fill="#74c0fc" text-anchor="middle">noise.ts</text>
@@ -60,8 +80,8 @@
   </g>
 
   <!-- Node 2: Infinite Chunk World -->
-  <g class="p-node" transform="translate(190, 48)" style="animation-delay: -0.6s;">
-    <rect width="140" height="114" rx="5" fill="url(#blockGrad)" stroke="#2b6e4e" stroke-width="1.5" />
+  <g transform="translate(190, 48)">
+    <rect width="140" height="114" rx="5" fill="url(#blockGrad)" stroke="#2b6e4e" stroke-width="1.5" class="glow-2" />
     <rect x="0" y="0" width="140" height="4" fill="#51cf66" rx="1" />
     <text x="70" y="26" class="code-font" font-size="10.5" fill="#b2f2bb" text-anchor="middle">INFINITE WORLD</text>
     <text x="70" y="44" class="code-font" font-size="8.5" fill="#8ce99a" text-anchor="middle">world.ts</text>
@@ -72,8 +92,8 @@
   </g>
 
   <!-- Node 3: Face-Culled Mesher -->
-  <g class="p-node" transform="translate(360, 48)" style="animation-delay: -1.2s;">
-    <rect width="140" height="114" rx="5" fill="url(#blockGrad)" stroke="#7a692b" stroke-width="1.5" />
+  <g transform="translate(360, 48)">
+    <rect width="140" height="114" rx="5" fill="url(#blockGrad)" stroke="#7a692b" stroke-width="1.5" class="glow-3" />
     <rect x="0" y="0" width="140" height="4" fill="#fcc419" rx="1" />
     <text x="70" y="26" class="code-font" font-size="10.5" fill="#ffec99" text-anchor="middle">VOXEL MESHER</text>
     <text x="70" y="44" class="code-font" font-size="8.5" fill="#ffe066" text-anchor="middle">mesher.ts &amp; tex.ts</text>
@@ -84,8 +104,8 @@
   </g>
 
   <!-- Node 4: Three.js Render & Physics -->
-  <g class="p-node" transform="translate(530, 48)" style="animation-delay: -1.8s;">
-    <rect width="140" height="114" rx="5" fill="url(#blockGrad)" stroke="#7a472b" stroke-width="1.5" />
+  <g transform="translate(530, 48)">
+    <rect width="140" height="114" rx="5" fill="url(#blockGrad)" stroke="#7a472b" stroke-width="1.5" class="glow-4" />
     <rect x="0" y="0" width="140" height="4" fill="#ff922b" rx="1" />
     <text x="70" y="26" class="code-font" font-size="10.5" fill="#ffd8a8" text-anchor="middle">RENDER &amp; PHYS</text>
     <text x="70" y="44" class="code-font" font-size="8.5" fill="#ffc078" text-anchor="middle">engine.ts</text>
@@ -96,8 +116,8 @@
   </g>
 
   <!-- Node 5: UI & WebAudio -->
-  <g class="p-node" transform="translate(700, 48)" style="animation-delay: -2.4s;">
-    <rect width="180" height="114" rx="5" fill="url(#blockGrad)" stroke="#752b7a" stroke-width="1.5" />
+  <g transform="translate(700, 48)">
+    <rect width="180" height="114" rx="5" fill="url(#blockGrad)" stroke="#752b7a" stroke-width="1.5" class="glow-5" />
     <rect x="0" y="0" width="180" height="4" fill="#cc5de8" rx="1" />
     <text x="90" y="26" class="code-font" font-size="10.5" fill="#f3d9fa" text-anchor="middle">HUD &amp; WEBAUDIO</text>
     <text x="90" y="44" class="code-font" font-size="8.5" fill="#e599f7" text-anchor="middle">Hud.tsx &amp; audio.ts</text>

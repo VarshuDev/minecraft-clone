@@ -122,86 +122,96 @@
   </g>
 
   <!-- Left: Animated Isometric Grass Block & Torch -->
-  <g class="cube-float" transform="translate(65, 125)">
-    <!-- 3D Isometric Grass Voxel -->
-    <g shape-rendering="crispEdges">
-      <!-- Top Face (Green Grass) -->
-      <polygon points="50,0 100,25 50,50 0,25" fill="#6bbe30" stroke="#3b7218" stroke-width="1.5" />
-      <polygon points="50,6 88,25 50,44 12,25" fill="#7ed438" />
-      <rect x="42" y="16" width="6" height="5" fill="#589e24" />
-      <rect x="58" y="24" width="5" height="4" fill="#8ee844" />
-      <rect x="30" y="28" width="7" height="4" fill="#589e24" />
+  <g transform="translate(65, 125)">
+    <g class="cube-float">
+      <!-- 3D Isometric Grass Voxel -->
+      <g shape-rendering="crispEdges">
+        <!-- Top Face (Green Grass) -->
+        <polygon points="50,0 100,25 50,50 0,25" fill="#6bbe30" stroke="#3b7218" stroke-width="1.5" />
+        <polygon points="50,6 88,25 50,44 12,25" fill="#7ed438" />
+        <rect x="42" y="16" width="6" height="5" fill="#589e24" />
+        <rect x="58" y="24" width="5" height="4" fill="#8ee844" />
+        <rect x="30" y="28" width="7" height="4" fill="#589e24" />
 
-      <!-- Left Face (Dirt with hanging grass fringe) -->
-      <polygon points="0,25 50,50 50,110 0,85" fill="#865c3a" stroke="#482e18" stroke-width="1.5" />
-      <polygon points="0,25 50,50 50,68 40,62 34,70 24,60 16,68 8,60 0,66" fill="#5b9b26" />
-      <!-- Dirt noise bits -->
-      <rect x="12" y="74" width="6" height="6" fill="#6c482b" />
-      <rect x="28" y="86" width="8" height="6" fill="#9b6e47" />
-      <rect x="36" y="72" width="7" height="6" fill="#5c3c22" />
+        <!-- Left Face (Dirt with hanging grass fringe) -->
+        <polygon points="0,25 50,50 50,110 0,85" fill="#865c3a" stroke="#482e18" stroke-width="1.5" />
+        <polygon points="0,25 50,50 50,68 40,62 34,70 24,60 16,68 8,60 0,66" fill="#5b9b26" />
+        <!-- Dirt noise bits -->
+        <rect x="12" y="74" width="6" height="6" fill="#6c482b" />
+        <rect x="28" y="86" width="8" height="6" fill="#9b6e47" />
+        <rect x="36" y="72" width="7" height="6" fill="#5c3c22" />
 
-      <!-- Right Face (Darker Shaded Dirt) -->
-      <polygon points="50,50 100,25 100,85 50,110" fill="#6c482c" stroke="#482e18" stroke-width="1.5" />
-      <polygon points="50,50 100,25 100,42 92,48 84,40 76,50 68,44 60,52 50,46" fill="#4a801e" />
-      <!-- Right face dirt bits -->
-      <rect x="62" y="72" width="6" height="5" fill="#55361e" />
-      <rect x="78" y="80" width="7" height="6" fill="#805634" />
-    </g>
+        <!-- Right Face (Darker Shaded Dirt) -->
+        <polygon points="50,50 100,25 100,85 50,110" fill="#6c482c" stroke="#482e18" stroke-width="1.5" />
+        <polygon points="50,50 100,25 100,42 92,48 84,40 76,50 68,44 60,52 50,46" fill="#4a801e" />
+        <!-- Right face dirt bits -->
+        <rect x="62" y="72" width="6" height="5" fill="#55361e" />
+        <rect x="78" y="80" width="7" height="6" fill="#805634" />
+      </g>
 
-    <!-- Animated Torch on top -->
-    <g transform="translate(46, -34)">
-      <!-- Wood stick -->
-      <rect x="2" y="14" width="5" height="22" fill="#7c4e25" stroke="#472b11" stroke-width="1" />
-      <!-- Coal tip -->
-      <rect x="1" y="8" width="7" height="6" fill="#2d2925" />
-      <!-- Animated Flame -->
-      <g class="flame">
-        <polygon points="4.5,0 9,7 7,12 2,12 0,7" fill="#ffb43a" filter="url(#glow)" />
-        <polygon points="4.5,2 7,8 5.5,10 3.5,10 2,8" fill="#fff494" />
+      <!-- Animated Torch on top -->
+      <g transform="translate(46, -34)">
+        <!-- Wood stick -->
+        <rect x="2" y="14" width="5" height="22" fill="#7c4e25" stroke="#472b11" stroke-width="1" />
+        <!-- Coal tip -->
+        <rect x="1" y="8" width="7" height="6" fill="#2d2925" />
+        <!-- Animated Flame -->
+        <g class="flame">
+          <polygon points="4.5,0 9,7 7,12 2,12 0,7" fill="#ffb43a" filter="url(#glow)" />
+          <polygon points="4.5,2 7,8 5.5,10 3.5,10 2,8" fill="#fff494" />
+        </g>
       </g>
     </g>
   </g>
 
   <!-- Right: Animated Diamond Ore Block & Pickaxe -->
-  <g class="cube-float" transform="translate(735, 125)" style="animation-delay: -2.1s;">
-    <!-- 3D Isometric Diamond Ore Voxel -->
-    <g shape-rendering="crispEdges">
-      <!-- Top Face (Stone + Cyan Gems) -->
-      <polygon points="50,0 100,25 50,50 0,25" fill="#888e99" stroke="#50545c" stroke-width="1.5" />
-      <rect x="35" y="16" width="9" height="7" fill="url(#diamondSheen)" />
-      <rect x="60" y="26" width="8" height="6" fill="url(#diamondSheen)" />
+  <g transform="translate(735, 125)">
+    <g class="cube-float" style="animation-delay: -2.1s;">
+      <!-- 3D Isometric Diamond Ore Voxel -->
+      <g shape-rendering="crispEdges">
+        <!-- Top Face (Stone + Cyan Gems) -->
+        <polygon points="50,0 100,25 50,50 0,25" fill="#888e99" stroke="#50545c" stroke-width="1.5" />
+        <rect x="35" y="16" width="9" height="7" fill="url(#diamondSheen)" />
+        <rect x="60" y="26" width="8" height="6" fill="url(#diamondSheen)" />
 
-      <!-- Left Face (Stone + Diamond Vein) -->
-      <polygon points="0,25 50,50 50,110 0,85" fill="#737984" stroke="#454952" stroke-width="1.5" />
-      <!-- Glowing Diamond clusters -->
-      <polygon points="18,52 28,48 32,58 22,64" fill="url(#diamondSheen)" filter="url(#glow)" />
-      <polygon points="26,76 38,72 42,84 30,90" fill="url(#diamondSheen)" filter="url(#glow)" />
-      <rect x="10" y="70" width="6" height="5" fill="#2ebec4" />
+        <!-- Left Face (Stone + Diamond Vein) -->
+        <polygon points="0,25 50,50 50,110 0,85" fill="#737984" stroke="#454952" stroke-width="1.5" />
+        <!-- Glowing Diamond clusters -->
+        <polygon points="18,52 28,48 32,58 22,64" fill="url(#diamondSheen)" filter="url(#glow)" />
+        <polygon points="26,76 38,72 42,84 30,90" fill="url(#diamondSheen)" filter="url(#glow)" />
+        <rect x="10" y="70" width="6" height="5" fill="#2ebec4" />
 
-      <!-- Right Face (Darker Stone + Diamond) -->
-      <polygon points="50,50 100,25 100,85 50,110" fill="#5d626c" stroke="#3b3e45" stroke-width="1.5" />
-      <polygon points="65,48 78,42 84,54 72,60" fill="url(#diamondSheen)" filter="url(#glow)" />
-      <polygon points="60,78 72,74 76,86 64,90" fill="url(#diamondSheen)" filter="url(#glow)" />
-    </g>
+        <!-- Right Face (Darker Stone + Diamond) -->
+        <polygon points="50,50 100,25 100,85 50,110" fill="#5d626c" stroke="#3b3e45" stroke-width="1.5" />
+        <polygon points="65,48 78,42 84,54 72,60" fill="url(#diamondSheen)" filter="url(#glow)" />
+        <polygon points="60,78 72,74 76,86 64,90" fill="url(#diamondSheen)" filter="url(#glow)" />
+      </g>
 
-    <!-- Animated Diamond Glint Sparkles -->
-    <g class="glint" transform="translate(25, 54)">
-      <polygon points="0,-6 2,-2 6,0 2,2 0,6 -2,2 -6,0 -2,-2" fill="#ffffff" filter="url(#glow)" />
-    </g>
-    <g class="glint" transform="translate(75, 48)" style="animation-delay: 0.9s;">
-      <polygon points="0,-5 2,-1 5,0 2,1 0,5 -2,1 -5,0 -2,-1" fill="#c4ffff" filter="url(#glow)" />
+      <!-- Animated Diamond Glint Sparkles -->
+      <g transform="translate(25, 54)">
+        <g class="glint">
+          <polygon points="0,-6 2,-2 6,0 2,2 0,6 -2,2 -6,0 -2,-2" fill="#ffffff" filter="url(#glow)" />
+        </g>
+      </g>
+      <g transform="translate(75, 48)">
+        <g class="glint" style="animation-delay: 0.9s;">
+          <polygon points="0,-5 2,-1 5,0 2,1 0,5 -2,1 -5,0 -2,-1" fill="#c4ffff" filter="url(#glow)" />
+        </g>
+      </g>
     </g>
   </g>
 
   <!-- Animated Diamond Pickaxe swinging on Right Header -->
-  <g class="pick-float" transform="translate(680, 20)">
-    <!-- Wooden handle -->
-    <rect x="42" y="14" width="6" height="56" rx="1" fill="#8a5323" stroke="#48270b" stroke-width="1.2" transform="rotate(-45 45 42)" />
-    <!-- Pickaxe Crosshead -->
-    <path d="M 12 18 C 28 8, 54 8, 70 18 L 62 26 C 50 19, 32 19, 20 26 Z" fill="#32c7cf" stroke="#106f75" stroke-width="1.5" filter="url(#glow)" />
-    <polygon points="12,18 20,26 8,28" fill="#58f0f8" />
-    <polygon points="70,18 62,26 74,28" fill="#1b858c" />
-    <rect x="38" y="18" width="6" height="6" fill="#8a5323" />
+  <g transform="translate(680, 20)">
+    <g class="pick-float">
+      <!-- Wooden handle -->
+      <rect x="42" y="14" width="6" height="56" rx="1" fill="#8a5323" stroke="#48270b" stroke-width="1.2" transform="rotate(-45 45 42)" />
+      <!-- Pickaxe Crosshead -->
+      <path d="M 12 18 C 28 8, 54 8, 70 18 L 62 26 C 50 19, 32 19, 20 26 Z" fill="#32c7cf" stroke="#106f75" stroke-width="1.5" filter="url(#glow)" />
+      <polygon points="12,18 20,26 8,28" fill="#58f0f8" />
+      <polygon points="70,18 62,26 74,28" fill="#1b858c" />
+      <rect x="38" y="18" width="6" height="6" fill="#8a5323" />
+    </g>
   </g>
 
   <!-- Center: Epic Minecraft Typography -->
