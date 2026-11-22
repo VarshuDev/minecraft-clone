@@ -22,7 +22,7 @@ import {
   WORLD_HEIGHT,
 } from "./world";
 import { GameAudio } from "./audio";
-import { MobManager } from "./mobs";
+import { MobManager, type MobEntity } from "./mobs";
 import { PlayerCharacterModel } from "./playerModel";
 import {
   loadSettings,
@@ -89,6 +89,7 @@ export interface EngineCallbacks {
   onOpenChest?: (chestPosKey: string) => void;
   onOpenFurnace?: (furnacePosKey: string) => void;
   onOpenEnchanting?: (bookshelfCount: number) => void;
+  onOpenTrading?: (villager: MobEntity) => void;
   onOpenChat?: (initialText?: string) => void;
   onChatMessage?: (msg: { id: string; text: string; type: "chat" | "system" | "command" | "error" }) => void;
   onNotification?: (msg: string) => void;
@@ -134,6 +135,7 @@ export class GameEngine {
   settings: GameSettings;
   chunkMeshes = new Map<string, ChunkMeshRecord>();
   dirtyChunks = new Set<string>();
+  spawnedVillages = new Set<string>();
 
   // Lighting & Sky
   sunLight: THREE.DirectionalLight;
@@ -987,6 +989,15 @@ export class GameEngine {
           this.world.ensureChunk(cx, cz);
           this.buildAndAttachChunkMesh(cx, cz);
           this.dirtyChunks.delete(key);
+
+          // Village Villager Natural Spawning
+          if (this.world.isVillageChunk(cx, cz) && !this.spawnedVillages.has(key)) {
+            this.spawnedVillages.add(key);
+            const villagerSpawns = this.world.getVillageVillagerSpawns(cx, cz);
+            for (const sp of villagerSpawns) {
+              this.mobManager.spawnMob("villager", sp.x, sp.y, sp.z, sp.profession);
+            }
+          }
         }
       }
     }
@@ -1327,6 +1338,7 @@ export class GameEngine {
           "/clear - Clear inventory",
           "/xp <add|set> <amount> - Modify player XP or level",
           "/dimension <overworld|nether> - Travel between dimensions",
+          "/spawn villager [profession] - Spawn an NPC villager for trading",
         ];
         helpLines.forEach((line) => {
           this.callbacks.onChatMessage?.({
@@ -1351,6 +1363,30 @@ export class GameEngine {
           return { success: true, message: msg };
         }
         const err = "Usage: /dimension <overworld|nether>";
+        this.callbacks.onChatMessage?.({
+          id: `msg_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+          text: err,
+          type: "error",
+        });
+        return { success: false, message: err };
+      }
+
+      case "spawn": {
+        const entity = args[0]?.toLowerCase();
+        if (entity === "villager") {
+          const prof = (args[1]?.toLowerCase() || "farmer") as any;
+          const px = this.player.pos.x - Math.sin(this.player.yaw) * 2.5;
+          const pz = this.player.pos.z - Math.cos(this.player.yaw) * 2.5;
+          this.mobManager.spawnMob("villager", px, this.player.pos.y, pz, prof);
+          const msg = `Spawned Villager (${prof}) at ${px.toFixed(1)}, ${this.player.pos.y.toFixed(1)}, ${pz.toFixed(1)}`;
+          this.callbacks.onChatMessage?.({
+            id: `msg_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+            text: msg,
+            type: "command",
+          });
+          return { success: true, message: msg };
+        }
+        const err = "Usage: /spawn villager [farmer|weaponsmith|librarian|cleric]";
         this.callbacks.onChatMessage?.({
           id: `msg_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
           text: err,
@@ -2036,6 +2072,19 @@ export class GameEngine {
         this.swingAnim = 0.45;
         return;
       }
+    }
+
+    // 2.7) Mob interaction (Villager Trading)
+    const rayDir = new THREE.Vector3(0, 0, -1).applyQuaternion(this.camera.quaternion).normalize();
+    const origin = this.camera.position.clone();
+    const clickedVillager = this.mobManager.interactRaycast(origin, rayDir);
+    if (clickedVillager) {
+      if (this.isPointerLocked) document.exitPointerLock();
+      this.audio.villagerHrmm();
+      const toPlayer = this.player.pos.clone().sub(clickedVillager.pos);
+      clickedVillager.yaw = Math.atan2(toPlayer.x, toPlayer.z);
+      this.callbacks.onOpenTrading?.(clickedVillager);
+      return;
     }
 
     if (!this.targetBlock) return;
@@ -2782,6 +2831,73 @@ export class GameEngine {
       }
     }
     this.rebuildViewmodel();
+  }
+
+  addItemWithEnchantments(item: ItemId, count = 1, enchantments?: Record<string, number>) {
+    if (!enchantments || Object.keys(enchantments).length === 0) {
+      this.addItem(item, count);
+      return;
+    }
+    for (let i = 0; i < 9; i++) {
+      if (!this.player.hotbar[i]) {
+        this.player.hotbar[i] = { item, count: 1, enchantments };
+        this.rebuildViewmodel();
+        return;
+      }
+    }
+    this.player.inventory[item] = (this.player.inventory[item] || 0) + 1;
+    this.rebuildViewmodel();
+  }
+
+  executeTrade(villagerId: string, tradeIndex: number): boolean {
+    const villager = this.mobManager.mobs.find((m) => m.id === villagerId);
+    if (!villager || !villager.trades || !villager.trades[tradeIndex]) return false;
+
+    const trade = villager.trades[tradeIndex];
+    if (trade.uses >= trade.maxUses) {
+      this.audio.villagerNo();
+      this.callbacks.onNotification?.("This trade is locked (max uses reached)!");
+      return false;
+    }
+
+    if (!this.hasItem(trade.in1.item, trade.in1.count)) {
+      this.audio.villagerNo();
+      this.callbacks.onNotification?.(`Missing ${ITEMS[trade.in1.item]?.name || trade.in1.item}!`);
+      return false;
+    }
+    if (trade.in2 && !this.hasItem(trade.in2.item, trade.in2.count)) {
+      this.audio.villagerNo();
+      this.callbacks.onNotification?.(`Missing ${ITEMS[trade.in2.item]?.name || trade.in2.item}!`);
+      return false;
+    }
+
+    this.consumeItem(trade.in1.item, trade.in1.count);
+    if (trade.in2) this.consumeItem(trade.in2.item, trade.in2.count);
+
+    this.addItemWithEnchantments(trade.out.item, trade.out.count, trade.out.enchantments);
+    trade.uses++;
+
+    this.audio.villagerTrade();
+    this.audio.villagerYes();
+    this.addXp(trade.xpReward);
+
+    // Green emerald particles around villager
+    const pos = villager.pos.clone().add(new THREE.Vector3(0, 1.2, 0));
+    for (let i = 0; i < 18; i++) {
+      const angle = (i / 18) * Math.PI * 2;
+      const speed = 0.8 + Math.random() * 0.8;
+      this.shards.push({
+        pos: pos.clone().add(new THREE.Vector3((Math.random() - 0.5) * 0.4, (Math.random() - 0.5) * 0.6, (Math.random() - 0.5) * 0.4)),
+        vel: new THREE.Vector3(Math.cos(angle) * speed, 1.2 + Math.random() * 0.8, Math.sin(angle) * speed),
+        color: new THREE.Color(Math.random() > 0.4 ? 0x10b981 : 0x34d399),
+        life: 0.9,
+        maxLife: 0.9,
+        size: 0.08,
+      });
+    }
+
+    this.callbacks.onNotification?.(`Traded for ${trade.out.count}x ${ITEMS[trade.out.item]?.name || trade.out.item}!`);
+    return true;
   }
 
   // --------------------------------------------------------------------------

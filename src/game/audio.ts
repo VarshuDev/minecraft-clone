@@ -537,4 +537,131 @@ export class GameAudio {
     shimmer.start(t0);
     shimmer.stop(t0 + 0.9);
   }
+
+  villagerHrmm(pitch = 1.0) {
+    if (!this.ctx || !this.master || this.muted) return;
+    const ctx = this.ctx;
+    const master = this.master;
+    const t0 = ctx.currentTime;
+
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    const filter = ctx.createBiquadFilter();
+
+    osc.type = "sawtooth";
+    const startFreq = 165 * pitch;
+    const endFreq = 125 * pitch;
+    osc.frequency.setValueAtTime(startFreq, t0);
+    osc.frequency.exponentialRampToValueAtTime(endFreq, t0 + 0.38);
+
+    filter.type = "bandpass";
+    filter.frequency.setValueAtTime(720 * pitch, t0);
+    filter.Q.setValueAtTime(4.2, t0);
+
+    gain.gain.setValueAtTime(0.0001, t0);
+    gain.gain.exponentialRampToValueAtTime(0.18, t0 + 0.04);
+    gain.gain.exponentialRampToValueAtTime(0.12, t0 + 0.28);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.42);
+
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(master);
+
+    osc.start(t0);
+    osc.stop(t0 + 0.45);
+  }
+
+  villagerYes() {
+    if (!this.ctx || !this.master || this.muted) return;
+    const ctx = this.ctx;
+    const master = this.master;
+    const t0 = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    const filter = ctx.createBiquadFilter();
+
+    osc.type = "sawtooth";
+    osc.frequency.setValueAtTime(160, t0);
+    osc.frequency.exponentialRampToValueAtTime(230, t0 + 0.24);
+
+    filter.type = "bandpass";
+    filter.frequency.setValueAtTime(840, t0);
+    filter.Q.setValueAtTime(3.8, t0);
+
+    gain.gain.setValueAtTime(0.0001, t0);
+    gain.gain.exponentialRampToValueAtTime(0.16, t0 + 0.03);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.26);
+
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(master);
+    osc.start(t0);
+    osc.stop(t0 + 0.28);
+  }
+
+  villagerNo() {
+    if (!this.ctx || !this.master || this.muted) return;
+    const ctx = this.ctx;
+    const master = this.master;
+    const t0 = ctx.currentTime;
+    [0, 0.14].forEach((delay, idx) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const filter = ctx.createBiquadFilter();
+
+      osc.type = "sawtooth";
+      osc.frequency.setValueAtTime(idx === 0 ? 140 : 120, t0 + delay);
+      osc.frequency.exponentialRampToValueAtTime(idx === 0 ? 125 : 105, t0 + delay + 0.11);
+
+      filter.type = "bandpass";
+      filter.frequency.setValueAtTime(620, t0 + delay);
+      filter.Q.setValueAtTime(3.5, t0 + delay);
+
+      gain.gain.setValueAtTime(0.0001, t0 + delay);
+      gain.gain.exponentialRampToValueAtTime(0.15, t0 + delay + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t0 + delay + 0.12);
+
+      osc.connect(filter);
+      filter.connect(gain);
+      gain.connect(master);
+      osc.start(t0 + delay);
+      osc.stop(t0 + delay + 0.14);
+    });
+  }
+
+  villagerTrade() {
+    if (!this.ctx || !this.master || this.muted) return;
+    const ctx = this.ctx;
+    const master = this.master;
+    const t0 = ctx.currentTime;
+    const notes = [783.99, 987.77, 1174.66, 1567.98];
+    notes.forEach((f, idx) => {
+      const t = t0 + idx * 0.05;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(f, t);
+
+      gain.gain.setValueAtTime(0.0001, t);
+      gain.gain.exponentialRampToValueAtTime(0.12, t + 0.015);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.4);
+
+      osc.connect(gain);
+      gain.connect(master);
+      osc.start(t);
+      osc.stop(t + 0.42);
+    });
+
+    const sparkle = ctx.createOscillator();
+    const sGain = ctx.createGain();
+    sparkle.type = "triangle";
+    sparkle.frequency.setValueAtTime(2349.32, t0 + 0.2);
+    sGain.gain.setValueAtTime(0.0001, t0 + 0.2);
+    sGain.gain.exponentialRampToValueAtTime(0.09, t0 + 0.22);
+    sGain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.65);
+    sparkle.connect(sGain);
+    sGain.connect(master);
+    sparkle.start(t0 + 0.2);
+    sparkle.stop(t0 + 0.68);
+  }
 }

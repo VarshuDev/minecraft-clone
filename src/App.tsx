@@ -19,6 +19,8 @@ import { CraftingModal } from "@/components/CraftingModal";
 import { ChestModal } from "@/components/ChestModal";
 import { FurnaceModal } from "@/components/FurnaceModal";
 import { EnchantingModal } from "@/components/EnchantingModal";
+import { TradingModal } from "@/components/TradingModal";
+import { type MobEntity } from "@/game/mobs";
 import { DeathScreen, PauseScreen } from "@/components/Overlays";
 import { TouchControls } from "@/components/TouchControls";
 import { ChatOverlay, type ChatMessage } from "@/components/ChatOverlay";
@@ -82,6 +84,7 @@ export default function App() {
   const [furnacePosKey, setFurnacePosKey] = useState<string | null>(null);
   const [isEnchantingOpen, setIsEnchantingOpen] = useState(false);
   const [enchantingBookshelfCount, setEnchantingBookshelfCount] = useState(0);
+  const [tradingVillager, setTradingVillager] = useState<MobEntity | null>(null);
 
   // Chat & Command Console state
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -119,6 +122,7 @@ export default function App() {
       setChestPosKey(null);
       setFurnacePosKey(null);
       setIsEnchantingOpen(false);
+      setTradingVillager(null);
 
       // Clean up previous engine
       if (gameRef.current) {
@@ -144,6 +148,9 @@ export default function App() {
           onOpenEnchanting: (bookshelfCount) => {
             setEnchantingBookshelfCount(bookshelfCount);
             setIsEnchantingOpen(true);
+          },
+          onOpenTrading: (villager) => {
+            setTradingVillager(villager);
           },
           onOpenChat: (initialText) => {
             setIsChatOpen(true);
@@ -290,6 +297,23 @@ export default function App() {
     },
     [],
   );
+
+  const handleCloseTrading = useCallback(() => {
+    setTradingVillager(null);
+    if (screen === "playing") {
+      try {
+        const p = hostRef.current?.requestPointerLock() as unknown as Promise<void> | undefined;
+        if (p && typeof p.catch === "function") p.catch(() => {});
+      } catch {
+        /* ignore */
+      }
+    }
+  }, [screen]);
+
+  const handleTrade = useCallback((villagerId: string, tradeIndex: number) => {
+    if (!gameRef.current) return false;
+    return gameRef.current.executeTrade(villagerId, tradeIndex);
+  }, []);
 
   const handleSaveChest = useCallback((posKey: string, slots: any) => {
     gameRef.current?.setChestSlots(posKey, slots);
@@ -494,6 +518,18 @@ export default function App() {
           inventory={hud.inventory}
           onClose={handleCloseEnchanting}
           onEnchant={handleEnchant}
+        />
+      )}
+
+      {/* Villager Trading Modal */}
+      {tradingVillager && (
+        <TradingModal
+          isOpen={true}
+          villager={tradingVillager}
+          hotbar={hud.hotbar}
+          inventory={hud.inventory}
+          onClose={handleCloseTrading}
+          onTrade={handleTrade}
         />
       )}
 

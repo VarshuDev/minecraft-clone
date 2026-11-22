@@ -58,6 +58,11 @@
 | <img src="assets/screenshots/enchanting_table_world.png" alt="Enchanting Table & 3D Spellbook" width="440" /> | <img src="assets/screenshots/enchanting_table_ui.png" alt="Enchanting UI & Runes" width="440" /> |
 | *Floating 3D Spellbook, Drifting Runic Particles & Bookshelves* | *Standard Galactic Alphabet Runes, 3 Tiers, Lapis & XP Costs* |
 
+| PLAINS VILLAGES & 3D NPC VILLAGERS | INTERACTIVE VILLAGER TRADING UI |
+| :---: | :---: |
+| <img src="assets/screenshots/villager_npc_world.png" alt="3D Villager NPC & Village" width="440" /> | <img src="assets/screenshots/villager_trading_ui.png" alt="Villager Trading UI" width="440" /> |
+| *3D Villager Model, Iconic 3D Nose, Robes, Professions & Paths* | *Multi-Tier Merchant Barter, Emerald Currency & Sound Chimes* |
+
 </div>
 
 <br/>
@@ -234,6 +239,32 @@
 - **Natural Lapis Lazuli Ores**:
   - Deep underground Lapis Lazuli veins spawn naturally in stone/deepslate layers ($Y = 6..24$). Mining yields 4–9 royal blue Lapis Lazuli gems (boosted by Fortune).
 
+### 17. Plains Villages, NPC Villagers & Emerald Economy
+- **Procedural Village Settlements**:
+  - Naturally generates in Plains biomes across chunks ($16 \times 16$ settlements) with Cobblestone foundations, Oak Planks walls, glass window panes, beds, chests, crafting tables, bookshelves, and glowing wall torches.
+  - Irrigated agricultural farm plots with central water canals and mature wheat crops ready for harvest.
+  - Cobblestone town wells with deep water reservoirs and oak pillar canopies.
+  - Gravel pathway networks connecting houses, farms, and wells throughout the settlement.
+- **3D Voxel Villager NPCs**:
+  - Procedural voxel model featuring the iconic long protruding 3D nose, unibrow, green eyes, brown robe body, folded connected-sleeve arms across the chest, and walking legs.
+  - 4 Distinct Professions with unique visual attire:
+    - `Farmer`: Golden straw sun hat with green waist belt sash.
+    - `Weaponsmith`: Heavy black leather blacksmith apron.
+    - `Librarian`: Red scholar hat and antique lore books.
+    - `Cleric`: Deep purple mystic hood.
+  - Living AI State Machine: Flees in terror from attacking Zombies, wanders village pathways, curiously halts and turns to inspect Steve, and utters the classic nasal "Hrmm..." (`audio.villagerHrmm()`).
+- **Interactive Villager Trading Interface**:
+  - Right-clicking any Villager opens an authentic trading workstation displaying merchant title, profession badge, and multi-tier offer cards.
+  - Shows real-time player emerald balance (`❇️ Emeralds`), live trade requirements, and transaction stock counters.
+  - Dynamic Multi-Profession Barter:
+    - *Farmer*: Exchanges 18x Wheat or 16x Seeds for 1x Emerald; 1x Emerald for 6x Bread or 4x Apples.
+    - *Weaponsmith*: Exchanges 15x Coal or 4x Iron Ingots for 1x Emerald; 3x Emeralds for Iron Sword, 2x for Bow, and 8x for Sharpness II Diamond Sword!
+    - *Librarian*: Exchanges 4x Books for 1x Emerald; 1x Emerald for Bookshelf; Emeralds + Book for Unbreaking II & Efficiency II tomes.
+    - *Cleric*: Exchanges 32x Rotten Flesh or 3x Gold for 1x Emerald; 1x Emerald for 3x Lapis Lazuli, 2x for 4x Redstone Dust, or 4x for 2x Glowstone.
+  - Executing a trade awards XP (+2 to +6 XP), plays authentic cash register chimes (`audio.villagerTrade()`, `audio.villagerYes()`), and bursts green emerald sparkle particles from the villager!
+- **Natural Emerald Ore & Currency**:
+  - High elevation mountain peaks and snowy ridges naturally spawn rare Emerald Ore veins ($Y \ge 30$). Mining drops shiny green emerald currency gems.
+
 <br/>
 
 <div align="center">
@@ -250,7 +281,7 @@
 
 <br/>
 
-The engine includes **65+ canonical block types & functional items** generated procedurally without external image files:
+The engine includes **70+ canonical block types & functional items** generated procedurally without external image files:
 
 | BLOCK CATEGORY | INCLUDED BLOCK TYPES |
 | :--- | :--- |
@@ -258,13 +289,13 @@ The engine includes **65+ canonical block types & functional items** generated p
 | **The Nether**     | `Netherrack`, `Lava (Fluid)`, `Obsidian`, `Nether Quartz Ore`, `Soul Sand`, `Nether Portal`, `Block of Quartz` |
 | **Nature & Fluids**| `Oak Log`, `Oak Leaves`, `Cactus`, `Water (Fluid)`, `Snow`, `Ice`, `Poppy`, `Dandelion` |
 | **Building**       | `Oak Planks`, `Bricks`, `Stone Bricks`, `Glass`, `Block of Quartz`, `Bookshelf` |
-| **Mineral Ores**   | `Coal Ore`, `Iron Ore`, `Gold Ore`, `Diamond Ore`, `Redstone Ore`, `Nether Quartz Ore`, `Lapis Lazuli Ore` |
+| **Mineral Ores**   | `Coal Ore`, `Iron Ore`, `Gold Ore`, `Diamond Ore`, `Redstone Ore`, `Nether Quartz Ore`, `Lapis Lazuli Ore`, `Emerald Ore` |
 | **Agriculture**    | `Farmland`, `Moist Farmland`, `Wheat Crops (Stages 1-4)`, `Wheat Seeds`, `Wheat`, `Bone Meal` |
 | **Redstone Power** | `Redstone Wire`, `Redstone Torch`, `Lever`, `Redstone Lamp (Unlit/Lit)`, `TNT Block` |
 | **Functional & Home** | `Crafting Table`, `Furnace`, `Chest`, `Bed`, `Wooden Door`, `Ladder`, `Torch`, `Glowstone`, `Enchanting Table` |
 | **Armor & Defense**| `Iron Helmet/Chestplate/Leggings/Boots`, `Diamond Helmet/Chestplate/Leggings/Boots`, `Leather Tunic/Boots` |
 | **Weapons & Tools**| `Wooden/Stone/Iron/Diamond Swords`, `Golden Sword`, `Bow & Arrows`, `Pickaxes`, `Axes`, `Shovels`, `Wooden Hoe`, `Flint and Steel` |
-| **Food & Mob Drops**| `Apple`, `Bread`, `Raw/Cooked Porkchop`, `Steak`, `Rotten Flesh`, `Bone`, `Gunpowder`, `String`, `Feather`, `Leather`, `Wool`, `Flint`, `Quartz`, `Gold Ingot`, `Lapis Lazuli`, `Book` |
+| **Food & Mob Drops**| `Apple`, `Bread`, `Raw/Cooked Porkchop`, `Steak`, `Rotten Flesh`, `Bone`, `Gunpowder`, `String`, `Feather`, `Leather`, `Wool`, `Flint`, `Quartz`, `Gold Ingot`, `Lapis Lazuli`, `Book`, `Emerald` |
 
 <br/>
 
@@ -354,6 +385,7 @@ Right-click any placed **Furnace** to smelt raw minerals, meats, and materials u
 | Dirt              | Baked Bricks       | 1/8 Coal (+0.3 XP)      |
 | Nether Quartz Ore | Nether Quartz      | 1/8 Coal (+1.0 XP)      |
 | Lapis Lazuli Ore  | Lapis Lazuli       | 1/8 Coal (+1.0 XP)      |
+| Emerald Ore       | Emerald            | 1/8 Coal (+1.0 XP)      |
 +-------------------+--------------------+-------------------------+
 ```
 
@@ -468,10 +500,10 @@ Creates a self-contained, single-file bundle in `dist/index.html` (under 916 kB,
 [+] Sea Level Height       : Y = 22 (Overworld) / Y = 13 Lava Ocean (Nether)
 [+] Active Render Distance : 7x7 Chunks (49 Chunks / 112x112 Block Viewport)
 [+] Texture Atlas          : 8x10 Procedural Grid (80 Canonical 18x18px Gutter Cells)
-[+] Mobs & Entities        : 8 Species (Zombie, Skeleton, Creeper, Pig, Cow, Sheep, Zombie Pigman, Ghast)
+[+] Mobs & Entities        : 9 Species (Zombie, Skeleton, Creeper, Pig, Cow, Sheep, Zombie Pigman, Ghast, Villager)
 [+] Sound Synthesizer      : Web Audio API (Zero External MP3/WAV Audio Files)
 [+] Ambient Soundtrack     : Procedural C418-Style Calm Piano Synthesizer
-[+] Build Output           : Single-File HTML (~1,033 kB / ~271 kB gzipped)
+[+] Build Output           : Single-File HTML (~1,062 kB / ~277 kB gzipped)
 [+] Persistence            : Web Storage API (Multi-World Edits, Dimensions, Inventory, Seed)
 ```
 

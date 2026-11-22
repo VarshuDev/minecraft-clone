@@ -56,6 +56,7 @@ export const BLOCK = {
   ENCHANTING_TABLE: 54,
   BOOKSHELF: 55,
   LAPIS_ORE: 56,
+  EMERALD_ORE: 57,
 } as const;
 
 export type BlockNum = (typeof BLOCK)[keyof typeof BLOCK];
@@ -80,6 +81,53 @@ export interface EnchantmentOffer {
   lapisCost: number; // 1, 2, or 3 Lapis Lazuli
   runeName: string; // Cryptic standard galactic rune phrase
   description: string;
+}
+
+export type VillagerProfession = "farmer" | "weaponsmith" | "librarian" | "cleric";
+
+export interface VillagerTrade {
+  id: string;
+  in1: { item: ItemId; count: number };
+  in2?: { item: ItemId; count: number };
+  out: { item: ItemId; count: number; enchantments?: Record<string, number> };
+  maxUses: number;
+  uses: number;
+  xpReward: number;
+}
+
+export function getVillagerTrades(profession: VillagerProfession): VillagerTrade[] {
+  switch (profession) {
+    case "farmer":
+      return [
+        { id: "f_1", in1: { item: "wheat", count: 18 }, out: { item: "item_emerald", count: 1 }, maxUses: 16, uses: 0, xpReward: 2 },
+        { id: "f_2", in1: { item: "seeds", count: 16 }, out: { item: "item_emerald", count: 1 }, maxUses: 12, uses: 0, xpReward: 2 },
+        { id: "f_3", in1: { item: "item_emerald", count: 1 }, out: { item: "bread", count: 6 }, maxUses: 16, uses: 0, xpReward: 3 },
+        { id: "f_4", in1: { item: "item_emerald", count: 1 }, out: { item: "apple", count: 4 }, maxUses: 12, uses: 0, xpReward: 3 },
+      ];
+    case "weaponsmith":
+      return [
+        { id: "w_1", in1: { item: "coal", count: 15 }, out: { item: "item_emerald", count: 1 }, maxUses: 16, uses: 0, xpReward: 2 },
+        { id: "w_2", in1: { item: "iron_ingot", count: 4 }, out: { item: "item_emerald", count: 1 }, maxUses: 12, uses: 0, xpReward: 2 },
+        { id: "w_3", in1: { item: "item_emerald", count: 3 }, out: { item: "iron_sword", count: 1 }, maxUses: 8, uses: 0, xpReward: 4 },
+        { id: "w_4", in1: { item: "item_emerald", count: 2 }, out: { item: "bow", count: 1 }, maxUses: 6, uses: 0, xpReward: 4 },
+        { id: "w_5", in1: { item: "item_emerald", count: 8 }, out: { item: "diamond_sword", count: 1, enchantments: { sharpness: 2 } }, maxUses: 4, uses: 0, xpReward: 6 },
+      ];
+    case "librarian":
+      return [
+        { id: "l_1", in1: { item: "item_book", count: 4 }, out: { item: "item_emerald", count: 1 }, maxUses: 12, uses: 0, xpReward: 2 },
+        { id: "l_2", in1: { item: "item_emerald", count: 1 }, out: { item: "block_bookshelf", count: 1 }, maxUses: 12, uses: 0, xpReward: 3 },
+        { id: "l_3", in1: { item: "item_emerald", count: 5 }, in2: { item: "item_book", count: 1 }, out: { item: "item_book", count: 1, enchantments: { unbreaking: 2 } }, maxUses: 4, uses: 0, xpReward: 5 },
+        { id: "l_4", in1: { item: "item_emerald", count: 6 }, in2: { item: "item_book", count: 1 }, out: { item: "item_book", count: 1, enchantments: { efficiency: 2 } }, maxUses: 4, uses: 0, xpReward: 5 },
+      ];
+    case "cleric":
+      return [
+        { id: "c_1", in1: { item: "rotten_flesh", count: 32 }, out: { item: "item_emerald", count: 1 }, maxUses: 16, uses: 0, xpReward: 2 },
+        { id: "c_2", in1: { item: "gold_ingot", count: 3 }, out: { item: "item_emerald", count: 1 }, maxUses: 12, uses: 0, xpReward: 3 },
+        { id: "c_3", in1: { item: "item_emerald", count: 1 }, out: { item: "item_lapis", count: 3 }, maxUses: 16, uses: 0, xpReward: 3 },
+        { id: "c_4", in1: { item: "item_emerald", count: 2 }, out: { item: "redstone_dust", count: 4 }, maxUses: 12, uses: 0, xpReward: 4 },
+        { id: "c_5", in1: { item: "item_emerald", count: 4 }, out: { item: "block_glowstone", count: 2 }, maxUses: 8, uses: 0, xpReward: 5 },
+      ];
+  }
 }
 
 export type ItemId =
@@ -180,7 +228,9 @@ export type ItemId =
   | "block_bookshelf"
   | "block_lapis_ore"
   | "item_lapis"
-  | "item_book";
+  | "item_book"
+  | "block_emerald_ore"
+  | "item_emerald";
 
 export type ToolKind = "pickaxe" | "axe" | "shovel" | "sword" | "hoe" | "bow";
 export type ArmorSlot = "head" | "chest" | "legs" | "feet";
@@ -913,6 +963,18 @@ export const BLOCK_DEFS: Record<BlockNum, BlockDef> = {
     sound: "stone",
     colors: { top: "#1e4ec8", left: "#727880", right: "#5b6068" },
   },
+  [BLOCK.EMERALD_ORE]: {
+    id: BLOCK.EMERALD_ORE,
+    name: "Emerald Ore",
+    hardness: 3.0,
+    preferredTool: "pickaxe",
+    drop: "item_emerald",
+    shards: ["#7a8088", "#065f46", "#10b981", "#34d399"],
+    solid: true,
+    transparent: false,
+    sound: "stone",
+    colors: { top: "#10b981", left: "#727880", right: "#5b6068" },
+  },
 };
 
 export interface FoodDef {
@@ -1350,6 +1412,21 @@ export const ITEMS: Record<ItemId, ItemDef> = {
     color: "#8b4226",
     category: "material",
   },
+  block_emerald_ore: {
+    id: "block_emerald_ore",
+    name: "Emerald Ore",
+    short: "E.ORE",
+    blockId: BLOCK.EMERALD_ORE,
+    color: "#10b981",
+    category: "block",
+  },
+  item_emerald: {
+    id: "item_emerald",
+    name: "Emerald",
+    short: "EMRLD",
+    color: "#10b981",
+    category: "material",
+  },
 };
 
 export interface Recipe {
@@ -1426,6 +1503,7 @@ export const SMELTING_RECIPES: SmeltingRecipe[] = [
   { input: "block_redstone_ore", output: "redstone_dust", xp: 0.7 },
   { input: "block_quartz_ore", output: "quartz", xp: 1.0 },
   { input: "block_lapis_ore", output: "item_lapis", xp: 1.0 },
+  { input: "block_emerald_ore", output: "item_emerald", xp: 1.0 },
   { input: "block_sand", output: "block_glass", xp: 0.2 },
   { input: "block_cobble", output: "block_stone", xp: 0.2 },
   { input: "raw_beef", output: "cooked_beef", xp: 0.5 },
@@ -1512,6 +1590,8 @@ export const CREATIVE_CATALOG: ItemId[] = [
   "block_lapis_ore",
   "item_lapis",
   "item_book",
+  "block_emerald_ore",
+  "item_emerald",
 ];
 
 export const DEFAULT_CREATIVE_HOTBAR: ItemId[] = [

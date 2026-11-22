@@ -1,13 +1,15 @@
 import * as THREE from "three";
 import { type InfiniteWorld } from "./world";
-import { BLOCK, BLOCK_DEFS, type ItemId } from "./blocks";
+import { BLOCK, BLOCK_DEFS, type ItemId, type VillagerProfession, type VillagerTrade, getVillagerTrades } from "./blocks";
 import { type GameAudio } from "./audio";
 
-export type MobType = "zombie" | "skeleton" | "creeper" | "pig" | "cow" | "sheep" | "pigman" | "ghast";
+export type MobType = "zombie" | "skeleton" | "creeper" | "pig" | "cow" | "sheep" | "pigman" | "ghast" | "villager";
 
 export interface MobEntity {
   id: string;
   type: MobType;
+  profession?: VillagerProfession;
+  trades?: VillagerTrade[];
   group: THREE.Group;
   pos: THREE.Vector3;
   vel: THREE.Vector3;
@@ -95,6 +97,16 @@ export class MobManager {
   private matGhastWhite = new THREE.MeshLambertMaterial({ color: 0xf0f0f0 });
   private matGhastEyes = new THREE.MeshLambertMaterial({ color: 0xcc2222 });
 
+  private matVillagerSkin = new THREE.MeshLambertMaterial({ color: 0xbd8b72 });
+  private matVillagerRobe = new THREE.MeshLambertMaterial({ color: 0x5a3d28 });
+  private matVillagerApron = new THREE.MeshLambertMaterial({ color: 0x2e2b2a });
+  private matVillagerSash = new THREE.MeshLambertMaterial({ color: 0x3d7034 });
+  private matVillagerHat = new THREE.MeshLambertMaterial({ color: 0x8b2222 });
+  private matVillagerStraw = new THREE.MeshLambertMaterial({ color: 0xd4af37 });
+  private matVillagerEye = new THREE.MeshLambertMaterial({ color: 0x224c28 });
+  private matVillagerWhite = new THREE.MeshLambertMaterial({ color: 0xf5f5f5 });
+  private matVillagerBrow = new THREE.MeshLambertMaterial({ color: 0x3e2718 });
+
   constructor(world: InfiniteWorld, scene: THREE.Scene, audio: GameAudio) {
     this.world = world;
     this.scene = scene;
@@ -104,12 +116,13 @@ export class MobManager {
   // --------------------------------------------------------------------------
   // SPAWNING
   // --------------------------------------------------------------------------
-  spawnMob(type: MobType, x: number, y: number, z: number): MobEntity {
+  spawnMob(type: MobType, x: number, y: number, z: number, profession?: VillagerProfession): MobEntity {
     const group = new THREE.Group();
     const originalColors = new Map<THREE.Mesh, THREE.Color>();
     let limbs: MobEntity["limbs"];
     let maxHealth = 20;
     let isHostile = true;
+    let trades: VillagerTrade[] | undefined;
 
     switch (type) {
       case "zombie":
@@ -149,6 +162,13 @@ export class MobManager {
         maxHealth = 12;
         isHostile = true;
         break;
+      case "villager":
+        profession = profession || (["farmer", "weaponsmith", "librarian", "cleric"][Math.floor(Math.random() * 4)] as VillagerProfession);
+        trades = getVillagerTrades(profession);
+        limbs = this.buildVillagerModel(group, originalColors, profession);
+        maxHealth = 20;
+        isHostile = false;
+        break;
     }
 
     group.position.set(x, y, z);
@@ -157,6 +177,8 @@ export class MobManager {
     const mob: MobEntity = {
       id: `mob_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
       type,
+      profession,
+      trades,
       group,
       pos: new THREE.Vector3(x, y, z),
       vel: new THREE.Vector3(0, 0, 0),
@@ -543,6 +565,97 @@ export class MobManager {
     return { head, body, legFL, legFR, legBL, legBR };
   }
 
+  private buildVillagerModel(group: THREE.Group, colors: Map<THREE.Mesh, THREE.Color>, profession: VillagerProfession) {
+    // Head
+    const head = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.54, 0.44), this.matVillagerSkin);
+    head.position.set(0, 1.48, 0);
+    this.registerMesh(head, colors);
+    group.add(head);
+
+    // Iconic Protruding 3D Nose
+    const nose = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.22, 0.14), this.matVillagerSkin);
+    nose.position.set(0, 1.38, 0.28);
+    this.registerMesh(nose, colors);
+    group.add(nose);
+
+    // Unibrow
+    const brow = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.06, 0.02), this.matVillagerBrow);
+    brow.position.set(0, 1.54, 0.225);
+    group.add(brow);
+
+    // Eyes
+    const eyeWhiteL = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 0.02), this.matVillagerWhite);
+    eyeWhiteL.position.set(-0.11, 1.45, 0.225);
+    group.add(eyeWhiteL);
+    const pupilL = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.08, 0.022), this.matVillagerEye);
+    pupilL.position.set(-0.09, 1.45, 0.225);
+    group.add(pupilL);
+
+    const eyeWhiteR = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 0.02), this.matVillagerWhite);
+    eyeWhiteR.position.set(0.11, 1.45, 0.225);
+    group.add(eyeWhiteR);
+    const pupilR = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.08, 0.022), this.matVillagerEye);
+    pupilR.position.set(0.09, 1.45, 0.225);
+    group.add(pupilR);
+
+    // Robe Torso
+    const body = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.72, 0.32), this.matVillagerRobe);
+    body.position.set(0, 0.9, 0);
+    this.registerMesh(body, colors);
+    group.add(body);
+
+    // Folded Arms (Connected Sleeve across chest)
+    const arms = new THREE.Mesh(new THREE.BoxGeometry(0.58, 0.22, 0.26), this.matVillagerRobe);
+    arms.position.set(0, 0.94, 0.14);
+    this.registerMesh(arms, colors);
+    group.add(arms);
+
+    // Hands peeking under sleeve
+    const hands = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.12, 0.14), this.matVillagerSkin);
+    hands.position.set(0, 0.86, 0.14);
+    this.registerMesh(hands, colors);
+    group.add(hands);
+
+    // Walking Legs
+    const legGeo = new THREE.BoxGeometry(0.2, 0.54, 0.22);
+    const leftLeg = new THREE.Mesh(legGeo, this.matVillagerRobe);
+    leftLeg.position.set(-0.12, 0.27, 0);
+    this.registerMesh(leftLeg, colors);
+    group.add(leftLeg);
+
+    const rightLeg = new THREE.Mesh(legGeo, this.matVillagerRobe);
+    rightLeg.position.set(0.12, 0.27, 0);
+    this.registerMesh(rightLeg, colors);
+    group.add(rightLeg);
+
+    // Profession visual accessories
+    if (profession === "farmer") {
+      const strawBrim = new THREE.Mesh(new THREE.BoxGeometry(0.66, 0.05, 0.66), this.matVillagerStraw);
+      strawBrim.position.set(0, 1.74, 0);
+      group.add(strawBrim);
+      const strawTop = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.1, 0.46), this.matVillagerStraw);
+      strawTop.position.set(0, 1.81, 0);
+      group.add(strawTop);
+      const sash = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.1, 0.34), this.matVillagerSash);
+      sash.position.set(0, 0.72, 0);
+      group.add(sash);
+    } else if (profession === "weaponsmith") {
+      const apron = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.54, 0.03), this.matVillagerApron);
+      apron.position.set(0, 0.9, 0.17);
+      group.add(apron);
+    } else if (profession === "librarian") {
+      const hat = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.14, 0.36), this.matVillagerHat);
+      hat.position.set(0, 1.78, 0);
+      group.add(hat);
+    } else if (profession === "cleric") {
+      const hood = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.22, 0.48), this.matVillagerHat);
+      hood.position.set(0, 1.62, 0);
+      group.add(hood);
+    }
+
+    return { head, body, leftArm: arms, rightArm: arms, leftLeg, rightLeg };
+  }
+
   // --------------------------------------------------------------------------
   // ARROW SHOOTING & PROJECTILES
   // --------------------------------------------------------------------------
@@ -737,7 +850,35 @@ export class MobManager {
       }
 
       // Passive mob or non-chasing wander
-      if (mob.state === "wander") {
+      if (mob.type === "villager") {
+        let zombieThreat: MobEntity | null = null;
+        for (const other of this.mobs) {
+          if (!other.dead && other.type === "zombie" && other.pos.distanceTo(mob.pos) < 10) {
+            zombieThreat = other;
+            break;
+          }
+        }
+        if (zombieThreat) {
+          mob.state = "flee";
+          const fleeDir = mob.pos.clone().sub(zombieThreat.pos);
+          mob.yaw = Math.atan2(fleeDir.x, fleeDir.z);
+          mob.vel.x = Math.sin(mob.yaw) * 3.2;
+          mob.vel.z = Math.cos(mob.yaw) * 3.2;
+        } else if (distToPlayer < 3.2) {
+          const dirToPlayer = playerPos.clone().sub(mob.pos);
+          mob.yaw = Math.atan2(dirToPlayer.x, dirToPlayer.z);
+          mob.vel.x = 0;
+          mob.vel.z = 0;
+        } else {
+          if (mob.stateTimer <= 0) {
+            mob.stateTimer = 4.0 + Math.random() * 6.0;
+            mob.yaw = Math.random() * Math.PI * 2;
+          }
+          const speed = 1.0;
+          mob.vel.x = Math.sin(mob.yaw) * speed;
+          mob.vel.z = Math.cos(mob.yaw) * speed;
+        }
+      } else if (mob.state === "wander") {
         if (mob.stateTimer <= 0) {
           mob.stateTimer = 3.0 + Math.random() * 5.0;
           mob.yaw = Math.random() * Math.PI * 2;
@@ -894,6 +1035,10 @@ export class MobManager {
         case "ghast":
           drops.push({ item: "gunpowder", count: 2 + Math.floor(Math.random() * 3) });
           break;
+        case "villager":
+          drops.push({ item: "item_emerald", count: 1 });
+          if (Math.random() < 0.6) drops.push({ item: "bread", count: 1 + Math.floor(Math.random() * 2) });
+          break;
       }
 
       const isHostile =
@@ -950,6 +1095,30 @@ export class MobManager {
       return true;
     }
     return false;
+  }
+
+  // Raycast interaction (e.g. trading with Villagers)
+  interactRaycast(origin: THREE.Vector3, direction: THREE.Vector3): MobEntity | null {
+    let closestMob: MobEntity | null = null;
+    let closestDist = 4.2;
+
+    for (const mob of this.mobs) {
+      if (mob.dead || mob.type !== "villager") continue;
+      const mobCenter = mob.pos.clone().add(new THREE.Vector3(0, 0.9, 0));
+      const dist = origin.distanceTo(mobCenter);
+      if (dist < closestDist) {
+        const toMob = mobCenter.clone().sub(origin);
+        const proj = toMob.dot(direction);
+        if (proj > 0) {
+          const perp = toMob.sub(direction.clone().multiplyScalar(proj)).length();
+          if (perp < 0.75) {
+            closestMob = mob;
+            closestDist = dist;
+          }
+        }
+      }
+    }
+    return closestMob;
   }
 
   // --------------------------------------------------------------------------

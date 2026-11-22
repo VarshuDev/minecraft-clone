@@ -1001,6 +1001,22 @@ function lapisOreTile(): TilePair {
   return { albedo: c };
 }
 
+function emeraldOreTile(): TilePair {
+  const { c, ctx } = makeCanvas();
+  noiseFill(ctx, stonePalette, 841);
+  const r = rng(842);
+  for (let i = 0; i < 8; i++) {
+    const x = Math.floor(r() * 13);
+    const y = Math.floor(r() * 13);
+    px(ctx, x, y, "#065f46", 2, 2);
+    px(ctx, x + 1, y, "#059669", 2, 2);
+    px(ctx, x + 1, y + 1, "#10b981", 1, 1);
+    px(ctx, x, y + 1, "#34d399", 1, 1);
+  }
+  shadeEdge(ctx);
+  return { albedo: c };
+}
+
 function crackTex(stage: number) {
   const { c, ctx } = makeCanvas(16, 16);
   ctx.clearRect(0, 0, 16, 16);
@@ -1135,7 +1151,8 @@ type TileKey =
   | "enchantTop"
   | "enchantSide"
   | "bookshelf"
-  | "lapisOre";
+  | "lapisOre"
+  | "emeraldOre";
 
 const ATLAS_COLS = 8;
 const ATLAS_ROWS = 10;
@@ -1211,6 +1228,7 @@ export function createBlockAtlas(): BlockAtlas {
     enchantSide: enchantSideTile(),
     bookshelf: bookshelfTile(),
     lapisOre: lapisOreTile(),
+    emeraldOre: emeraldOreTile(),
   };
 
   const W = ATLAS_COLS * CELL;
@@ -1320,6 +1338,7 @@ export function createBlockAtlas(): BlockAtlas {
     [BLOCK.ENCHANTING_TABLE]: { top: uvByKey.enchantTop, bottom: uvByKey.obsidian, side: uvByKey.enchantSide },
     [BLOCK.BOOKSHELF]: { top: uvByKey.planks, bottom: uvByKey.planks, side: uvByKey.bookshelf },
     [BLOCK.LAPIS_ORE]: u("lapisOre"),
+    [BLOCK.EMERALD_ORE]: u("emeraldOre"),
   };
 
   const crackTextures = [crackTex(0), crackTex(1), crackTex(2)];

@@ -174,7 +174,8 @@ export class InfiniteWorld {
           // Ores inside stone / deepslate
           if (b === BLOCK.STONE || b === BLOCK.DEEPSLATE) {
             const oreH = hashCoords(wx, y, wz, this.seed + 701);
-            if (y <= 11 && oreH < 0.014) b = BLOCK.DIAMOND_ORE;
+            if (info.name === "Snowy Peaks" && y >= 30 && oreH < 0.038) b = BLOCK.EMERALD_ORE;
+            else if (y <= 11 && oreH < 0.014) b = BLOCK.DIAMOND_ORE;
             else if (y <= 16 && oreH < 0.032) b = BLOCK.GOLD_ORE;
             else if (y >= 6 && y <= 24 && oreH < 0.046) b = BLOCK.LAPIS_ORE;
             else if (y <= 18 && oreH < 0.062) b = BLOCK.REDSTONE_ORE;
@@ -236,6 +237,11 @@ export class InfiniteWorld {
           }
         }
       }
+    }
+
+    // 2.5) Village Structures (Plains biome villages)
+    if (this.isVillageChunk(cx, cz)) {
+      this.buildVillageChunk(data, cx, cz, baseX, baseZ, heights);
     }
 
     // 3) Re-apply any saved player edits in this chunk
@@ -371,6 +377,189 @@ export class InfiniteWorld {
     const lz = wz - cz * CHUNK_SIZE;
     data[localIdx(lx, y, lz)] = block;
     this.recordEdit(wx, y, wz, block);
+  }
+
+  isVillageChunk(cx: number, cz: number): boolean {
+    if (this.dimension !== "overworld") return false;
+    const modX = ((cx % 8) + 8) % 8;
+    const modZ = ((cz % 8) + 8) % 8;
+    if (modX !== 2 || modZ !== 2) return false;
+
+    const centerBiome = this.getBiomeAt(cx * CHUNK_SIZE + 8, cz * CHUNK_SIZE + 8);
+    return centerBiome.name === "Plains" && centerBiome.height >= 22 && centerBiome.height <= 34;
+  }
+
+  getVillageVillagerSpawns(cx: number, cz: number): Array<{ x: number; y: number; z: number; profession: "farmer" | "weaponsmith" | "librarian" | "cleric" }> {
+    if (!this.isVillageChunk(cx, cz)) return [];
+    const baseX = cx * CHUNK_SIZE;
+    const baseZ = cz * CHUNK_SIZE;
+    const centerBiome = this.getBiomeAt(baseX + 8, baseZ + 8);
+    const avgH = centerBiome.height;
+    return [
+      { x: baseX + 10.5, y: avgH + 1.1, z: baseZ + 4.5, profession: "farmer" },
+      { x: baseX + 4.5, y: avgH + 1.1, z: baseZ + 4.5, profession: "weaponsmith" },
+      { x: baseX + 11.5, y: avgH + 1.1, z: baseZ + 11.5, profession: "cleric" },
+    ];
+  }
+
+  private buildVillageChunk(
+    data: Uint8Array,
+    _cx: number,
+    _cz: number,
+    baseX: number,
+    baseZ: number,
+    heights: Int16Array,
+  ) {
+    const avgH = heights[(8 << 4) | 8];
+    if (avgH < 22 || avgH > 40) return;
+
+    const setB = (lx: number, y: number, lz: number, b: BlockNum) => {
+      if (lx >= 0 && lx < CHUNK_SIZE && lz >= 0 && lz < CHUNK_SIZE && y >= 0 && y < WORLD_HEIGHT) {
+        data[localIdx(lx, y, lz)] = b;
+        if (b === BLOCK.TORCH) {
+          const wx = baseX + lx;
+          const wz = baseZ + lz;
+          this.lightBlocks.set(blockKey(wx, y, wz), { x: wx + 0.5, y: y + 0.6, z: wz + 0.5, color: 0xffc970 });
+        }
+      }
+    };
+
+    // 1) Gravel Paths
+    for (let lz = 6; lz <= 8; lz++) {
+      for (let lx = 0; lx < CHUNK_SIZE; lx++) {
+        const h = heights[(lz << 4) | lx];
+        setB(lx, h, lz, BLOCK.GRAVEL);
+      }
+    }
+    for (let lx = 7; lx <= 8; lx++) {
+      for (let lz = 0; lz < CHUNK_SIZE; lz++) {
+        const h = heights[(lz << 4) | lx];
+        setB(lx, h, lz, BLOCK.GRAVEL);
+      }
+    }
+
+    // 2) Village House (lx: 1..6, lz: 1..6)
+    for (let x = 1; x <= 6; x++) {
+      for (let z = 1; z <= 6; z++) {
+        setB(x, avgH, z, BLOCK.COBBLESTONE);
+        for (let y = avgH + 1; y <= avgH + 4; y++) {
+          setB(x, y, z, BLOCK.AIR);
+        }
+      }
+    }
+
+    // Corner Log Pillars
+    for (const [px, pz] of [[1, 1], [6, 1], [1, 6], [6, 6]]) {
+      for (let dy = 1; dy <= 4; dy++) setB(px, avgH + dy, pz, BLOCK.OAK_LOG);
+    }
+
+    // Walls
+    for (let dy = 1; dy <= 3; dy++) {
+      for (let x = 2; x <= 5; x++) {
+        setB(x, avgH + dy, 1, BLOCK.PLANKS);
+        setB(x, avgH + dy, 6, BLOCK.PLANKS);
+      }
+      for (let z = 2; z <= 5; z++) {
+        setB(1, avgH + dy, z, BLOCK.PLANKS);
+        setB(6, avgH + dy, z, BLOCK.PLANKS);
+      }
+    }
+
+    // Windows
+    setB(1, avgH + 2, 3, BLOCK.GLASS);
+    setB(1, avgH + 2, 4, BLOCK.GLASS);
+    setB(6, avgH + 2, 3, BLOCK.GLASS);
+    setB(6, avgH + 2, 4, BLOCK.GLASS);
+    setB(3, avgH + 2, 1, BLOCK.GLASS);
+    setB(4, avgH + 2, 1, BLOCK.GLASS);
+
+    // Doorway
+    setB(3, avgH + 1, 6, BLOCK.WOOD_DOOR);
+    setB(3, avgH + 2, 6, BLOCK.AIR);
+
+    // Roof
+    for (let x = 1; x <= 6; x++) {
+      for (let z = 1; z <= 6; z++) {
+        setB(x, avgH + 4, z, BLOCK.PLANKS);
+      }
+    }
+
+    // Interior Furniture
+    setB(2, avgH + 1, 2, BLOCK.BED);
+    setB(5, avgH + 1, 2, BLOCK.CRAFTING_TABLE);
+    setB(5, avgH + 1, 5, BLOCK.CHEST);
+    setB(2, avgH + 1, 5, BLOCK.BOOKSHELF);
+    setB(3, avgH + 3, 2, BLOCK.TORCH);
+
+    // 3) Village Farm Plot (lx: 9..14, lz: 1..7)
+    for (let x = 9; x <= 14; x++) {
+      for (let z = 1; z <= 7; z++) {
+        for (let y = avgH + 1; y <= avgH + 2; y++) setB(x, y, z, BLOCK.AIR);
+      }
+    }
+
+    for (let x = 9; x <= 14; x++) {
+      setB(x, avgH, 1, BLOCK.OAK_LOG);
+      setB(x, avgH, 7, BLOCK.OAK_LOG);
+    }
+    for (let z = 1; z <= 7; z++) {
+      setB(9, avgH, z, BLOCK.OAK_LOG);
+      setB(14, avgH, z, BLOCK.OAK_LOG);
+    }
+
+    // Central Water Trench
+    for (let z = 2; z <= 6; z++) {
+      setB(11, avgH, z, BLOCK.WATER);
+      setB(12, avgH, z, BLOCK.WATER);
+    }
+
+    // Farmland & Crops
+    for (let z = 2; z <= 6; z++) {
+      setB(10, avgH, z, BLOCK.FARMLAND_MOIST);
+      setB(10, avgH + 1, z, z % 2 === 0 ? BLOCK.WHEAT_3 : BLOCK.WHEAT_2);
+
+      setB(13, avgH, z, BLOCK.FARMLAND_MOIST);
+      setB(13, avgH + 1, z, z % 2 === 0 ? BLOCK.WHEAT_2 : BLOCK.WHEAT_3);
+    }
+
+    // 4) Village Well (lx: 10..13, lz: 10..13)
+    for (let x = 10; x <= 13; x++) {
+      for (let z = 10; z <= 13; z++) {
+        for (let y = avgH + 1; y <= avgH + 5; y++) setB(x, y, z, BLOCK.AIR);
+        setB(x, avgH - 1, z, BLOCK.COBBLESTONE);
+      }
+    }
+
+    // Cobblestone Rim
+    for (let x = 10; x <= 13; x++) {
+      setB(x, avgH, 10, BLOCK.COBBLESTONE);
+      setB(x, avgH, 13, BLOCK.COBBLESTONE);
+      setB(x, avgH + 1, 10, BLOCK.COBBLESTONE);
+      setB(x, avgH + 1, 13, BLOCK.COBBLESTONE);
+    }
+    for (let z = 10; z <= 13; z++) {
+      setB(10, avgH, z, BLOCK.COBBLESTONE);
+      setB(13, avgH, z, BLOCK.COBBLESTONE);
+      setB(10, avgH + 1, z, BLOCK.COBBLESTONE);
+      setB(13, avgH + 1, z, BLOCK.COBBLESTONE);
+    }
+
+    // Water pool
+    setB(11, avgH, 11, BLOCK.WATER);
+    setB(12, avgH, 11, BLOCK.WATER);
+    setB(11, avgH, 12, BLOCK.WATER);
+    setB(12, avgH, 12, BLOCK.WATER);
+
+    // Well Roof Posts
+    for (const [wx, wz] of [[10, 10], [13, 10], [10, 13], [13, 13]]) {
+      for (let dy = 2; dy <= 4; dy++) setB(wx, avgH + dy, wz, BLOCK.OAK_LOG);
+      setB(wx, avgH + 3, wz, BLOCK.TORCH);
+    }
+    for (let x = 10; x <= 13; x++) {
+      for (let z = 10; z <= 13; z++) {
+        setB(x, avgH + 5, z, BLOCK.PLANKS);
+      }
+    }
   }
 
   findSpawn(): { x: number; y: number; z: number } {
