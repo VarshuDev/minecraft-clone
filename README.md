@@ -38,6 +38,16 @@
 | <img src="assets/screenshots/weather_and_defense.png" alt="Weather & Armor Defense" width="440" /> | <img src="assets/screenshots/furnace_smelting.png" alt="Interactive Furnace" width="440" /> |
 | *Rain, Snow, Thunderstorms, Armor Shields & XP Bar* | *Animated Burning Flame, Cooking Arrow & Fuels* |
 
+| F5 3D STEVE & THIRD PERSON | IN-GAME CHAT & COMMAND CONSOLE |
+| :---: | :---: |
+| <img src="assets/screenshots/third_person_steve.png" alt="Third Person 3D Steve" width="440" /> | <img src="assets/screenshots/chat_and_commands.png" alt="In-Game Chat & Commands" width="440" /> |
+| *F5 Perspectives, 3D Steve Model, Armor Overlays & Animations* | *Real-Time Command Console, Slash Commands & History* |
+
+| CROPS, AGRICULTURE & HARVESTING | REDSTONE LOGIC & MECHANICS |
+| :---: | :---: |
+| <img src="assets/screenshots/farming_and_redstone.png" alt="Farming & Redstone" width="440" /> | <img src="assets/screenshots/underground_cave_mining.png" alt="Redstone Cave" width="440" /> |
+| *4 Wheat Growth Stages, Farmland Hydration & Bone Meal* | *Redstone Ore, Floor Wires, Levers, Lit Lamps & TNT* |
+
 </div>
 
 <br/>
@@ -122,12 +132,52 @@
 - **Bed**: Right-click at night to sleep through the night, fast-forwarding to dawn and setting your respawn point with sleep chime.
 - **Wooden Door**: Toggle open/close with wooden latch sound.
 - **Ladders**: Climbable vertical surface ladders for shaft descents.
-- **Farmland & Farming**: Right-clicking Grass/Dirt with a Hoe tills the soil into moist farmland; planting seeds yields crops.
 - **Underwater Atmosphere**: Dives shift scene fog to deep ocean cyan (`#0d3859`), trigger an underwater blue caustic tint vignette, and deplete oxygen bubbles with drowning damage.
 
 ### 10. Procedural C418-Style Ambient Soundtrack
 - **Procedural Ambient Piano**: Synthesizes gentle, reflective ambient piano and Rhodes chord progressions in pentatonic/Lydian harmony ("Wet Hands", "Sweden" inspired) with zero megabytes of audio downloads.
 - **Procedural Soundscape**: Authentic WebAudio synthesis for mob groans, hisses, oinks, moos, arrow shots, footstep surfaces, water splashes, thunder rumbles, and tool strikes.
+
+### 11. F5 Third-Person Perspectives & 3D Steve Character Model
+- **Multiple Camera Modes (`F5`)**: Seamlessly cycle between `First-Person`, `Third-Person (Back)`, and `Third-Person (Front)` perspectives with audio switch chimes.
+- **Procedural 3D Steve Character Model**:
+  - Pixel-art Steve facial features, blue eyes, hair bangs, cyan shirt, blue denim jeans, and shoes.
+  - Dynamic visual armor overlays: equipped helmets, chestplates with shoulder pauldrons, leggings, and boots render directly on Steve in 3D!
+  - Equipped held tools and weapons (Diamond Swords, Pickaxes, Blocks) attach to Steve's right hand.
+- **Procedural Skeletal Animation**:
+  - Legs and arms swing naturally in counter-phase during walking (`Math.sin(walkBob)`).
+  - Right arm pitches and sweeps during mining, block placement, and melee sword swings.
+  - Head tilts and pitches according to mouse look angle.
+- **Collision Obstacle Avoidance**: 3rd-person camera raycasts behind and in front of the player to prevent clipping into cliffs, trees, or cavern walls.
+
+### 12. In-Game Chat & Command Console (`/` or `T`)
+- **Interactive Chat Overlay**: Bottom-left transparent black message console with auto-focus input bar, command history recall (Up/Down arrow keys), and 8.5-second auto-fading recent messages.
+- **Built-In Slash Commands**:
+  - `/gamemode <survival|creative>`: Instant gamemode switching with flight and inventory unlocks.
+  - `/time set <day|noon|sunset|night|midnight|<ticks>>`: Instantly manipulate the day/night celestial clock.
+  - `/weather <clear|rain|thunder>`: Set atmospheric weather and ambient storm audio.
+  - `/tp <x> <y> <z>`: Instant player coordinate teleportation with immediate chunk streaming.
+  - `/give <item_id> [count]`: Give any block, tool, or weapon directly to player inventory.
+  - `/heal`: Instant full health, hunger, and saturation restoration.
+  - `/kill`: Slay Steve for respawn testing.
+  - `/seed`: Inspect the active world generation seed.
+  - `/clear`: Wipe player inventory and hotbar.
+  - `/xp <add|set> <amount>`: Add XP or set experience level.
+  - `/help`: Detailed command syntax and descriptions.
+- **Player Chat**: Messages without `/` are displayed in authentic `<Steve> message` chat formatting!
+
+### 13. Crops & Agriculture Simulation
+- **4 Distinct Wheat Growth Stages**: Tiny germinating sprouts (`Stage 1`) -> young green shoots (`Stage 2`) -> tall yellowish stalks (`Stage 3`) -> fully mature golden wheat with grain husks (`Stage 4`).
+- **Farmland Hydration**: Farmland within 4 horizontal blocks of `Water` darkens into moist rich soil (`#291a0e`), accelerating crop growth speed.
+- **Bone Meal Fertilizer**: Crafted from skeleton bones (`1 Bone -> 3 Bone Meal`); right-clicking bone meal on crops instantly promotes growth with magical green sparkle particles and chime audio!
+- **Harvesting & Replanting**: Harvesting mature wheat drops 1 `Wheat` (for bread) + 1-3 `Seeds` for continuous farming expansion.
+
+### 14. Redstone Engineering & Mechanics
+- **Redstone Ore**: Deep underground stone with glowing crimson veins emitting ambient light.
+- **Redstone Wire**: Floor-mounted redstone dust tracks conveying electrical power.
+- **Toggleable Levers**: Wall/floor mounted mechanical levers that toggle ON/OFF with crisp clicking audio.
+- **Redstone Lamps**: Unlit lamps (`#3d2817`) ignite into brilliant glowing amber lamps (`#ffe27a`) with emissive light when powered!
+- **Power Automation**: Powering adjacent `TNT` primes and detonates it; powering `Wooden Doors` swings them open/closed!
 
 <br/>
 
@@ -145,15 +195,17 @@
 
 <br/>
 
-The engine includes **45 canonical block types & functional items** generated procedurally without external image files:
+The engine includes **55+ canonical block types & functional items** generated procedurally without external image files:
 
 | BLOCK CATEGORY | INCLUDED BLOCK TYPES |
 | :--- | :--- |
 | **Terrain & Rock** | `Grass Block`, `Dirt`, `Stone`, `Cobblestone`, `Deepslate`, `Bedrock`, `Sand`, `Sandstone` |
 | **Nature & Fluids**| `Oak Log`, `Oak Leaves`, `Cactus`, `Water`, `Snow`, `Ice`, `Poppy`, `Dandelion` |
 | **Building**       | `Oak Planks`, `Bricks`, `Stone Bricks`, `Glass` |
-| **Mineral Ores**   | `Coal Ore`, `Iron Ore`, `Gold Ore`, `Diamond Ore` |
-| **Functional & Home** | `Crafting Table`, `Furnace`, `Chest`, `Bed`, `Wooden Door`, `Ladder`, `Farmland`, `Torch`, `Glowstone`, `TNT Block` |
+| **Mineral Ores**   | `Coal Ore`, `Iron Ore`, `Gold Ore`, `Diamond Ore`, `Redstone Ore` |
+| **Agriculture**    | `Farmland`, `Moist Farmland`, `Wheat Crops (Stages 1-4)`, `Wheat Seeds`, `Wheat`, `Bone Meal` |
+| **Redstone Power** | `Redstone Wire`, `Redstone Torch`, `Lever`, `Redstone Lamp (Unlit/Lit)`, `TNT Block` |
+| **Functional & Home** | `Crafting Table`, `Furnace`, `Chest`, `Bed`, `Wooden Door`, `Ladder`, `Torch`, `Glowstone` |
 | **Armor & Defense**| `Iron Helmet/Chestplate/Leggings/Boots`, `Diamond Helmet/Chestplate/Leggings/Boots`, `Leather Tunic/Boots` |
 | **Weapons & Tools**| `Wooden/Stone/Iron/Diamond Swords`, `Bow & Arrows`, `Pickaxes`, `Axes`, `Shovels`, `Wooden Hoe` |
 | **Food & Mob Drops**| `Apple`, `Bread`, `Raw/Cooked Porkchop`, `Steak`, `Rotten Flesh`, `Bone`, `Gunpowder`, `String`, `Feather`, `Leather`, `Wool` |
@@ -215,6 +267,10 @@ Pressing `E` opens the **2x2 Player Inventory Crafting Grid**, while right-click
 | Glass (x4)        | 2x Sand + 1x Coal  | Transparent windows    |
 | Glowstone (x2)    | 1x Gold + 1x Glass | Permanent light cube   |
 | TNT (x2)          | 2x Sand + 2x Coal  | Explosive demolition   |
+| Bone Meal (x3)    | 1x Skeleton Bone   | Instant crop fertilizer|
+| Lever             | 1x Stick + 1x Cobbl| Mechanical power switch|
+| Redstone Torch    | 1x Stick + 1x Redst| Power generator        |
+| Redstone Lamp     | 1x Glowst + 4x Red | Switchable amber light  |
 +-------------------+--------------------+------------------------+
 ```
 
@@ -230,6 +286,7 @@ Right-click any placed **Furnace** to smelt raw minerals, meats, and materials u
 | Raw Porkchop      | Cooked Porkchop    | 1/8 Coal (+0.5 XP)      |
 | Iron Ore          | Iron Ingot         | 1/8 Coal (+1.0 XP)      |
 | Gold Ore          | Gold Ingot         | 1/8 Coal (+1.5 XP)      |
+| Redstone Ore      | Redstone Dust      | 1/8 Coal (+0.7 XP)      |
 | Sand              | Clear Glass        | 1/8 Coal (+0.2 XP)      |
 | Cobblestone       | Smooth Stone       | 1/8 Coal (+0.2 XP)      |
 | Dirt              | Baked Bricks       | 1/8 Coal (+0.3 XP)      |
@@ -262,6 +319,8 @@ Right-click any placed **Furnace** to smelt raw minerals, meats, and materials u
 | **Place Block** | Right Mouse Button | Place Button |
 | **Select Hotbar Slot** | Number Keys `1` to `9` or `Mouse Wheel` | Tap Hotbar Slot |
 | **Crafting / Inventory** | `E` Key | `E` HUD Button |
+| **Camera Perspective** | `F5` Key (1st / 3rd Back / 3rd Front) | `F5` HUD Button |
+| **Chat & Slash Commands** | `T` or `/` Keys | `💬` HUD Button |
 | **Debug F3 Overlay** | `F3` Key | `F3` HUD Button |
 | **Pause / Settings** | `Escape` Key | Pause HUD Button |
 

@@ -12,6 +12,8 @@ interface HudProps {
   onSelectSlot: (slotIndex: number) => void;
   onOpenCrafting: () => void;
   onToggleF3: () => void;
+  onToggleCamera?: () => void;
+  onOpenChat?: () => void;
 }
 
 export function Hud({
@@ -23,6 +25,8 @@ export function Hud({
   onSelectSlot,
   onOpenCrafting,
   onToggleF3,
+  onToggleCamera,
+  onOpenChat,
 }: HudProps) {
   const [tooltipName, setTooltipName] = useState<string>("");
   const [tooltipVisible, setTooltipVisible] = useState(false);
@@ -135,6 +139,22 @@ export function Hud({
             title="Toggle F3 Debug (F3)"
           >
             F3
+          </button>
+          <button
+            type="button"
+            onClick={onToggleCamera}
+            className="btn-icon !h-8 !w-8 text-[10px] text-white/80"
+            title="Change Camera Perspective (F5)"
+          >
+            F5
+          </button>
+          <button
+            type="button"
+            onClick={onOpenChat}
+            className="btn-icon !h-8 !w-8 text-[11px] text-white/80"
+            title="Open Chat & Commands (T or /)"
+          >
+            💬
           </button>
           <button
             type="button"

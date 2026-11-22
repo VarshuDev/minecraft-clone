@@ -34,6 +34,17 @@ export const BLOCK = {
   FARMLAND: 32,
   POPPY: 33,
   DANDELION: 34,
+  FARMLAND_MOIST: 35,
+  WHEAT_0: 36,
+  WHEAT_1: 37,
+  WHEAT_2: 38,
+  WHEAT_3: 39,
+  REDSTONE_ORE: 40,
+  REDSTONE_WIRE: 41,
+  REDSTONE_TORCH: 42,
+  LEVER: 43,
+  REDSTONE_LAMP: 44,
+  REDSTONE_LAMP_LIT: 45,
 } as const;
 
 export type BlockNum = (typeof BLOCK)[keyof typeof BLOCK];
@@ -116,7 +127,13 @@ export type ItemId =
   | "diamond_leggings"
   | "diamond_boots"
   | "leather_chestplate"
-  | "leather_boots";
+  | "leather_boots"
+  | "bone_meal"
+  | "redstone_dust"
+  | "lever"
+  | "redstone_torch"
+  | "redstone_lamp"
+  | "block_redstone_ore";
 
 export type ToolKind = "pickaxe" | "axe" | "shovel" | "sword" | "hoe" | "bow";
 export type ArmorSlot = "head" | "chest" | "legs" | "feet";
@@ -144,6 +161,10 @@ export interface BlockDef {
   isTorch?: boolean;
   isFlower?: boolean;
   isLadder?: boolean;
+  isCrop?: boolean;
+  cropStage?: number;
+  isWire?: boolean;
+  isLever?: boolean;
   sound: "grass" | "stone" | "wood" | "sand" | "glass" | "water";
   colors: { top: string; left: string; right: string };
 }
@@ -566,6 +587,149 @@ export const BLOCK_DEFS: Record<BlockNum, BlockDef> = {
     sound: "grass",
     colors: { top: "#ffd43b", left: "#2f9e44", right: "#2f9e44" },
   },
+  [BLOCK.FARMLAND_MOIST]: {
+    id: BLOCK.FARMLAND_MOIST,
+    name: "Moist Farmland",
+    hardness: 0.6,
+    preferredTool: "shovel",
+    drop: "block_dirt",
+    shards: ["#3d2716", "#291a0e"],
+    solid: true,
+    transparent: false,
+    sound: "grass",
+    colors: { top: "#291a0e", left: "#3d2716", right: "#24170c" },
+  },
+  [BLOCK.WHEAT_0]: {
+    id: BLOCK.WHEAT_0,
+    name: "Wheat (Stage 1)",
+    hardness: 0.05,
+    drop: "seeds",
+    shards: ["#6bbd45"],
+    solid: false,
+    transparent: true,
+    isCrop: true,
+    cropStage: 0,
+    sound: "grass",
+    colors: { top: "#55a822", left: "#55a822", right: "#55a822" },
+  },
+  [BLOCK.WHEAT_1]: {
+    id: BLOCK.WHEAT_1,
+    name: "Wheat (Stage 2)",
+    hardness: 0.05,
+    drop: "seeds",
+    shards: ["#76c835"],
+    solid: false,
+    transparent: true,
+    isCrop: true,
+    cropStage: 1,
+    sound: "grass",
+    colors: { top: "#6bbd45", left: "#6bbd45", right: "#6bbd45" },
+  },
+  [BLOCK.WHEAT_2]: {
+    id: BLOCK.WHEAT_2,
+    name: "Wheat (Stage 3)",
+    hardness: 0.05,
+    drop: "seeds",
+    shards: ["#a0cc30"],
+    solid: false,
+    transparent: true,
+    isCrop: true,
+    cropStage: 2,
+    sound: "grass",
+    colors: { top: "#a0cc30", left: "#a0cc30", right: "#a0cc30" },
+  },
+  [BLOCK.WHEAT_3]: {
+    id: BLOCK.WHEAT_3,
+    name: "Mature Wheat",
+    hardness: 0.05,
+    drop: "wheat",
+    shards: ["#fab005", "#ffd43b"],
+    solid: false,
+    transparent: true,
+    isCrop: true,
+    cropStage: 3,
+    sound: "grass",
+    colors: { top: "#fab005", left: "#ffd43b", right: "#d89c47" },
+  },
+  [BLOCK.REDSTONE_ORE]: {
+    id: BLOCK.REDSTONE_ORE,
+    name: "Redstone Ore",
+    hardness: 2.2,
+    preferredTool: "pickaxe",
+    drop: "redstone_dust",
+    shards: ["#8b9099", "#ff2200"],
+    solid: true,
+    transparent: false,
+    emitsLight: true,
+    lightColor: 0xff2200,
+    sound: "stone",
+    colors: { top: "#ff2200", left: "#8b9099", right: "#6b7078" },
+  },
+  [BLOCK.REDSTONE_WIRE]: {
+    id: BLOCK.REDSTONE_WIRE,
+    name: "Redstone Wire",
+    hardness: 0.05,
+    drop: "redstone_dust",
+    shards: ["#ff2200"],
+    solid: false,
+    transparent: true,
+    isWire: true,
+    sound: "sand",
+    colors: { top: "#ff2200", left: "#ff2200", right: "#ff2200" },
+  },
+  [BLOCK.REDSTONE_TORCH]: {
+    id: BLOCK.REDSTONE_TORCH,
+    name: "Redstone Torch",
+    hardness: 0.05,
+    drop: "redstone_torch",
+    shards: ["#ff2200", "#825329"],
+    solid: false,
+    transparent: true,
+    isTorch: true,
+    emitsLight: true,
+    lightColor: 0xff3311,
+    sound: "wood",
+    colors: { top: "#ff3311", left: "#825329", right: "#ff3311" },
+  },
+  [BLOCK.LEVER]: {
+    id: BLOCK.LEVER,
+    name: "Lever",
+    hardness: 0.4,
+    preferredTool: "pickaxe",
+    drop: "lever",
+    shards: ["#825329", "#8b9099"],
+    solid: false,
+    transparent: true,
+    isLever: true,
+    sound: "stone",
+    colors: { top: "#825329", left: "#8b9099", right: "#825329" },
+  },
+  [BLOCK.REDSTONE_LAMP]: {
+    id: BLOCK.REDSTONE_LAMP,
+    name: "Redstone Lamp",
+    hardness: 0.8,
+    preferredTool: "pickaxe",
+    drop: "redstone_lamp",
+    shards: ["#4a301c", "#8b6530"],
+    solid: true,
+    transparent: false,
+    sound: "glass",
+    colors: { top: "#4a301c", left: "#382314", right: "#2e1c0f" },
+  },
+  [BLOCK.REDSTONE_LAMP_LIT]: {
+    id: BLOCK.REDSTONE_LAMP_LIT,
+    name: "Lit Redstone Lamp",
+    hardness: 0.8,
+    preferredTool: "pickaxe",
+    drop: "redstone_lamp",
+    shards: ["#ffc83b", "#ff9e1b"],
+    solid: true,
+    transparent: false,
+    emitsLight: true,
+    lightColor: 0xffaa33,
+    sound: "glass",
+    colors: { top: "#ffc83b", left: "#ffa710", right: "#ff8800" },
+  },
 };
 
 export interface FoodDef {
@@ -832,6 +996,53 @@ export const ITEMS: Record<ItemId, ItemDef> = {
     category: "armor",
     armor: { slot: "feet", defense: 1, material: "leather" },
   },
+  bone_meal: {
+    id: "bone_meal",
+    name: "Bone Meal",
+    short: "MEAL",
+    color: "#f8f9fa",
+    category: "material",
+  },
+  redstone_dust: {
+    id: "redstone_dust",
+    name: "Redstone Dust",
+    short: "REDSTN",
+    blockId: BLOCK.REDSTONE_WIRE,
+    color: "#ff2200",
+    category: "material",
+  },
+  lever: {
+    id: "lever",
+    name: "Lever",
+    short: "LEVER",
+    blockId: BLOCK.LEVER,
+    color: "#825329",
+    category: "block",
+  },
+  redstone_torch: {
+    id: "redstone_torch",
+    name: "Redstone Torch",
+    short: "R.TORCH",
+    blockId: BLOCK.REDSTONE_TORCH,
+    color: "#ff3311",
+    category: "block",
+  },
+  redstone_lamp: {
+    id: "redstone_lamp",
+    name: "Redstone Lamp",
+    short: "LAMP",
+    blockId: BLOCK.REDSTONE_LAMP,
+    color: "#4a301c",
+    category: "block",
+  },
+  block_redstone_ore: {
+    id: "block_redstone_ore",
+    name: "Redstone Ore",
+    short: "R.ORE",
+    blockId: BLOCK.REDSTONE_ORE,
+    color: "#ff2200",
+    category: "block",
+  },
 };
 
 export interface Recipe {
@@ -884,6 +1095,10 @@ export const RECIPES: Recipe[] = [
   { id: "glass", out: "block_glass", count: 4, inputs: [{ item: "block_sand", count: 2 }, { item: "coal", count: 1 }], note: "Clear window" },
   { id: "glowstone", out: "block_glowstone", count: 2, inputs: [{ item: "gold_ingot", count: 1 }, { item: "block_glass", count: 1 }], note: "Bright lamp" },
   { id: "tnt", out: "block_tnt", count: 2, inputs: [{ item: "block_sand", count: 2 }, { item: "gunpowder", count: 2 }], note: "Explosive blast" },
+  { id: "bone_meal", out: "bone_meal", count: 3, inputs: [{ item: "bone", count: 1 }], note: "Fertilizer for crops" },
+  { id: "lever", out: "lever", count: 1, inputs: [{ item: "stick", count: 1 }, { item: "block_cobble", count: 1 }], note: "Redstone power switch" },
+  { id: "redstone_torch", out: "redstone_torch", count: 1, inputs: [{ item: "stick", count: 1 }, { item: "redstone_dust", count: 1 }], note: "Continuous redstone power" },
+  { id: "redstone_lamp", out: "redstone_lamp", count: 1, inputs: [{ item: "block_glowstone", count: 1 }, { item: "redstone_dust", count: 4 }], note: "Redstone activated lamp" },
 ];
 
 export interface SmeltingRecipe {
@@ -895,6 +1110,7 @@ export interface SmeltingRecipe {
 export const SMELTING_RECIPES: SmeltingRecipe[] = [
   { input: "block_iron_ore", output: "iron_ingot", xp: 1.0 },
   { input: "block_gold_ore", output: "gold_ingot", xp: 1.5 },
+  { input: "block_redstone_ore", output: "redstone_dust", xp: 0.7 },
   { input: "block_sand", output: "block_glass", xp: 0.2 },
   { input: "block_cobble", output: "block_stone", xp: 0.2 },
   { input: "raw_beef", output: "cooked_beef", xp: 0.5 },
@@ -942,6 +1158,14 @@ export const CREATIVE_CATALOG: ItemId[] = [
   "block_iron_ore",
   "block_gold_ore",
   "block_diamond_ore",
+  "block_redstone_ore",
+  "redstone_dust",
+  "redstone_torch",
+  "lever",
+  "redstone_lamp",
+  "bone_meal",
+  "wheat",
+  "seeds",
   "diamond_sword",
   "diamond_pick",
   "iron_helmet",

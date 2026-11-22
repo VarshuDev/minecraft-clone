@@ -20,6 +20,7 @@ import { ChestModal } from "@/components/ChestModal";
 import { FurnaceModal } from "@/components/FurnaceModal";
 import { DeathScreen, PauseScreen } from "@/components/Overlays";
 import { TouchControls } from "@/components/TouchControls";
+import { ChatOverlay, type ChatMessage } from "@/components/ChatOverlay";
 
 type Screen = "menu" | "playing" | "paused" | "dead";
 
@@ -79,6 +80,11 @@ export default function App() {
   const [chestPosKey, setChestPosKey] = useState<string | null>(null);
   const [furnacePosKey, setFurnacePosKey] = useState<string | null>(null);
 
+  // Chat & Command Console state
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [chatInitialText, setChatInitialText] = useState("");
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+
   const [isTouch] = useState<boolean>(
     () => typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches,
   );
@@ -130,6 +136,13 @@ export default function App() {
           },
           onOpenFurnace: (posKey) => {
             setFurnacePosKey(posKey);
+          },
+          onOpenChat: (initialText) => {
+            setIsChatOpen(true);
+            setChatInitialText(initialText ?? "");
+          },
+          onChatMessage: (msg) => {
+            setChatMessages((prev) => [...prev.slice(-60), { ...msg, timestamp: Date.now() }]);
           },
           onNotification: (msg) => {
             setToast(msg);
@@ -257,6 +270,22 @@ export default function App() {
     [],
   );
 
+  const handleSendMessage = useCallback((text: string) => {
+    gameRef.current?.executeCommand(text);
+  }, []);
+
+  const handleCloseChat = useCallback(() => {
+    setIsChatOpen(false);
+    if (screen === "playing") {
+      try {
+        const p = hostRef.current?.requestPointerLock() as unknown as Promise<void> | undefined;
+        if (p && typeof p.catch === "function") p.catch(() => {});
+      } catch {
+        /* ignore */
+      }
+    }
+  }, [screen]);
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
@@ -313,6 +342,14 @@ export default function App() {
                 gameRef.current.isF3Open = !gameRef.current.isF3Open;
               }
             }}
+            onToggleCamera={() => {
+              gameRef.current?.toggleCameraMode();
+            }}
+            onOpenChat={() => {
+              if (gameRef.current?.isPointerLocked) document.exitPointerLock();
+              setIsChatOpen(true);
+              setChatInitialText("");
+            }}
           />
 
           {/* Touch Controls (Mobile / Tablet) */}
@@ -343,6 +380,15 @@ export default function App() {
               minePulse={0}
             />
           )}
+
+          {/* In-Game Chat Overlay & Console */}
+          <ChatOverlay
+            isOpen={isChatOpen}
+            initialText={chatInitialText}
+            messages={chatMessages}
+            onClose={handleCloseChat}
+            onSendMessage={handleSendMessage}
+          />
         </>
       )}
 

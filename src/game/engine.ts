@@ -22,6 +22,7 @@ import {
 } from "./world";
 import { GameAudio } from "./audio";
 import { MobManager } from "./mobs";
+import { PlayerCharacterModel } from "./playerModel";
 import {
   loadSettings,
   saveWorldSave,
@@ -86,6 +87,8 @@ export interface EngineCallbacks {
   onOpenCrafting: (isWorkstation: boolean) => void;
   onOpenChest?: (chestPosKey: string) => void;
   onOpenFurnace?: (furnacePosKey: string) => void;
+  onOpenChat?: (initialText?: string) => void;
+  onChatMessage?: (msg: { id: string; text: string; type: "chat" | "system" | "command" | "error" }) => void;
   onNotification?: (msg: string) => void;
   onDeath: () => void;
   onPauseRequest: () => void;
@@ -195,6 +198,14 @@ export class GameEngine {
   isMining = false;
   isPlacing = false;
   walkBob = 0;
+
+  // Third-Person Camera & 3D Character Model
+  cameraMode: "first_person" | "third_person_back" | "third_person_front" = "first_person";
+  playerModel: PlayerCharacterModel;
+
+  // Crops & Agriculture Simulation
+  activeCrops: Set<string> = new Set();
+  cropTimer = 0;
 
   // Targeting & Mining
   targetBlock: { x: number; y: number; z: number; block: BlockNum } | null = null;
@@ -338,6 +349,11 @@ export class GameEngine {
     this.viewmodelGroup = new THREE.Group();
     this.camera.add(this.viewmodelGroup);
     this.rebuildViewmodel();
+
+    // 3D Steve Character Model for Third-Person Mode
+    this.playerModel = new PlayerCharacterModel();
+    this.scene.add(this.playerModel.group);
+    this.playerModel.group.visible = false;
 
     // Setup Torch / Glowstone Point Lights pool (up to 4 local dynamic lights)
     for (let i = 0; i < 4; i++) {
@@ -607,6 +623,17 @@ export class GameEngine {
     }
 
     this.updatePrecipitation(dt);
+  }
+
+  setWeather(w: "clear" | "rain" | "thunder") {
+    this.weather = w;
+    if (w === "clear") {
+      this.audio.stopRain();
+      this.weatherTimer = 240;
+    } else {
+      this.audio.startRain(w === "thunder" ? 0.9 : 0.6);
+      this.weatherTimer = 120;
+    }
   }
 
   private updatePrecipitation(dt: number) {
@@ -1038,6 +1065,21 @@ export class GameEngine {
         return;
       }
 
+      // F5 Third-Person Camera Toggle
+      if (e.code === "F5") {
+        e.preventDefault();
+        this.toggleCameraMode();
+        return;
+      }
+
+      // 'T' or '/' for In-Game Chat Console
+      if ((e.code === "KeyT" || e.code === "Slash") && !e.ctrlKey && !e.altKey) {
+        e.preventDefault();
+        if (this.isPointerLocked) document.exitPointerLock();
+        this.callbacks.onOpenChat?.(e.code === "Slash" ? "/" : "");
+        return;
+      }
+
       // Space double-tap in creative mode: toggle flying
       if (e.code === "Space" && this.save.gameMode === "creative") {
         const now = performance.now();
@@ -1207,6 +1249,321 @@ export class GameEngine {
       this.player.selectedSlot = index;
       this.audio.ui();
       this.rebuildViewmodel();
+    }
+  }
+
+  toggleCameraMode() {
+    if (this.cameraMode === "first_person") {
+      this.cameraMode = "third_person_back";
+      this.callbacks.onNotification?.("Camera: Third Person (Back)");
+    } else if (this.cameraMode === "third_person_back") {
+      this.cameraMode = "third_person_front";
+      this.callbacks.onNotification?.("Camera: Third Person (Front)");
+    } else {
+      this.cameraMode = "first_person";
+      this.callbacks.onNotification?.("Camera: First Person");
+    }
+    this.audio.cameraSwitch();
+  }
+
+  executeCommand(raw: string): { success: boolean; message: string } {
+    const trimmed = raw.trim();
+    if (!trimmed) return { success: false, message: "" };
+
+    if (!trimmed.startsWith("/")) {
+      const msg = `<Steve> ${trimmed}`;
+      this.callbacks.onChatMessage?.({
+        id: `msg_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+        text: msg,
+        type: "chat",
+      });
+      this.audio.chatPop();
+      return { success: true, message: msg };
+    }
+
+    const parts = trimmed.slice(1).split(/\s+/);
+    const cmd = parts[0].toLowerCase();
+    const args = parts.slice(1);
+
+    this.audio.chatPop();
+
+    switch (cmd) {
+      case "help":
+      case "?": {
+        const helpLines = [
+          "--- Available Commands ---",
+          "/gamemode <survival|creative> - Change game mode",
+          "/time set <day|noon|night|midnight> - Set time of day",
+          "/weather <clear|rain|thunder> - Set atmospheric weather",
+          "/tp <x> <y> <z> - Teleport coordinates",
+          "/give <item_id> [count] - Add items to inventory",
+          "/heal - Full health & hunger recovery",
+          "/kill - Slay the player",
+          "/seed - Display world seed",
+          "/clear - Clear inventory",
+          "/xp <add|set> <amount> - Modify player XP or level",
+        ];
+        helpLines.forEach((line) => {
+          this.callbacks.onChatMessage?.({
+            id: `msg_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+            text: line,
+            type: "system",
+          });
+        });
+        return { success: true, message: helpLines.join("\n") };
+      }
+
+      case "gamemode": {
+        const modeArg = args[0]?.toLowerCase();
+        let mode: GameModeId = "survival";
+        if (modeArg === "creative" || modeArg === "1" || modeArg === "c") mode = "creative";
+        else if (modeArg === "survival" || modeArg === "0" || modeArg === "s") mode = "survival";
+        else {
+          const err = "Usage: /gamemode <survival|creative>";
+          this.callbacks.onChatMessage?.({
+            id: `msg_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+            text: err,
+            type: "error",
+          });
+          return { success: false, message: err };
+        }
+        this.save.gameMode = mode;
+        if (mode === "creative") {
+          this.player.health = 20;
+          this.player.hunger = 20;
+        } else {
+          this.player.flying = false;
+        }
+        const msg = `Set game mode to ${mode.toUpperCase()} Mode`;
+        this.callbacks.onChatMessage?.({
+          id: `msg_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+          text: msg,
+          type: "command",
+        });
+        this.callbacks.onNotification?.(msg);
+        return { success: true, message: msg };
+      }
+
+      case "time": {
+        if (args[0]?.toLowerCase() === "set") {
+          const val = args[1]?.toLowerCase();
+          let ticks = 6000;
+          if (val === "day") ticks = 1000;
+          else if (val === "noon") ticks = 6000;
+          else if (val === "sunset" || val === "dusk") ticks = 12000;
+          else if (val === "night") ticks = 13500;
+          else if (val === "midnight") ticks = 18000;
+          else if (!isNaN(Number(val))) ticks = parseInt(val, 10);
+          else {
+            const err = "Usage: /time set <day|noon|night|midnight|<ticks>>";
+            this.callbacks.onChatMessage?.({
+              id: `msg_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+              text: err,
+              type: "error",
+            });
+            return { success: false, message: err };
+          }
+          this.save.dayTime = ticks % 24000;
+          const msg = `Set the time to ${ticks}`;
+          this.callbacks.onChatMessage?.({
+            id: `msg_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+            text: msg,
+            type: "command",
+          });
+          this.callbacks.onNotification?.(msg);
+          return { success: true, message: msg };
+        }
+        const err = "Usage: /time set <day|noon|night|midnight|<ticks>>";
+        this.callbacks.onChatMessage?.({
+          id: `msg_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+          text: err,
+          type: "error",
+        });
+        return { success: false, message: err };
+      }
+
+      case "weather": {
+        const type = args[0]?.toLowerCase();
+        if (type === "clear" || type === "rain" || type === "thunder") {
+          this.setWeather(type);
+          const msg = `Set the weather to ${type}`;
+          this.callbacks.onChatMessage?.({
+            id: `msg_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+            text: msg,
+            type: "command",
+          });
+          this.callbacks.onNotification?.(msg);
+          return { success: true, message: msg };
+        }
+        const err = "Usage: /weather <clear|rain|thunder>";
+        this.callbacks.onChatMessage?.({
+          id: `msg_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+          text: err,
+          type: "error",
+        });
+        return { success: false, message: err };
+      }
+
+      case "tp":
+      case "teleport": {
+        if (args.length < 3) {
+          const err = "Usage: /tp <x> <y> <z>";
+          this.callbacks.onChatMessage?.({
+            id: `msg_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+            text: err,
+            type: "error",
+          });
+          return { success: false, message: err };
+        }
+        const tx = parseFloat(args[0]);
+        const ty = parseFloat(args[1]);
+        const tz = parseFloat(args[2]);
+        if (isNaN(tx) || isNaN(ty) || isNaN(tz)) {
+          const err = "Invalid coordinates.";
+          this.callbacks.onChatMessage?.({
+            id: `msg_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+            text: err,
+            type: "error",
+          });
+          return { success: false, message: err };
+        }
+        this.player.pos.set(tx, ty, tz);
+        this.player.vel.set(0, 0, 0);
+        this.updateLoadedChunks(true);
+        const msg = `Teleported Steve to ${tx.toFixed(1)}, ${ty.toFixed(1)}, ${tz.toFixed(1)}`;
+        this.callbacks.onChatMessage?.({
+          id: `msg_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+          text: msg,
+          type: "command",
+        });
+        this.callbacks.onNotification?.(msg);
+        return { success: true, message: msg };
+      }
+
+      case "give": {
+        const itemId = args[0] as ItemId;
+        const count = args[1] ? Math.max(1, parseInt(args[1], 10)) : 1;
+        if (!ITEMS[itemId]) {
+          const err = `Unknown item '${args[0]}'. See /help or creative catalog.`;
+          this.callbacks.onChatMessage?.({
+            id: `msg_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+            text: err,
+            type: "error",
+          });
+          return { success: false, message: err };
+        }
+        this.addItem(itemId, count);
+        const msg = `Gave ${count} [${ITEMS[itemId].name}] to Steve`;
+        this.callbacks.onChatMessage?.({
+          id: `msg_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+          text: msg,
+          type: "command",
+        });
+        this.callbacks.onNotification?.(msg);
+        return { success: true, message: msg };
+      }
+
+      case "heal": {
+        this.player.health = 20;
+        this.player.hunger = 20;
+        this.player.saturation = 20;
+        const msg = "Healed Steve to full health and hunger!";
+        this.callbacks.onChatMessage?.({
+          id: `msg_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+          text: msg,
+          type: "command",
+        });
+        this.callbacks.onNotification?.(msg);
+        return { success: true, message: msg };
+      }
+
+      case "kill": {
+        this.player.health = 0;
+        this.isDead = true;
+        this.audio.hurt();
+        this.callbacks.onDeath();
+        const msg = "Steve fell out of the world.";
+        this.callbacks.onChatMessage?.({
+          id: `msg_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+          text: msg,
+          type: "system",
+        });
+        return { success: true, message: msg };
+      }
+
+      case "seed": {
+        const msg = `World Seed: ${this.save.seed}`;
+        this.callbacks.onChatMessage?.({
+          id: `msg_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+          text: msg,
+          type: "system",
+        });
+        return { success: true, message: msg };
+      }
+
+      case "clear": {
+        this.player.inventory = {};
+        this.player.hotbar = Array(9).fill(null);
+        this.rebuildViewmodel();
+        const msg = "Cleared player inventory and hotbar.";
+        this.callbacks.onChatMessage?.({
+          id: `msg_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+          text: msg,
+          type: "command",
+        });
+        return { success: true, message: msg };
+      }
+
+      case "xp": {
+        const sub = args[0]?.toLowerCase();
+        const amt = parseInt(args[1], 10);
+        if (isNaN(amt)) {
+          const err = "Usage: /xp <add|set> <amount>";
+          this.callbacks.onChatMessage?.({
+            id: `msg_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+            text: err,
+            type: "error",
+          });
+          return { success: false, message: err };
+        }
+        if (sub === "add") {
+          this.addXp(amt);
+          const msg = `Added ${amt} XP to player.`;
+          this.callbacks.onChatMessage?.({
+            id: `msg_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+            text: msg,
+            type: "command",
+          });
+          return { success: true, message: msg };
+        } else if (sub === "set") {
+          this.player.level = Math.max(0, amt);
+          this.player.xp = 0;
+          const msg = `Set player level to ${amt}.`;
+          this.callbacks.onChatMessage?.({
+            id: `msg_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+            text: msg,
+            type: "command",
+          });
+          return { success: true, message: msg };
+        }
+        const err = "Usage: /xp <add|set> <amount>";
+        this.callbacks.onChatMessage?.({
+          id: `msg_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+          text: err,
+          type: "error",
+        });
+        return { success: false, message: err };
+      }
+
+      default: {
+        const err = `Unknown command: /${cmd}. Type /help for available commands.`;
+        this.callbacks.onChatMessage?.({
+          id: `msg_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+          text: err,
+          type: "error",
+        });
+        return { success: false, message: err };
+      }
     }
   }
 
@@ -1407,8 +1764,18 @@ export class GameEngine {
   // RAYCASTING & BLOCK TARGETING
   // --------------------------------------------------------------------------
   private updateTargeting() {
-    const rayOrigin = this.camera.position.clone();
-    const rayDir = new THREE.Vector3(0, 0, -1).applyQuaternion(this.camera.quaternion).normalize();
+    const eyeY = this.player.pos.y + 1.62;
+    const rayOrigin = this.cameraMode === "first_person"
+      ? this.camera.position.clone()
+      : new THREE.Vector3(this.player.pos.x, eyeY, this.player.pos.z);
+
+    const rayDir = this.cameraMode === "first_person"
+      ? new THREE.Vector3(0, 0, -1).applyQuaternion(this.camera.quaternion).normalize()
+      : new THREE.Vector3(
+          -Math.sin(this.player.yaw) * Math.cos(this.player.pitch),
+          Math.sin(this.player.pitch),
+          -Math.cos(this.player.yaw) * Math.cos(this.player.pitch),
+        ).normalize();
 
     const maxDist = 5.2;
     const step = 0.04;
@@ -1534,16 +1901,22 @@ export class GameEngine {
     // Remove block
     this.world.setBlock(x, y, z, BLOCK.AIR);
     this.markBlockDirty(x, y, z);
+    this.activeCrops.delete(`${x},${y},${z}`);
 
     // Give drop in survival mode
     if (this.save.gameMode === "survival") {
-      if (def.drop) {
+      if (block === BLOCK.WHEAT_3) {
+        this.addItem("wheat", 1);
+        this.addItem("seeds", 1 + Math.floor(Math.random() * 3));
+        this.spawnXpOrbs(x + 0.5, y + 0.5, z + 0.5, 1);
+      } else if (def.drop) {
         this.addItem(def.drop, 1);
       }
       if (block === BLOCK.COAL_ORE) this.spawnXpOrbs(x + 0.5, y + 0.5, z + 0.5, 1);
       else if (block === BLOCK.IRON_ORE) this.spawnXpOrbs(x + 0.5, y + 0.5, z + 0.5, 2);
       else if (block === BLOCK.GOLD_ORE) this.spawnXpOrbs(x + 0.5, y + 0.5, z + 0.5, 3);
       else if (block === BLOCK.DIAMOND_ORE) this.spawnXpOrbs(x + 0.5, y + 0.5, z + 0.5, 5);
+      else if (block === BLOCK.REDSTONE_ORE) this.spawnXpOrbs(x + 0.5, y + 0.5, z + 0.5, 4);
     }
 
     // Recheck targeting
@@ -1641,6 +2014,12 @@ export class GameEngine {
       return;
     }
 
+    // 7.5) Lever toggle
+    if (block === BLOCK.LEVER) {
+      this.toggleLever(x, y, z);
+      return;
+    }
+
     // 8) Hoe tilling on Grass or Dirt -> Farmland
     if (heldDef?.tool?.kind === "hoe" && (block === BLOCK.GRASS || block === BLOCK.DIRT)) {
       this.world.setBlock(x, y, z, BLOCK.FARMLAND);
@@ -1651,11 +2030,33 @@ export class GameEngine {
     }
 
     // 9) Seeds on Farmland
-    if (held?.item === "seeds" && block === BLOCK.FARMLAND) {
-      this.world.setBlock(x, y + 1, z, BLOCK.DANDELION);
-      this.markBlockDirty(x, y + 1, z);
-      this.audio.place("grass");
-      this.consumeHeldItem(1);
+    if (held?.item === "seeds" && (block === BLOCK.FARMLAND || block === BLOCK.FARMLAND_MOIST)) {
+      if (this.world.getBlock(x, y + 1, z) === BLOCK.AIR) {
+        this.world.setBlock(x, y + 1, z, BLOCK.WHEAT_0);
+        this.markBlockDirty(x, y + 1, z);
+        this.activeCrops.add(`${x},${y + 1},${z}`);
+        this.audio.place("grass");
+        if (this.save.gameMode === "survival") {
+          this.consumeHeldItem(1);
+        }
+        this.swingAnim = 0.5;
+        return;
+      }
+    }
+
+    // 9.5) Bone Meal on Crops
+    if (
+      held?.item === "bone_meal" &&
+      (block === BLOCK.WHEAT_0 || block === BLOCK.WHEAT_1 || block === BLOCK.WHEAT_2)
+    ) {
+      const nextCrop = (block === BLOCK.WHEAT_2 ? BLOCK.WHEAT_3 : block + 1) as BlockNum;
+      this.world.setBlock(x, y, z, nextCrop);
+      this.markBlockDirty(x, y, z);
+      this.audio.boneMealSparkle();
+      this.spawnSparkleParticles(x + 0.5, y + 0.5, z + 0.5);
+      if (this.save.gameMode === "survival") {
+        this.consumeHeldItem(1);
+      }
       this.swingAnim = 0.5;
       return;
     }
@@ -1682,8 +2083,14 @@ export class GameEngine {
 
     if (py < 0 || py >= WORLD_HEIGHT) return;
 
-    // Ensure placement doesn't intersect player AABB (unless torch)
-    if (placeBlockId !== BLOCK.TORCH) {
+    // Ensure placement doesn't intersect player AABB (unless torch/wire/lever)
+    const isPassableFixture =
+      placeBlockId === BLOCK.TORCH ||
+      placeBlockId === BLOCK.REDSTONE_WIRE ||
+      placeBlockId === BLOCK.LEVER ||
+      placeBlockId === BLOCK.REDSTONE_TORCH;
+
+    if (!isPassableFixture) {
       const pBox = new THREE.Box3(
         new THREE.Vector3(this.player.pos.x - 0.3, this.player.pos.y, this.player.pos.z - 0.3),
         new THREE.Vector3(this.player.pos.x + 0.3, this.player.pos.y + 1.8, this.player.pos.z + 0.3),
@@ -1751,6 +2158,136 @@ export class GameEngine {
         this.player.vel.addScaledVector(dir, 8.5);
       }
     }, 1200);
+  }
+
+  private toggleLever(x: number, y: number, z: number) {
+    this.audio.leverToggle(true);
+    this.swingAnim = 0.45;
+
+    const neighbors = [
+      [x + 1, y, z], [x - 1, y, z],
+      [x, y + 1, z], [x, y - 1, z],
+      [x, y, z + 1], [x, y, z - 1],
+    ];
+
+    let poweredAny = false;
+    for (const [nx, ny, nz] of neighbors) {
+      const nb = this.world.getBlock(nx, ny, nz);
+      if (nb === BLOCK.REDSTONE_LAMP) {
+        this.world.setBlock(nx, ny, nz, BLOCK.REDSTONE_LAMP_LIT);
+        this.markBlockDirty(nx, ny, nz);
+        poweredAny = true;
+      } else if (nb === BLOCK.REDSTONE_LAMP_LIT) {
+        this.world.setBlock(nx, ny, nz, BLOCK.REDSTONE_LAMP);
+        this.markBlockDirty(nx, ny, nz);
+        poweredAny = true;
+      } else if (nb === BLOCK.TNT) {
+        this.detonateTNT(nx, ny, nz);
+        poweredAny = true;
+      } else if (nb === BLOCK.WOOD_DOOR) {
+        this.audio.doorToggle(true);
+        poweredAny = true;
+      } else if (nb === BLOCK.REDSTONE_WIRE) {
+        this.propagateRedstone(nx, ny, nz);
+        poweredAny = true;
+      }
+    }
+
+    if (!poweredAny) {
+      this.callbacks.onNotification?.("Lever flipped! Connect Redstone Wire, Lamp, Door, or TNT.");
+    }
+  }
+
+  private propagateRedstone(x: number, y: number, z: number) {
+    const queue = [[x, y, z]];
+    const visited = new Set<string>();
+    visited.add(`${x},${y},${z}`);
+
+    while (queue.length > 0 && visited.size < 20) {
+      const [cx, cy, cz] = queue.shift()!;
+      const neighbors = [
+        [cx + 1, cy, cz], [cx - 1, cy, cz],
+        [cx, cy, cz + 1], [cx, cy, cz - 1],
+        [cx, cy + 1, cz], [cx, cy - 1, cz],
+      ];
+      for (const [nx, ny, nz] of neighbors) {
+        const key = `${nx},${ny},${nz}`;
+        if (visited.has(key)) continue;
+        visited.add(key);
+
+        const blk = this.world.getBlock(nx, ny, nz);
+        if (blk === BLOCK.REDSTONE_WIRE) {
+          queue.push([nx, ny, nz]);
+        } else if (blk === BLOCK.REDSTONE_LAMP) {
+          this.world.setBlock(nx, ny, nz, BLOCK.REDSTONE_LAMP_LIT);
+          this.markBlockDirty(nx, ny, nz);
+        } else if (blk === BLOCK.REDSTONE_LAMP_LIT) {
+          this.world.setBlock(nx, ny, nz, BLOCK.REDSTONE_LAMP);
+          this.markBlockDirty(nx, ny, nz);
+        } else if (blk === BLOCK.TNT) {
+          this.detonateTNT(nx, ny, nz);
+        } else if (blk === BLOCK.WOOD_DOOR) {
+          this.audio.doorToggle(true);
+        }
+      }
+    }
+  }
+
+  spawnSparkleParticles(x: number, y: number, z: number) {
+    const greenSparkles = ["#88ff20", "#44ee11", "#aaff44", "#ffffff"];
+    this.spawnBlockShards(x - 0.5, y - 0.5, z - 0.5, greenSparkles, 14);
+  }
+
+  private updateCrops(dt: number) {
+    this.cropTimer += dt;
+    if (this.cropTimer < 2.5) return;
+    this.cropTimer = 0;
+
+    const cropPositions = Array.from(this.activeCrops);
+    for (const posKey of cropPositions) {
+      const [x, y, z] = posKey.split(",").map(Number);
+      const blk = this.world.getBlock(x, y, z);
+      const def = BLOCK_DEFS[blk];
+
+      if (!def?.isCrop) {
+        this.activeCrops.delete(posKey);
+        continue;
+      }
+
+      // Check block below
+      const soil = this.world.getBlock(x, y - 1, z);
+      if (soil !== BLOCK.FARMLAND && soil !== BLOCK.FARMLAND_MOIST) {
+        this.breakTargetBlock(x, y, z, blk);
+        this.activeCrops.delete(posKey);
+        continue;
+      }
+
+      // Check hydration of soil: within 4 horizontal blocks of WATER
+      let hasWater = false;
+      for (let dx = -4; dx <= 4 && !hasWater; dx++) {
+        for (let dz = -4; dz <= 4 && !hasWater; dz++) {
+          if (this.world.getBlock(x + dx, y - 1, z + dz) === BLOCK.WATER) {
+            hasWater = true;
+          }
+        }
+      }
+
+      if (hasWater && soil === BLOCK.FARMLAND) {
+        this.world.setBlock(x, y - 1, z, BLOCK.FARMLAND_MOIST);
+        this.markBlockDirty(x, y - 1, z);
+      } else if (!hasWater && soil === BLOCK.FARMLAND_MOIST) {
+        this.world.setBlock(x, y - 1, z, BLOCK.FARMLAND);
+        this.markBlockDirty(x, y - 1, z);
+      }
+
+      // Growth chance: faster if soil is moist
+      const growthChance = hasWater ? 0.45 : 0.18;
+      if (Math.random() < growthChance && blk !== BLOCK.WHEAT_3) {
+        const nextCrop = (blk === BLOCK.WHEAT_0 ? BLOCK.WHEAT_1 : blk === BLOCK.WHEAT_1 ? BLOCK.WHEAT_2 : BLOCK.WHEAT_3) as BlockNum;
+        this.world.setBlock(x, y, z, nextCrop);
+        this.markBlockDirty(x, y, z);
+      }
+    }
   }
 
   // --------------------------------------------------------------------------
@@ -2221,12 +2758,65 @@ export class GameEngine {
       // 1) Update Player Physics
       this.updatePlayerPhysics(dt);
 
-      // 2) Update Camera Transform
+      // 2) Update Camera Transform & 3D Character Model
       const eyeY = this.player.pos.y + 1.62 + (this.player.onGround ? Math.sin(this.walkBob) * 0.04 : 0);
-      this.camera.position.set(this.player.pos.x, eyeY, this.player.pos.z);
-      this.camera.rotation.set(0, 0, 0);
-      this.camera.rotation.y = this.player.yaw;
-      this.camera.rotation.x = this.player.pitch;
+      const eyePos = new THREE.Vector3(this.player.pos.x, eyeY, this.player.pos.z);
+
+      if (this.cameraMode === "first_person") {
+        this.camera.position.copy(eyePos);
+        this.camera.rotation.set(0, 0, 0);
+        this.camera.rotation.y = this.player.yaw;
+        this.camera.rotation.x = this.player.pitch;
+        this.viewmodelGroup.visible = true;
+        this.playerModel.group.visible = false;
+      } else {
+        this.viewmodelGroup.visible = false;
+        this.playerModel.group.visible = true;
+
+        this.playerModel.group.position.copy(this.player.pos);
+        this.playerModel.group.rotation.set(0, 0, 0);
+        this.playerModel.group.rotation.y = this.player.yaw;
+
+        this.playerModel.updateArmor(this.player.armor);
+        const held = this.getHeldItem();
+        this.playerModel.updateHeldItem(held?.item ?? null);
+
+        const isMoving = Math.hypot(this.player.vel.x, this.player.vel.z) > 0.15 && this.player.onGround;
+        this.playerModel.animate(isMoving, this.walkBob, this.swingAnim, this.player.pitch);
+
+        const targetDist = 3.6;
+        const forward = new THREE.Vector3(
+          -Math.sin(this.player.yaw) * Math.cos(this.player.pitch),
+          Math.sin(this.player.pitch),
+          -Math.cos(this.player.yaw) * Math.cos(this.player.pitch),
+        ).normalize();
+
+        const camDir = this.cameraMode === "third_person_back" ? forward.clone().negate() : forward.clone();
+
+        let safeDist = targetDist;
+        for (let d = 0.4; d <= targetDist; d += 0.15) {
+          const testP = eyePos.clone().add(camDir.clone().multiplyScalar(d));
+          const bx = Math.floor(testP.x);
+          const by = Math.floor(testP.y);
+          const bz = Math.floor(testP.z);
+          const blk = this.world.getBlock(bx, by, bz);
+          if (blk !== BLOCK.AIR && blk !== BLOCK.WATER && BLOCK_DEFS[blk]?.solid) {
+            safeDist = Math.max(0.4, d - 0.2);
+            break;
+          }
+        }
+
+        const camPos = eyePos.clone().add(camDir.multiplyScalar(safeDist));
+        this.camera.position.copy(camPos);
+
+        if (this.cameraMode === "third_person_back") {
+          this.camera.rotation.set(0, 0, 0);
+          this.camera.rotation.y = this.player.yaw;
+          this.camera.rotation.x = this.player.pitch;
+        } else {
+          this.camera.lookAt(eyePos);
+        }
+      }
 
       // 3) Update Atmosphere & Lights
       this.updateDayNightCycle(dt);
@@ -2272,10 +2862,11 @@ export class GameEngine {
         (ex, ey, ez) => this.detonateTNT(ex, ey, ez),
       );
 
-      // 10) Weather, XP Orbs & Furnace Simulation
+      // 10) Weather, XP Orbs, Furnace & Crop Simulation
       this.updateWeather(dt);
       this.updateXpOrbs(dt);
       this.updateFurnaces(dt);
+      this.updateCrops(dt);
 
       // 11) Procedural Ambient Music Update
       this.audio.updateAmbient(dt);
@@ -2500,6 +3091,7 @@ export class GameEngine {
     this.audio.dispose();
     this.atlas.dispose();
     this.mobManager.dispose();
+    this.playerModel.dispose();
 
     if (this.precipPoints) {
       this.scene.remove(this.precipPoints);

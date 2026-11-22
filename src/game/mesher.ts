@@ -178,15 +178,15 @@ function emitTorch(buf: MeshBuf, x: number, y: number, z: number, tileSet: Block
   }
 }
 
-function emitCross(buf: MeshBuf, x: number, y: number, z: number, tileSet: BlockTileMap) {
+function emitCross(buf: MeshBuf, x: number, y: number, z: number, tileSet: BlockTileMap, height = 0.95) {
   const uv = tileSet.side;
   for (let flip = 0; flip < 2; flip++) {
     const vc = buf.vCount;
     buf.pos.push(
       x + 0.15, y, z + 0.15,
       x + 0.85, y, z + 0.85,
-      x + 0.85, y + 0.95, z + 0.85,
-      x + 0.15, y + 0.95, z + 0.15,
+      x + 0.85, y + height, z + 0.85,
+      x + 0.15, y + height, z + 0.15,
     );
     buf.norm.push(0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0);
     buf.col.push(0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95);
@@ -204,8 +204,8 @@ function emitCross(buf: MeshBuf, x: number, y: number, z: number, tileSet: Block
     buf.pos.push(
       x + 0.15, y, z + 0.85,
       x + 0.85, y, z + 0.15,
-      x + 0.85, y + 0.95, z + 0.15,
-      x + 0.15, y + 0.95, z + 0.85,
+      x + 0.85, y + height, z + 0.15,
+      x + 0.15, y + height, z + 0.85,
     );
     buf.norm.push(0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0);
     buf.col.push(0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95);
@@ -217,6 +217,23 @@ function emitCross(buf: MeshBuf, x: number, y: number, z: number, tileSet: Block
     }
     buf.vCount += 4;
   }
+}
+
+function emitWire(buf: MeshBuf, x: number, y: number, z: number, tileSet: BlockTileMap) {
+  const uv = tileSet.top;
+  const vc = buf.vCount;
+  const yH = y + 0.02;
+  buf.pos.push(
+    x, yH, z + 1,
+    x + 1, yH, z + 1,
+    x + 1, yH, z,
+    x, yH, z,
+  );
+  buf.norm.push(0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0);
+  buf.col.push(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1);
+  buf.uv.push(uv.u0, uv.vBot, uv.u1, uv.vBot, uv.u1, uv.vTop, uv.u0, uv.vTop);
+  buf.idx.push(vc, vc + 1, vc + 2, vc, vc + 2, vc + 3);
+  buf.vCount += 4;
 }
 
 export interface ChunkGeometries {
@@ -248,13 +265,24 @@ export function buildChunkGeometries(
         const def = BLOCK_DEFS[b];
         const tileSet = tiles[b];
 
-        if (def.isTorch) {
+        if (def.isTorch || def.isLever) {
           emitTorch(opaqueBuf, wx, y, wz, tileSet);
           continue;
         }
 
         if (def.isFlower) {
           emitCross(opaqueBuf, wx, y, wz, tileSet);
+          continue;
+        }
+
+        if (def.isCrop) {
+          const cropH = 0.4 + (def.cropStage ?? 0) * 0.18;
+          emitCross(opaqueBuf, wx, y, wz, tileSet, cropH);
+          continue;
+        }
+
+        if (def.isWire) {
+          emitWire(opaqueBuf, wx, y, wz, tileSet);
           continue;
         }
 
@@ -297,7 +325,7 @@ export function buildChunkGeometries(
           const uv = tileSet[face.uvKind];
           const aoLevels: [number, number, number, number] = [3, 3, 3, 3];
           const vc = opaqueBuf.vCount;
-          const height = b === BLOCK.BED ? 0.56 : b === BLOCK.FARMLAND ? 0.9375 : 1.0;
+          const height = b === BLOCK.BED ? 0.56 : (b === BLOCK.FARMLAND || b === BLOCK.FARMLAND_MOIST) ? 0.9375 : 1.0;
 
           for (let c = 0; c < 4; c++) {
             const [vx, vy, vz] = face.corners[c];

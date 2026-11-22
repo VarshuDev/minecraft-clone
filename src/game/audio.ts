@@ -265,6 +265,28 @@ export class GameAudio {
     this.noise(0.04, 0.1, 900, 1.4, 0.04);
   }
 
+  cameraSwitch() {
+    this.tone(520, 0.05, { type: "sine", vol: 0.14, slide: 780 });
+  }
+
+  leverToggle(on: boolean) {
+    const f1 = on ? 420 : 340;
+    const f2 = on ? 680 : 260;
+    this.noise(0.04, 0.22, 1800, 1.4);
+    this.tone(f1, 0.04, { type: "square", vol: 0.16, slide: f2 });
+  }
+
+  boneMealSparkle() {
+    [780, 980, 1170, 1560].forEach((freq, idx) => {
+      this.tone(freq, 0.09, { type: "sine", vol: 0.1, delay: idx * 0.04 });
+    });
+    this.noise(0.12, 0.08, 3200, 1.8);
+  }
+
+  chatPop() {
+    this.tone(440, 0.05, { type: "triangle", vol: 0.15, slide: 660 });
+  }
+
   furnaceCrackle() {
     this.noise(0.035, 0.07, 2400 + Math.random() * 800, 2.2);
     this.tone(180 + Math.random() * 80, 0.04, { type: "sine", vol: 0.04 });

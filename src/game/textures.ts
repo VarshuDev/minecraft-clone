@@ -626,6 +626,157 @@ function dandelionTile(): TilePair {
   return { albedo: c };
 }
 
+function farmlandWetTile(): TilePair {
+  const { c, ctx } = makeCanvas();
+  noiseFill(ctx, ["#291a0e", "#332112", "#24170c", "#201309"], 499);
+  for (let y = 1; y < 16; y += 2) {
+    for (let x = 0; x < 16; x++) {
+      if ((x + y) % 3 === 0) px(ctx, x, y, "#1a0f07");
+    }
+  }
+  return { albedo: c };
+}
+
+function wheatTile(stage: 0 | 1 | 2 | 3): TilePair {
+  const { c, ctx } = makeCanvas();
+  ctx.clearRect(0, 0, 16, 16);
+  if (stage === 0) {
+    for (let x = 2; x <= 13; x += 3) {
+      px(ctx, x, 14, "#40851e", 1, 2);
+      px(ctx, x + 1, 13, "#5ca62e", 1, 3);
+      px(ctx, x, 13, "#70c238", 1, 1);
+    }
+  } else if (stage === 1) {
+    for (let x = 1; x <= 14; x += 2) {
+      px(ctx, x, 10, "#489422", 1, 6);
+      px(ctx, x + (x % 4 === 1 ? 1 : 0), 8, "#65b832", 1, 4);
+      px(ctx, x, 8, "#7dd440", 1, 2);
+    }
+  } else if (stage === 2) {
+    for (let x = 1; x <= 14; x += 2) {
+      px(ctx, x, 7, "#6fa825", 1, 9);
+      px(ctx, x + (x % 3 === 0 ? 1 : -1), 4, "#92c734", 1, 6);
+      px(ctx, x, 4, "#b4e048", 1, 3);
+      px(ctx, x + 1, 5, "#d6ea65", 1, 2);
+    }
+  } else {
+    for (let x = 1; x <= 14; x += 2) {
+      px(ctx, x, 6, "#ad8218", 1, 10);
+      px(ctx, x, 2, "#d6a827", 1, 7);
+      px(ctx, x + (x % 2 === 0 ? 1 : -1), 1, "#f2cb44", 2, 4);
+      px(ctx, x, 0, "#ffe066", 1, 3);
+      px(ctx, x, 3, "#855812", 1, 2);
+    }
+  }
+  return { albedo: c };
+}
+
+function redstoneOreTile(): TilePair {
+  const { c, ctx } = makeCanvas();
+  const em = makeCanvas();
+  noiseFill(ctx, stonePalette, 712);
+  shadeEdge(ctx);
+  em.ctx.fillStyle = "#000000";
+  em.ctx.fillRect(0, 0, 16, 16);
+
+  const r = rng(8821);
+  for (let i = 0; i < 9; i++) {
+    const rx = 2 + Math.floor(r() * 12);
+    const ry = 2 + Math.floor(r() * 12);
+    px(ctx, rx, ry, "#ff1100", 2, 1);
+    px(ctx, rx, ry + 1, "#cc0000", 1, 1);
+    px(ctx, rx + 1, ry, "#ff4422", 1, 1);
+
+    px(em.ctx, rx, ry, "#ff2200", 2, 1);
+    px(em.ctx, rx + 1, ry, "#ff4422", 1, 1);
+  }
+  return { albedo: c, emissive: em.c };
+}
+
+function redstoneWireTile(): TilePair {
+  const { c, ctx } = makeCanvas();
+  const em = makeCanvas();
+  ctx.clearRect(0, 0, 16, 16);
+  em.ctx.fillStyle = "#000000";
+  em.ctx.fillRect(0, 0, 16, 16);
+
+  px(ctx, 6, 0, "#e61400", 4, 16);
+  px(ctx, 0, 6, "#e61400", 16, 4);
+  px(ctx, 7, 1, "#ff3b1f", 2, 14);
+  px(ctx, 1, 7, "#ff3b1f", 14, 2);
+  px(ctx, 7, 7, "#ff7052", 2, 2);
+
+  px(em.ctx, 6, 0, "#cc1000", 4, 16);
+  px(em.ctx, 0, 6, "#cc1000", 16, 4);
+  px(em.ctx, 7, 7, "#ff3311", 2, 2);
+  return { albedo: c, emissive: em.c };
+}
+
+function redstoneTorchTile(): TilePair {
+  const { c, ctx } = makeCanvas();
+  const em = makeCanvas();
+  ctx.clearRect(0, 0, 16, 16);
+  em.ctx.fillStyle = "#000000";
+  em.ctx.fillRect(0, 0, 16, 16);
+
+  px(ctx, 7, 6, "#744b26", 2, 10);
+  px(ctx, 7, 9, "#593617", 1, 7);
+  px(ctx, 6, 3, "#cc0c00", 4, 4);
+  px(ctx, 7, 2, "#ff2614", 2, 4);
+  px(ctx, 7, 3, "#ff6b57", 2, 2);
+
+  px(em.ctx, 6, 2, "#ff1a00", 4, 5);
+  px(em.ctx, 7, 3, "#ff5533", 2, 2);
+  return { albedo: c, emissive: em.c };
+}
+
+function leverTile(): TilePair {
+  const { c, ctx } = makeCanvas();
+  ctx.clearRect(0, 0, 16, 16);
+  px(ctx, 4, 12, "#737880", 8, 4);
+  px(ctx, 5, 12, "#8e949e", 6, 1);
+  px(ctx, 4, 15, "#4e5259", 8, 1);
+  px(ctx, 7, 10, "#825329", 2, 2);
+  px(ctx, 8, 8, "#825329", 2, 2);
+  px(ctx, 9, 6, "#825329", 2, 2);
+  px(ctx, 10, 4, "#825329", 2, 2);
+  px(ctx, 10, 3, "#b0b0b0", 3, 3);
+  return { albedo: c };
+}
+
+function lampOffTile(): TilePair {
+  const { c, ctx } = makeCanvas();
+  noiseFill(ctx, ["#3d2817", "#47301c", "#332012"], 601);
+  px(ctx, 0, 0, "#26170c", 16, 2);
+  px(ctx, 0, 14, "#26170c", 16, 2);
+  px(ctx, 0, 0, "#26170c", 2, 16);
+  px(ctx, 14, 0, "#26170c", 2, 16);
+  px(ctx, 7, 0, "#54371f", 2, 16);
+  px(ctx, 0, 7, "#54371f", 16, 2);
+  return { albedo: c };
+}
+
+function lampOnTile(): TilePair {
+  const { c, ctx } = makeCanvas();
+  const em = makeCanvas();
+  noiseFill(ctx, ["#e0982b", "#f0ae3a", "#c77f1e"], 602);
+  px(ctx, 0, 0, "#54371f", 16, 2);
+  px(ctx, 0, 14, "#54371f", 16, 2);
+  px(ctx, 0, 0, "#54371f", 2, 16);
+  px(ctx, 14, 0, "#54371f", 2, 16);
+  px(ctx, 7, 0, "#734e2e", 2, 16);
+  px(ctx, 0, 7, "#734e2e", 16, 2);
+
+  px(ctx, 3, 3, "#ffe27a", 3, 3);
+  px(ctx, 10, 3, "#ffe27a", 3, 3);
+  px(ctx, 3, 10, "#ffe27a", 3, 3);
+  px(ctx, 10, 10, "#ffe27a", 3, 3);
+
+  em.ctx.fillStyle = "#ffaa20";
+  em.ctx.fillRect(0, 0, 16, 16);
+  return { albedo: c, emissive: em.c };
+}
+
 function crackTex(stage: number) {
   const { c, ctx } = makeCanvas(16, 16);
   ctx.clearRect(0, 0, 16, 16);
@@ -736,10 +887,21 @@ type TileKey =
   | "farmlandTop"
   | "farmlandSide"
   | "poppy"
-  | "dandelion";
+  | "dandelion"
+  | "farmlandWet"
+  | "wheat_0"
+  | "wheat_1"
+  | "wheat_2"
+  | "wheat_3"
+  | "redstoneOre"
+  | "redstoneWire"
+  | "redstoneTorch"
+  | "lever"
+  | "lampOff"
+  | "lampOn";
 
 const ATLAS_COLS = 8;
-const ATLAS_ROWS = 6;
+const ATLAS_ROWS = 8;
 const CELL = 18;
 
 export function createBlockAtlas(): BlockAtlas {
@@ -788,6 +950,17 @@ export function createBlockAtlas(): BlockAtlas {
     farmlandSide: farmlandSideTile(),
     poppy: poppyTile(),
     dandelion: dandelionTile(),
+    farmlandWet: farmlandWetTile(),
+    wheat_0: wheatTile(0),
+    wheat_1: wheatTile(1),
+    wheat_2: wheatTile(2),
+    wheat_3: wheatTile(3),
+    redstoneOre: redstoneOreTile(),
+    redstoneWire: redstoneWireTile(),
+    redstoneTorch: redstoneTorchTile(),
+    lever: leverTile(),
+    lampOff: lampOffTile(),
+    lampOn: lampOnTile(),
   };
 
   const W = ATLAS_COLS * CELL;
@@ -875,6 +1048,17 @@ export function createBlockAtlas(): BlockAtlas {
     [BLOCK.FARMLAND]: { top: uvByKey.farmlandTop, bottom: uvByKey.dirt, side: uvByKey.farmlandSide },
     [BLOCK.POPPY]: u("poppy"),
     [BLOCK.DANDELION]: u("dandelion"),
+    [BLOCK.FARMLAND_MOIST]: { top: uvByKey.farmlandWet, bottom: uvByKey.dirt, side: uvByKey.farmlandSide },
+    [BLOCK.WHEAT_0]: u("wheat_0"),
+    [BLOCK.WHEAT_1]: u("wheat_1"),
+    [BLOCK.WHEAT_2]: u("wheat_2"),
+    [BLOCK.WHEAT_3]: u("wheat_3"),
+    [BLOCK.REDSTONE_ORE]: u("redstoneOre"),
+    [BLOCK.REDSTONE_WIRE]: u("redstoneWire"),
+    [BLOCK.REDSTONE_TORCH]: u("redstoneTorch"),
+    [BLOCK.LEVER]: u("lever"),
+    [BLOCK.REDSTONE_LAMP]: u("lampOff"),
+    [BLOCK.REDSTONE_LAMP_LIT]: u("lampOn"),
   };
 
   const crackTextures = [crackTex(0), crackTex(1), crackTex(2)];
