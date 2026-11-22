@@ -2,6 +2,8 @@
 export class GameAudio {
   private ctx: AudioContext | null = null;
   private master: GainNode | null = null;
+  private rainGain: GainNode | null = null;
+  private rainSrc: AudioBufferSourceNode | null = null;
   muted = false;
 
   constructor(muted = false) {
@@ -30,10 +32,19 @@ export class GameAudio {
   }
 
   dispose() {
+    if (this.rainSrc) {
+      try {
+        this.rainSrc.stop();
+      } catch {
+        /* ignore */
+      }
+      this.rainSrc = null;
+    }
     if (this.ctx) {
       void this.ctx.close().catch(() => undefined);
       this.ctx = null;
       this.master = null;
+      this.rainGain = null;
     }
   }
 
@@ -232,6 +243,69 @@ export class GameAudio {
     notes.forEach((freq, idx) => {
       this.tone(freq, 0.6, { type: "sine", vol: 0.08, delay: idx * 0.16 });
     });
+  }
+
+  xpChime(step = 0) {
+    const base = 1046.5 * Math.pow(1.059463, (step % 14));
+    this.tone(base, 0.12, { type: "sine", vol: 0.11, slide: base * 1.04 });
+    this.tone(base * 1.498, 0.09, { type: "triangle", vol: 0.07, delay: 0.02 });
+  }
+
+  levelUp() {
+    const fanfare = [523.25, 659.25, 783.99, 1046.5, 1318.51];
+    fanfare.forEach((freq, i) => {
+      this.tone(freq, 0.28, { type: "triangle", vol: 0.14, delay: i * 0.08 });
+      this.tone(freq * 1.5, 0.22, { type: "sine", vol: 0.08, delay: i * 0.08 + 0.02 });
+    });
+  }
+
+  armorEquip() {
+    this.noise(0.07, 0.16, 1600, 1.2);
+    this.tone(680, 0.08, { type: "triangle", vol: 0.12, slide: 320 });
+    this.noise(0.04, 0.1, 900, 1.4, 0.04);
+  }
+
+  furnaceCrackle() {
+    this.noise(0.035, 0.07, 2400 + Math.random() * 800, 2.2);
+    this.tone(180 + Math.random() * 80, 0.04, { type: "sine", vol: 0.04 });
+  }
+
+  startRain(intensity = 0.5) {
+    if (!this.ctx || !this.master) return;
+    if (!this.rainGain) {
+      const ctx = this.ctx;
+      const buffer = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+      const src = ctx.createBufferSource();
+      src.buffer = buffer;
+      src.loop = true;
+      const filter = ctx.createBiquadFilter();
+      filter.type = "lowpass";
+      filter.frequency.value = 1100;
+      this.rainGain = ctx.createGain();
+      this.rainGain.gain.value = 0.001;
+      src.connect(filter).connect(this.rainGain).connect(this.master);
+      src.start();
+      this.rainSrc = src;
+    }
+    const target = this.muted ? 0 : Math.min(0.22, intensity * 0.2);
+    this.rainGain.gain.setTargetAtTime(target, this.ctx.currentTime, 0.5);
+  }
+
+  stopRain() {
+    if (this.rainGain && this.ctx) {
+      this.rainGain.gain.setTargetAtTime(0.0001, this.ctx.currentTime, 0.4);
+    }
+  }
+
+  thunderRumble() {
+    // Sharp crack followed by deep lowpass rumble
+    this.noise(0.18, 0.35, 1200, 0.8);
+    this.tone(90, 0.4, { type: "sawtooth", vol: 0.28, slide: 35 });
+    for (let i = 0; i < 4; i++) {
+      this.noise(0.55 + i * 0.2, 0.24 / (i + 1), 110 - i * 15, 0.5, 0.08 + i * 0.18);
+    }
   }
 
   // --------------------------------------------------------------------------

@@ -106,9 +106,26 @@ export type ItemId =
   | "string"
   | "feather"
   | "leather"
-  | "wool";
+  | "wool"
+  | "iron_helmet"
+  | "iron_chestplate"
+  | "iron_leggings"
+  | "iron_boots"
+  | "diamond_helmet"
+  | "diamond_chestplate"
+  | "diamond_leggings"
+  | "diamond_boots"
+  | "leather_chestplate"
+  | "leather_boots";
 
 export type ToolKind = "pickaxe" | "axe" | "shovel" | "sword" | "hoe" | "bow";
+export type ArmorSlot = "head" | "chest" | "legs" | "feet";
+
+export interface ArmorDef {
+  slot: ArmorSlot;
+  defense: number; // In half-shields (e.g. 2 = 1 full shield)
+  material: "leather" | "iron" | "diamond";
+}
 
 export interface BlockDef {
   id: BlockNum;
@@ -563,6 +580,7 @@ export interface ItemDef {
   short: string;
   blockId?: BlockNum;
   attackDamage?: number;
+  armor?: ArmorDef;
   tool?: {
     kind: ToolKind;
     speed: number;
@@ -573,7 +591,7 @@ export interface ItemDef {
   };
   food?: FoodDef;
   color: string;
-  category: "block" | "material" | "tool" | "food" | "weapon";
+  category: "block" | "material" | "tool" | "food" | "weapon" | "armor";
 }
 
 export const ITEMS: Record<ItemId, ItemDef> = {
@@ -734,6 +752,86 @@ export const ITEMS: Record<ItemId, ItemDef> = {
   feather: { id: "feather", name: "Feather", short: "FEATHR", color: "#ffffff", category: "material" },
   leather: { id: "leather", name: "Leather", short: "LTHR", color: "#874f28", category: "material" },
   wool: { id: "wool", name: "Wool", short: "WOOL", color: "#f1f3f5", category: "material" },
+  iron_helmet: {
+    id: "iron_helmet",
+    name: "Iron Helmet",
+    short: "I.HELM",
+    color: "#e6d8c3",
+    category: "armor",
+    armor: { slot: "head", defense: 2, material: "iron" },
+  },
+  iron_chestplate: {
+    id: "iron_chestplate",
+    name: "Iron Chestplate",
+    short: "I.CHEST",
+    color: "#e6d8c3",
+    category: "armor",
+    armor: { slot: "chest", defense: 6, material: "iron" },
+  },
+  iron_leggings: {
+    id: "iron_leggings",
+    name: "Iron Leggings",
+    short: "I.LEGS",
+    color: "#e6d8c3",
+    category: "armor",
+    armor: { slot: "legs", defense: 5, material: "iron" },
+  },
+  iron_boots: {
+    id: "iron_boots",
+    name: "Iron Boots",
+    short: "I.BOOTS",
+    color: "#e6d8c3",
+    category: "armor",
+    armor: { slot: "feet", defense: 2, material: "iron" },
+  },
+  diamond_helmet: {
+    id: "diamond_helmet",
+    name: "Diamond Helmet",
+    short: "D.HELM",
+    color: "#5ce8ff",
+    category: "armor",
+    armor: { slot: "head", defense: 3, material: "diamond" },
+  },
+  diamond_chestplate: {
+    id: "diamond_chestplate",
+    name: "Diamond Chestplate",
+    short: "D.CHEST",
+    color: "#5ce8ff",
+    category: "armor",
+    armor: { slot: "chest", defense: 8, material: "diamond" },
+  },
+  diamond_leggings: {
+    id: "diamond_leggings",
+    name: "Diamond Leggings",
+    short: "D.LEGS",
+    color: "#5ce8ff",
+    category: "armor",
+    armor: { slot: "legs", defense: 6, material: "diamond" },
+  },
+  diamond_boots: {
+    id: "diamond_boots",
+    name: "Diamond Boots",
+    short: "D.BOOTS",
+    color: "#5ce8ff",
+    category: "armor",
+    armor: { slot: "feet", defense: 3, material: "diamond" },
+  },
+  leather_chestplate: {
+    id: "leather_chestplate",
+    name: "Leather Tunic",
+    short: "L.CHEST",
+    color: "#874f28",
+    category: "armor",
+    armor: { slot: "chest", defense: 3, material: "leather" },
+  },
+  leather_boots: {
+    id: "leather_boots",
+    name: "Leather Boots",
+    short: "L.BOOTS",
+    color: "#874f28",
+    category: "armor",
+    armor: { slot: "feet", defense: 1, material: "leather" },
+  },
 };
 
 export interface Recipe {
@@ -771,12 +869,46 @@ export const RECIPES: Recipe[] = [
   { id: "stone_axe", out: "stone_axe", count: 1, inputs: [{ item: "block_cobble", count: 3 }, { item: "stick", count: 2 }], note: "5.5x chop wood" },
   { id: "iron_pick", out: "iron_pick", count: 1, inputs: [{ item: "iron_ingot", count: 3 }, { item: "stick", count: 2 }], note: "6.2x mine fast" },
   { id: "diamond_pick", out: "diamond_pick", count: 1, inputs: [{ item: "diamond", count: 3 }, { item: "stick", count: 2 }], note: "9.5x turbo mine" },
+  { id: "iron_helm", out: "iron_helmet", count: 1, inputs: [{ item: "iron_ingot", count: 5 }], note: "+2 Armor defense" },
+  { id: "iron_chest", out: "iron_chestplate", count: 1, inputs: [{ item: "iron_ingot", count: 8 }], note: "+6 Armor defense" },
+  { id: "iron_legs", out: "iron_leggings", count: 1, inputs: [{ item: "iron_ingot", count: 7 }], note: "+5 Armor defense" },
+  { id: "iron_boots", out: "iron_boots", count: 1, inputs: [{ item: "iron_ingot", count: 4 }], note: "+2 Armor defense" },
+  { id: "diamond_helm", out: "diamond_helmet", count: 1, inputs: [{ item: "diamond", count: 5 }], note: "+3 Armor defense" },
+  { id: "diamond_chest", out: "diamond_chestplate", count: 1, inputs: [{ item: "diamond", count: 8 }], note: "+8 Armor defense" },
+  { id: "diamond_legs", out: "diamond_leggings", count: 1, inputs: [{ item: "diamond", count: 7 }], note: "+6 Armor defense" },
+  { id: "diamond_boots", out: "diamond_boots", count: 1, inputs: [{ item: "diamond", count: 4 }], note: "+3 Armor defense" },
+  { id: "leather_chest", out: "leather_chestplate", count: 1, inputs: [{ item: "leather", count: 8 }], note: "+3 Armor defense" },
+  { id: "leather_boots", out: "leather_boots", count: 1, inputs: [{ item: "leather", count: 4 }], note: "+1 Armor defense" },
   { id: "stone_bricks", out: "block_stone_bricks", count: 4, inputs: [{ item: "block_cobble", count: 4 }], note: "Castle stone" },
   { id: "bricks", out: "block_bricks", count: 4, inputs: [{ item: "block_dirt", count: 2 }, { item: "coal", count: 1 }], note: "Baked brick" },
   { id: "glass", out: "block_glass", count: 4, inputs: [{ item: "block_sand", count: 2 }, { item: "coal", count: 1 }], note: "Clear window" },
   { id: "glowstone", out: "block_glowstone", count: 2, inputs: [{ item: "gold_ingot", count: 1 }, { item: "block_glass", count: 1 }], note: "Bright lamp" },
   { id: "tnt", out: "block_tnt", count: 2, inputs: [{ item: "block_sand", count: 2 }, { item: "gunpowder", count: 2 }], note: "Explosive blast" },
 ];
+
+export interface SmeltingRecipe {
+  input: ItemId;
+  output: ItemId;
+  xp: number;
+}
+
+export const SMELTING_RECIPES: SmeltingRecipe[] = [
+  { input: "block_iron_ore", output: "iron_ingot", xp: 1.0 },
+  { input: "block_gold_ore", output: "gold_ingot", xp: 1.5 },
+  { input: "block_sand", output: "block_glass", xp: 0.2 },
+  { input: "block_cobble", output: "block_stone", xp: 0.2 },
+  { input: "raw_beef", output: "cooked_beef", xp: 0.5 },
+  { input: "raw_porkchop", output: "cooked_porkchop", xp: 0.5 },
+  { input: "block_dirt", output: "block_bricks", xp: 0.3 },
+];
+
+export function getFuelBurnTime(item: ItemId): number {
+  if (item === "coal") return 80; // 8 smelts (80s)
+  if (item === "block_log") return 15; // 1.5 smelts
+  if (item === "block_planks") return 15;
+  if (item === "stick") return 5;
+  return 0;
+}
 
 export const CREATIVE_CATALOG: ItemId[] = [
   "block_grass",
@@ -812,6 +944,14 @@ export const CREATIVE_CATALOG: ItemId[] = [
   "block_diamond_ore",
   "diamond_sword",
   "diamond_pick",
+  "iron_helmet",
+  "iron_chestplate",
+  "iron_leggings",
+  "iron_boots",
+  "diamond_helmet",
+  "diamond_chestplate",
+  "diamond_leggings",
+  "diamond_boots",
   "bow",
   "arrow",
   "apple",

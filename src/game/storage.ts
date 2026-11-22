@@ -17,9 +17,26 @@ export interface PlayerSave {
   oxygen: number; // 0 - 20
   hotbar: Array<{ item: ItemId; count: number } | null>;
   inventory: Record<string, number>;
+  armor?: {
+    head: ItemId | null;
+    chest: ItemId | null;
+    legs: ItemId | null;
+    feet: ItemId | null;
+  };
+  xp?: number;
+  level?: number;
   selectedSlot: number;
   flying: boolean;
   spawnPos?: [number, number, number];
+}
+
+export interface FurnaceData {
+  input: { item: ItemId; count: number } | null;
+  fuel: { item: ItemId; count: number } | null;
+  output: { item: ItemId; count: number } | null;
+  burnTime: number;
+  maxBurnTime: number;
+  cookProgress: number;
 }
 
 export interface WorldSave {
@@ -28,9 +45,11 @@ export interface WorldSave {
   seed: number;
   gameMode: GameModeId;
   dayTime: number; // 0..24000 (Minecraft day ticks)
+  weather?: "clear" | "rain" | "thunder";
   player: PlayerSave;
   edits: Record<string, number>;
   chests?: Record<string, Array<{ item: ItemId; count: number } | null>>;
+  furnaces?: Record<string, FurnaceData>;
   createdAt: number;
   updatedAt: number;
 }
@@ -132,10 +151,21 @@ export function createDefaultWorldSave(
               block_log: 8,
               block_dirt: 16,
             },
+      armor: {
+        head: null,
+        chest: null,
+        legs: null,
+        feet: null,
+      },
+      xp: 0,
+      level: 0,
       selectedSlot: 0,
       flying: false,
     },
+    weather: "clear",
     edits: {},
+    chests: {},
+    furnaces: {},
     createdAt: Date.now(),
     updatedAt: Date.now(),
   };

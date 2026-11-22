@@ -16,6 +16,8 @@ import { type GameModeId, type ItemId } from "@/game/blocks";
 import { StartScreen } from "@/components/StartScreen";
 import { Hud } from "@/components/Hud";
 import { CraftingModal } from "@/components/CraftingModal";
+import { ChestModal } from "@/components/ChestModal";
+import { FurnaceModal } from "@/components/FurnaceModal";
 import { DeathScreen, PauseScreen } from "@/components/Overlays";
 import { TouchControls } from "@/components/TouchControls";
 
@@ -36,6 +38,12 @@ const INITIAL_HUD: MinecraftHudState = {
   heldDef: null,
   heldName: "",
   inventory: {},
+  armorPoints: 0,
+  armor: { head: null, chest: null, legs: null, feet: null },
+  xp: 0,
+  level: 0,
+  weather: "clear",
+  underwater: false,
   debug: {
     fps: 60,
     x: 0,
@@ -65,9 +73,11 @@ export default function App() {
   const [settings, setSettings] = useState<GameSettings>(() => loadSettings());
   const [toast, setToast] = useState<string | null>(null);
 
-  // Crafting Modal state
+  // Crafting, Chest, Furnace Modal states
   const [isCraftingOpen, setIsCraftingOpen] = useState(false);
   const [isWorkstation, setIsWorkstation] = useState(false);
+  const [chestPosKey, setChestPosKey] = useState<string | null>(null);
+  const [furnacePosKey, setFurnacePosKey] = useState<string | null>(null);
 
   const [isTouch] = useState<boolean>(
     () => typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches,
@@ -97,6 +107,8 @@ export default function App() {
 
       setScreen("playing");
       setIsCraftingOpen(false);
+      setChestPosKey(null);
+      setFurnacePosKey(null);
 
       // Clean up previous engine
       if (gameRef.current) {
@@ -113,13 +125,11 @@ export default function App() {
             setIsWorkstation(workstation);
             setIsCraftingOpen(true);
           },
-          onOpenChest: () => {
-            setIsWorkstation(true);
-            setIsCraftingOpen(true);
+          onOpenChest: (posKey) => {
+            setChestPosKey(posKey);
           },
-          onOpenFurnace: () => {
-            setIsWorkstation(true);
-            setIsCraftingOpen(true);
+          onOpenFurnace: (posKey) => {
+            setFurnacePosKey(posKey);
           },
           onNotification: (msg) => {
             setToast(msg);
@@ -133,6 +143,7 @@ export default function App() {
           },
         });
         gameRef.current = engine;
+        (window as any).__game = engine;
       }, 50);
     },
     [],
@@ -199,6 +210,52 @@ export default function App() {
       }
     }
   }, [screen]);
+
+  const handleCloseChest = useCallback(() => {
+    setChestPosKey(null);
+    if (gameRef.current) {
+      gameRef.current.audio.chestToggle(false);
+    }
+    if (screen === "playing") {
+      try {
+        const p = hostRef.current?.requestPointerLock() as unknown as Promise<void> | undefined;
+        if (p && typeof p.catch === "function") p.catch(() => {});
+      } catch {
+        /* ignore */
+      }
+    }
+  }, [screen]);
+
+  const handleCloseFurnace = useCallback(() => {
+    setFurnacePosKey(null);
+    if (screen === "playing") {
+      try {
+        const p = hostRef.current?.requestPointerLock() as unknown as Promise<void> | undefined;
+        if (p && typeof p.catch === "function") p.catch(() => {});
+      } catch {
+        /* ignore */
+      }
+    }
+  }, [screen]);
+
+  const handleSaveChest = useCallback((posKey: string, slots: any) => {
+    gameRef.current?.setChestSlots(posKey, slots);
+  }, []);
+
+  const handleUpdateFurnace = useCallback((posKey: string, data: any) => {
+    gameRef.current?.setFurnaceData(posKey, data);
+  }, []);
+
+  const handleUpdatePlayerInventory = useCallback(
+    (newInv: Record<string, number>, newHb: Array<{ item: ItemId; count: number } | null>) => {
+      if (gameRef.current) {
+        gameRef.current.player.inventory = newInv;
+        gameRef.current.player.hotbar = newHb;
+        gameRef.current.rebuildViewmodel();
+      }
+    },
+    [],
+  );
 
   // Cleanup on unmount
   useEffect(() => {
@@ -296,10 +353,50 @@ export default function App() {
         gameMode={hud.gameMode}
         inventory={hud.inventory}
         hotbar={hud.hotbar}
+        armor={hud.armor}
         onClose={handleCloseCrafting}
         onCraft={handleCraft}
         onAddCreativeItem={handleAddCreativeItem}
+        onEquipArmor={(item) => gameRef.current?.equipArmor(item)}
+        onUnequipArmor={(slot) => gameRef.current?.unequipArmor(slot)}
       />
+
+      {/* Chest Storage Modal */}
+      {chestPosKey && (
+        <ChestModal
+          isOpen={true}
+          chestPosKey={chestPosKey}
+          initialChestSlots={gameRef.current?.getChestSlots(chestPosKey) || []}
+          inventory={hud.inventory}
+          hotbar={hud.hotbar}
+          onClose={handleCloseChest}
+          onSaveChest={handleSaveChest}
+          onUpdatePlayerInventory={handleUpdatePlayerInventory}
+        />
+      )}
+
+      {/* Furnace Smelting Modal */}
+      {furnacePosKey && (
+        <FurnaceModal
+          isOpen={true}
+          furnacePosKey={furnacePosKey}
+          furnaceData={
+            gameRef.current?.getFurnaceData(furnacePosKey) || {
+              input: null,
+              fuel: null,
+              output: null,
+              burnTime: 0,
+              maxBurnTime: 0,
+              cookProgress: 0,
+            }
+          }
+          inventory={hud.inventory}
+          hotbar={hud.hotbar}
+          onClose={handleCloseFurnace}
+          onUpdateFurnace={handleUpdateFurnace}
+          onUpdatePlayerInventory={handleUpdatePlayerInventory}
+        />
+      )}
 
       {/* Pause Screen */}
       {screen === "paused" && (

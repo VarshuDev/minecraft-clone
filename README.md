@@ -28,10 +28,15 @@
 
 <div align="center">
 
-| OVERWORLD BIOMES & WILDLIFE | MOBS & SURVIVAL COMBAT | UNDERGROUND CAVES & MINING |
-| :---: | :---: | :---: |
-| <img src="assets/screenshots/surface_gameplay.png" alt="Overworld Biomes" width="300" /> | <img src="assets/screenshots/mobs_and_survival.png" alt="Mobs & Survival" width="300" /> | <img src="assets/screenshots/underground_cave_mining.png" alt="Underground Mining" width="300" /> |
-| *Oak Forests, Hills, Sun/Moon Orbit & Water* | *Natural Mobs, 10 Drumsticks & Hearts HUD* | *3D Caves, Deepslate Mining, Viewmodel & Hotbar* |
+| OVERWORLD BIOMES & WILDLIFE | MOBS & SURVIVAL COMBAT |
+| :---: | :---: |
+| <img src="assets/screenshots/surface_gameplay.png" alt="Overworld Biomes" width="440" /> | <img src="assets/screenshots/mobs_and_survival.png" alt="Mobs & Survival" width="440" /> |
+| *Oak Forests, Hills, Sun/Moon Orbit & Water* | *Natural Mobs, 10 Drumsticks & Hearts HUD* |
+
+| DYNAMIC WEATHER, ARMOR & XP | INTERACTIVE SMELTING FURNACE |
+| :---: | :---: |
+| <img src="assets/screenshots/weather_and_defense.png" alt="Weather & Armor Defense" width="440" /> | <img src="assets/screenshots/furnace_smelting.png" alt="Interactive Furnace" width="440" /> |
+| *Rain, Snow, Thunderstorms, Armor Shields & XP Bar* | *Animated Burning Flame, Cooking Arrow & Fuels* |
 
 </div>
 
@@ -74,28 +79,55 @@
 - **Natural Spawning System**: Spawns peaceful farm animals on sunlit surface grass, and hostile monsters in dark underground caves or during the night.
 - **Combat Feedback**: Red hurt flash, knockback impulse, procedural groans/hisses/moos, and death drop yields.
 
-### 3. Weapons & Melee Combat
+### 3. Dynamic Weather System
+- **Precipitation Simulation**: 1,200 particle instances dynamically wrap around the player camera:
+  - `Plains / Forest / Ocean`: Rapid falling raindrops with light blue streaks (`#a0d8ef`).
+  - `Snowy Peaks`: Gentle fluttering snowflakes with organic sinusoidal wind drift (`#ffffff`).
+  - `Desert`: Overcast clouds without precipitation (authentic Minecraft climate rule).
+- **Atmospheric Dimming & Lightning**: Storm sky shifts to dark slate (`#323a48`), fog thickens, and random lightning flashes burst with 2.4x ambient intensity and booming WebAudio lowpass thunder crackles (`audio.thunderRumble()`).
+- **Weather State Machine**: Automatically cycles between `Clear`, `Rain`, and `Thunderstorm`, with real-time UI indicator badges on the HUD.
+
+### 4. Armor & Defense System
+- **10 Silver Armor Shields**: Renders directly above the 10 hearts on the HUD to display current defense rating (up to 20 defense points = 80% damage reduction).
+- **Full Armor Sets**:
+  - `Leather`: Tunic and Boots (7 defense points).
+  - `Iron`: Helmet, Chestplate, Leggings, and Boots (15 defense points = 60% reduction).
+  - `Diamond`: Full Diamond Set (20 defense points = 80% maximum damage reduction).
+- **Interactive Armor Rack**: View equipped armor in the inventory modal (`E`), click equipped armor to remove it, or right-click any armor piece in your hotbar to instantly equip it with authentic metallic clinking sound.
+
+### 5. Experience & Leveling System
+- **Green XP Progress Bar & Level Badge**: Renders centered above the 9-slot hotbar with glowing Minecraft green `#80ff20` level numbers.
+- **Magnetic XP Orbs**: Defeating hostile mobs (+5 XP), farm animals (+2 XP), mining mineral ores (Coal, Iron, Gold, Diamond), and smelting items spawns floating, spinning lime/yellow 3D XP orbs.
+- **Orb Physics & Magnetic Pull**: XP orbs float with gentle gravity, magnetizing toward the player within 6 blocks. Collecting orbs plays an escalating chime series (`audio.xpChime()`), and leveling up triggers a celebratory 5-note fanfare.
+
+### 6. Interactive 27-Slot Chest & Smelting Furnace UIs
+- **Dedicated Chest Modal**: Authentic 27-slot chest grid (3x9) plus 27-slot player inventory and 9-slot hotbar. Click items to transfer seamlessly between chest storage and inventory; saves per-coordinate in world data.
+- **Dedicated Smelting Furnace**: Authentic 3-slot smelting workstation with:
+  - Animated burning flame icon reflecting remaining fuel burn time.
+  - Cooking progress arrow filling smoothly as items smelt (6 seconds per item).
+  - Real fuel durations: Coal burns for 8 smelts (80s), Wood/Logs burn for 1.5 smelts (15s), Sticks burn for 5s.
+  - Full smelting matrix: Raw Beef/Pork into Steaks/Cooked Pork, Iron/Gold Ores into Ingots, Sand into Glass, Cobblestone into Smooth Stone, and Dirt into Bricks.
+
+### 7. Weapons & Melee Combat
 - **Swords**: Wooden, Stone, Iron, and Diamond Swords with distinct damage ratings (+4 to +7 Attack Damage) and first-person 3D sword viewmodels with crossguards and pommels.
 - **Bow & Projectile Physics**: Ballistic gravity arc trajectories with voxel terrain collision, mob hit detection, and sound effects.
 - **Hit Detection**: Left-click raycast targets mobs within reach before block mining, applying weapon damage and knockback.
 
-### 4. Hunger & Food System
+### 8. Hunger & Food System
 - **10 Drumstick Bar (20 Hunger)**: Hunger depletes during sprinting and jumping; sprinting is disabled when hunger falls to 6 or below.
 - **Natural Regeneration & Starvation**: When satiated (18+ hunger), health gently regenerates. When hunger reaches 0, starvation damage occurs.
 - **Food Items**: Apples, Bread, Raw/Cooked Porkchops, and Raw/Cooked Beef (Steak). Right-click to eat with crunchy chewing audio.
 
-### 5. Interactive Blocks & Farming
-- **Chest**: Right-click to access item storage.
-- **Furnace**: Right-click to access smelting and cooking for ores and meats.
-- **Bed**: Right-click at night to sleep through the night, fast-forwarding to dawn and setting your respawn point.
+### 9. Interactive Blocks, Bed & Underwater
+- **Bed**: Right-click at night to sleep through the night, fast-forwarding to dawn and setting your respawn point with sleep chime.
 - **Wooden Door**: Toggle open/close with wooden latch sound.
 - **Ladders**: Climbable vertical surface ladders for shaft descents.
 - **Farmland & Farming**: Right-clicking Grass/Dirt with a Hoe tills the soil into moist farmland; planting seeds yields crops.
-- **Flowers**: Red Poppies and Yellow Dandelions render with authentic cross-billboard geometry.
+- **Underwater Atmosphere**: Dives shift scene fog to deep ocean cyan (`#0d3859`), trigger an underwater blue caustic tint vignette, and deplete oxygen bubbles with drowning damage.
 
-### 6. Procedural C418-Style Ambient Soundtrack
+### 10. Procedural C418-Style Ambient Soundtrack
 - **Procedural Ambient Piano**: Synthesizes gentle, reflective ambient piano and Rhodes chord progressions in pentatonic/Lydian harmony ("Wet Hands", "Sweden" inspired) with zero megabytes of audio downloads.
-- **Procedural Soundscape**: Authentic WebAudio synthesis for mob groans, hisses, oinks, moos, arrow shots, footstep surfaces, water splashes, and tool strikes.
+- **Procedural Soundscape**: Authentic WebAudio synthesis for mob groans, hisses, oinks, moos, arrow shots, footstep surfaces, water splashes, thunder rumbles, and tool strikes.
 
 <br/>
 
@@ -113,7 +145,7 @@
 
 <br/>
 
-The engine includes **35 canonical block types & functional items** generated procedurally without external image files:
+The engine includes **45 canonical block types & functional items** generated procedurally without external image files:
 
 | BLOCK CATEGORY | INCLUDED BLOCK TYPES |
 | :--- | :--- |
@@ -122,6 +154,7 @@ The engine includes **35 canonical block types & functional items** generated pr
 | **Building**       | `Oak Planks`, `Bricks`, `Stone Bricks`, `Glass` |
 | **Mineral Ores**   | `Coal Ore`, `Iron Ore`, `Gold Ore`, `Diamond Ore` |
 | **Functional & Home** | `Crafting Table`, `Furnace`, `Chest`, `Bed`, `Wooden Door`, `Ladder`, `Farmland`, `Torch`, `Glowstone`, `TNT Block` |
+| **Armor & Defense**| `Iron Helmet/Chestplate/Leggings/Boots`, `Diamond Helmet/Chestplate/Leggings/Boots`, `Leather Tunic/Boots` |
 | **Weapons & Tools**| `Wooden/Stone/Iron/Diamond Swords`, `Bow & Arrows`, `Pickaxes`, `Axes`, `Shovels`, `Wooden Hoe` |
 | **Food & Mob Drops**| `Apple`, `Bread`, `Raw/Cooked Porkchop`, `Steak`, `Rotten Flesh`, `Bone`, `Gunpowder`, `String`, `Feather`, `Leather`, `Wool` |
 
@@ -167,12 +200,40 @@ Pressing `E` opens the **2x2 Player Inventory Crafting Grid**, while right-click
 | Wooden Axe        | 3x Planks + 2x Stk | 3.4x wood chopping     |
 | Stone Axe         | 3x Cobble + 2x Stk | 5.5x wood chopping     |
 | Wooden Shovel     | 1x Plank + 2x Stk  | 3.5x soil digging      |
+| Iron Helmet       | 5x Iron Ingot      | +2 Armor Defense       |
+| Iron Chestplate   | 8x Iron Ingot      | +6 Armor Defense       |
+| Iron Leggings     | 7x Iron Ingot      | +5 Armor Defense       |
+| Iron Boots        | 4x Iron Ingot      | +2 Armor Defense       |
+| Diamond Helmet    | 5x Diamond         | +3 Armor Defense       |
+| Diamond Chestplate| 8x Diamond         | +8 Armor Defense       |
+| Diamond Leggings  | 7x Diamond         | +6 Armor Defense       |
+| Diamond Boots     | 4x Diamond         | +3 Armor Defense       |
+| Leather Tunic     | 8x Leather         | +3 Armor Defense       |
+| Leather Boots     | 4x Leather         | +1 Armor Defense       |
 | Stone Bricks (x4) | 4x Cobblestone     | Castle masonry         |
 | Bricks (x4)       | 2x Dirt + 1x Coal  | Kiln baked bricks      |
 | Glass (x4)        | 2x Sand + 1x Coal  | Transparent windows    |
 | Glowstone (x2)    | 1x Gold + 1x Glass | Permanent light cube   |
 | TNT (x2)          | 2x Sand + 2x Coal  | Explosive demolition   |
 +-------------------+--------------------+------------------------+
+```
+
+### Furnace Smelting Matrix
+
+Right-click any placed **Furnace** to smelt raw minerals, meats, and materials using Coal (8 smelts / 80s), Wood (1.5 smelts / 15s), or Sticks:
+
+```text
++-------------------+--------------------+-------------------------+
+| RAW INGREDIENT    | COOKED PRODUCT     | FUEL CONSUMED & XP      |
++-------------------+--------------------+-------------------------+
+| Raw Beef          | Steak              | 1/8 Coal (+0.5 XP)      |
+| Raw Porkchop      | Cooked Porkchop    | 1/8 Coal (+0.5 XP)      |
+| Iron Ore          | Iron Ingot         | 1/8 Coal (+1.0 XP)      |
+| Gold Ore          | Gold Ingot         | 1/8 Coal (+1.5 XP)      |
+| Sand              | Clear Glass        | 1/8 Coal (+0.2 XP)      |
+| Cobblestone       | Smooth Stone       | 1/8 Coal (+0.2 XP)      |
+| Dirt              | Baked Bricks       | 1/8 Coal (+0.3 XP)      |
++-------------------+--------------------+-------------------------+
 ```
 
 <br/>

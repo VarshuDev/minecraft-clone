@@ -14,9 +14,17 @@ interface CraftingModalProps {
   gameMode: GameModeId;
   inventory: Record<string, number>;
   hotbar: Array<{ item: ItemId; count: number } | null>;
+  armor?: {
+    head: ItemId | null;
+    chest: ItemId | null;
+    legs: ItemId | null;
+    feet: ItemId | null;
+  };
   onClose: () => void;
   onCraft: (recipeId: string) => void;
   onAddCreativeItem: (item: ItemId) => void;
+  onEquipArmor?: (item: ItemId) => void;
+  onUnequipArmor?: (slot: "head" | "chest" | "legs" | "feet") => void;
 }
 
 export function CraftingModal({
@@ -25,11 +33,14 @@ export function CraftingModal({
   gameMode,
   inventory,
   hotbar,
+  armor,
   onClose,
   onCraft,
   onAddCreativeItem,
+  onEquipArmor,
+  onUnequipArmor,
 }: CraftingModalProps) {
-  const [filter, setFilter] = useState<"all" | "tools" | "blocks" | "food">("all");
+  const [filter, setFilter] = useState<"all" | "tools" | "armor" | "blocks" | "food">("all");
 
   if (!isOpen) return null;
 
@@ -44,6 +55,7 @@ export function CraftingModal({
   // Filter recipes
   const displayRecipes = RECIPES.filter((r) => {
     if (filter === "tools") return ITEMS[r.out]?.category === "tool" || ITEMS[r.out]?.category === "weapon";
+    if (filter === "armor") return ITEMS[r.out]?.category === "armor";
     if (filter === "blocks") return ITEMS[r.out]?.category === "block";
     if (filter === "food") return ITEMS[r.out]?.category === "food";
     return true;
@@ -134,12 +146,21 @@ export function CraftingModal({
                 </button>
                 <button
                   type="button"
+                  onClick={() => setFilter("armor")}
+                  className={`rounded-xs px-2.5 py-1 text-[9px] ${
+                    filter === "armor" ? "bg-[#373737] text-white" : "bg-[#a5a5a5] text-[#222222]"
+                  }`}
+                >
+                  ARMOR
+                </button>
+                <button
+                  type="button"
                   onClick={() => setFilter("blocks")}
                   className={`rounded-xs px-2.5 py-1 text-[9px] ${
                     filter === "blocks" ? "bg-[#373737] text-white" : "bg-[#a5a5a5] text-[#222222]"
                   }`}
                 >
-                  BLOCKS & BUILDING
+                  BLOCKS
                 </button>
                 <button
                   type="button"
@@ -148,7 +169,7 @@ export function CraftingModal({
                     filter === "food" ? "bg-[#373737] text-white" : "bg-[#a5a5a5] text-[#222222]"
                   }`}
                 >
-                  FOOD & COOKING
+                  FOOD
                 </button>
               </div>
 
@@ -223,27 +244,72 @@ export function CraftingModal({
                 })}
               </div>
 
+              {/* Equipped Armor Display */}
+              {armor && (
+                <div className="mt-4 rounded-xs border border-[#888888] bg-[#ababab] p-2.5">
+                  <div className="mb-1 text-[9px] font-bold text-[#222222]">
+                    EQUIPPED ARMOR (CLICK TO UNEQUIP):
+                  </div>
+                  <div className="flex items-center gap-3">
+                    {(["head", "chest", "legs", "feet"] as const).map((slotKey) => {
+                      const equippedItem = armor[slotKey];
+                      const def = equippedItem ? ITEMS[equippedItem] : null;
+                      return (
+                        <div key={slotKey} className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => equippedItem && onUnequipArmor?.(slotKey)}
+                            className="relative flex h-9 w-9 items-center justify-center border-2 border-t-[#373737] border-l-[#373737] border-b-white border-r-white bg-[#8b8b8b] hover:bg-[#a0a0a0] transition-colors"
+                            title={def ? `${def.name} (Click to remove)` : `${slotKey.toUpperCase()} (Empty)`}
+                          >
+                            {def ? (
+                              <div
+                                className="h-5 w-5 rounded-xs"
+                                style={{ backgroundColor: def.color || "#888" }}
+                              />
+                            ) : (
+                              <span className="text-[7px] text-black/40 uppercase">{slotKey.slice(0, 4)}</span>
+                            )}
+                          </button>
+                          <span className="text-[8px] text-[#222222] capitalize">{slotKey}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               {/* Current Materials Summary */}
-              <div className="mt-4 rounded-xs border border-[#888888] bg-[#ababab] p-2.5">
+              <div className="mt-3 rounded-xs border border-[#888888] bg-[#ababab] p-2.5">
                 <div className="mb-1.5 text-[9px] font-bold text-[#222222]">
-                  YOUR INVENTORY MATERIALS:
+                  YOUR INVENTORY MATERIALS (CLICK ARMOR TO EQUIP):
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {Object.entries(currentCounts).map(([item, count]) => {
                     if (count <= 0) return null;
                     const def = ITEMS[item as ItemId];
                     if (!def) return null;
+                    const isArmor = !!def.armor;
                     return (
-                      <span
+                      <button
                         key={item}
-                        className="flex items-center gap-1 rounded-xs border border-black/30 bg-[#8b8b8b] px-2 py-0.5 text-[8px] text-white shadow-xs"
+                        type="button"
+                        onClick={() => {
+                          if (isArmor) onEquipArmor?.(item as ItemId);
+                        }}
+                        className={`flex items-center gap-1 rounded-xs border px-2 py-0.5 text-[8px] shadow-xs transition-colors ${
+                          isArmor
+                            ? "border-amber-700 bg-amber-500/30 text-amber-900 font-bold hover:bg-amber-500/50 cursor-pointer"
+                            : "border-black/30 bg-[#8b8b8b] text-white cursor-default"
+                        }`}
+                        title={isArmor ? "Click to equip this armor" : undefined}
                       >
                         <span
                           className="h-2.5 w-2.5 rounded-2xs inline-block"
                           style={{ backgroundColor: def.color || "#888" }}
                         />
                         {def.short ?? def.name}: {count}
-                      </span>
+                      </button>
                     );
                   })}
                 </div>

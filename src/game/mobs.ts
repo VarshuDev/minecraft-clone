@@ -477,7 +477,7 @@ export class MobManager {
     playerPos: THREE.Vector3,
     isDay: boolean,
     onPlayerDamage: (dmg: number) => void,
-    onMobDefeated: (drops: Array<{ item: ItemId; count: number }>) => void,
+    onMobDefeated: (drops: Array<{ item: ItemId; count: number }>, pos: THREE.Vector3, xp: number) => void,
     onExplosion: (x: number, y: number, z: number) => void,
   ) {
     // 1) Natural Mob Spawning around player (up to 16 active mobs)
@@ -696,7 +696,7 @@ export class MobManager {
   applyDamageToMob(
     mob: MobEntity,
     damage: number,
-    onMobDefeated: (drops: Array<{ item: ItemId; count: number }>) => void,
+    onMobDefeated: (drops: Array<{ item: ItemId; count: number }>, pos: THREE.Vector3, xp: number) => void,
   ) {
     if (mob.dead) return;
 
@@ -738,12 +738,19 @@ export class MobManager {
           break;
       }
 
-      onMobDefeated(drops.filter((d) => d.count > 0));
+      const isHostile = mob.type === "zombie" || mob.type === "skeleton" || mob.type === "creeper";
+      const xp = isHostile ? 5 : 2;
+      onMobDefeated(drops.filter((d) => d.count > 0), mob.pos.clone(), xp);
     }
   }
 
   // Raycast attack from player against mobs
-  attackRaycast(origin: THREE.Vector3, direction: THREE.Vector3, damage: number, onMobDefeated: any): boolean {
+  attackRaycast(
+    origin: THREE.Vector3,
+    direction: THREE.Vector3,
+    damage: number,
+    onMobDefeated: (drops: Array<{ item: ItemId; count: number }>, pos: THREE.Vector3, xp: number) => void,
+  ): boolean {
     let closestMob: MobEntity | null = null;
     let closestDist = 4.2;
 

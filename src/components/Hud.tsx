@@ -64,8 +64,23 @@ export function Hud({
     return "empty";
   });
 
+  // Armor shields calculation (10 shields = 20 armor)
+  const armorShields = Array.from({ length: 10 }, (_, i) => {
+    const val = hud.armorPoints - i * 2;
+    if (val >= 2) return "full";
+    if (val === 1) return "half";
+    return "empty";
+  });
+
   return (
     <div className="no-select pointer-events-none absolute inset-0 z-10 font-pixel">
+      {/* Underwater Ocean Tint & Vignette */}
+      {hud.underwater && (
+        <div className="pointer-events-none absolute inset-0 bg-[#00487c]/30 backdrop-blur-[0.5px] transition-opacity duration-300">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_45%,rgba(5,20,50,0.55)_100%)]" />
+        </div>
+      )}
+
       {/* Hurt Vignette Flash */}
       {hud.hurtFlash && (
         <div className="pointer-events-none absolute inset-0 animate-pulse bg-red-600/35 transition-opacity duration-150" />
@@ -98,6 +113,16 @@ export function Hud({
           ) : (
             <span className="hidden rounded border border-black/40 bg-indigo-500/20 px-2 py-1 text-[9px] text-indigo-300 sm:inline">
               NIGHT
+            </span>
+          )}
+          {hud.weather === "rain" && (
+            <span className="rounded border border-sky-400 bg-sky-900/60 px-2 py-1 text-[9px] text-sky-200">
+              🌧 RAIN
+            </span>
+          )}
+          {hud.weather === "thunder" && (
+            <span className="rounded border border-amber-400 bg-amber-950/70 px-2 py-1 text-[9px] text-amber-300 animate-pulse">
+              ⚡ THUNDER
             </span>
           )}
         </div>
@@ -181,36 +206,76 @@ export function Hud({
       {/* Survival Status Bars (Health Hearts on Left & Hunger Drumsticks on Right) */}
       {hud.gameMode === "survival" && (
         <div className="absolute bottom-20 left-1/2 -translate-x-1/2 flex w-[380px] max-w-[94vw] items-end justify-between px-1">
-          {/* Health Hearts (Left) */}
-          <div className="flex gap-1">
-            {hearts.map((h, i) => (
-              <span
-                key={i}
-                className={`relative inline-block h-4 w-4 ${hud.health <= 4 ? "animate-pulse" : ""}`}
-                title={`Health: ${hud.health}/${hud.maxHealth}`}
-              >
-                <svg viewBox="0 0 16 16" className="h-full w-full drop-shadow-[0_1px_1px_rgba(0,0,0,0.8)]">
-                  <path
-                    d="M 8,14 L 2,8 C 0,6 0,2 4,1 C 6,1 7,3 8,4 C 9,3 10,1 12,1 C 16,2 16,6 14,8 Z"
-                    fill="#2a0d0d"
-                    stroke="#110505"
-                    strokeWidth="1.2"
-                  />
-                  {h === "full" && (
+          {/* Left Column: Armor Shields (Top) + Health Hearts (Bottom) */}
+          <div className="flex flex-col items-start gap-1">
+            {hud.armorPoints > 0 && (
+              <div className="flex gap-1">
+                {armorShields.map((s, i) => (
+                  <span
+                    key={`armor-${i}`}
+                    className="relative inline-block h-4 w-4"
+                    title={`Armor: ${hud.armorPoints}/20`}
+                  >
+                    <svg viewBox="0 0 16 16" className="h-full w-full drop-shadow-[0_1px_1px_rgba(0,0,0,0.8)]">
+                      <path
+                        d="M8 1 L14 3 L13 10 C12 13 8 15 8 15 C8 15 4 13 3 10 L2 3 Z"
+                        fill="#2a2a2a"
+                        stroke="#111111"
+                        strokeWidth="1.2"
+                      />
+                      {s === "full" && (
+                        <path
+                          d="M8 2 L13 3.8 L12.2 9.5 C11.3 12 8 13.8 8 13.8 C8 13.8 4.7 12 3.8 9.5 L3 3.8 Z"
+                          fill="#cfcfcf"
+                          stroke="#ffffff"
+                          strokeWidth="0.6"
+                        />
+                      )}
+                      {s === "half" && (
+                        <path
+                          d="M8 2 L8 13.8 C8 13.8 4.7 12 3.8 9.5 L3 3.8 L8 2 Z"
+                          fill="#cfcfcf"
+                          stroke="#ffffff"
+                          strokeWidth="0.6"
+                        />
+                      )}
+                    </svg>
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {/* Health Hearts */}
+            <div className="flex gap-1">
+              {hearts.map((h, i) => (
+                <span
+                  key={i}
+                  className={`relative inline-block h-4 w-4 ${hud.health <= 4 ? "animate-pulse" : ""}`}
+                  title={`Health: ${hud.health}/${hud.maxHealth}`}
+                >
+                  <svg viewBox="0 0 16 16" className="h-full w-full drop-shadow-[0_1px_1px_rgba(0,0,0,0.8)]">
                     <path
-                      d="M 8,13 L 3,8 C 1.2,6.2 1.2,2.8 4,2 C 5.6,2 6.6,3.4 8,4.5 C 9.4,3.4 10.4,2 12,2 C 14.8,2.8 14.8,6.2 13,8 Z"
-                      fill="#e02525"
+                      d="M 8,14 L 2,8 C 0,6 0,2 4,1 C 6,1 7,3 8,4 C 9,3 10,1 12,1 C 16,2 16,6 14,8 Z"
+                      fill="#2a0d0d"
+                      stroke="#110505"
+                      strokeWidth="1.2"
                     />
-                  )}
-                  {h === "half" && (
-                    <path
-                      d="M 8,13 L 3,8 C 1.2,6.2 1.2,2.8 4,2 C 5.6,2 6.6,3.4 8,4.5 L 8,13 Z"
-                      fill="#e02525"
-                    />
-                  )}
-                </svg>
-              </span>
-            ))}
+                    {h === "full" && (
+                      <path
+                        d="M 8,13 L 3,8 C 1.2,6.2 1.2,2.8 4,2 C 5.6,2 6.6,3.4 8,4.5 C 9.4,3.4 10.4,2 12,2 C 14.8,2.8 14.8,6.2 13,8 Z"
+                        fill="#e02525"
+                      />
+                    )}
+                    {h === "half" && (
+                      <path
+                        d="M 8,13 L 3,8 C 1.2,6.2 1.2,2.8 4,2 C 5.6,2 6.6,3.4 8,4.5 L 8,13 Z"
+                        fill="#e02525"
+                      />
+                    )}
+                  </svg>
+                </span>
+              ))}
+            </div>
           </div>
 
           {/* Right Column: Oxygen Bubbles + Hunger Drumsticks */}
@@ -282,6 +347,31 @@ export function Hud({
                 </span>
               ))}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Experience (XP) Level Bar */}
+      {hud.gameMode === "survival" && (
+        <div className="pointer-events-none absolute bottom-[58px] left-1/2 -translate-x-1/2 flex flex-col items-center w-[360px] max-w-[90vw]">
+          {/* Level number */}
+          {hud.level > 0 && (
+            <span
+              className="text-[12px] font-bold text-[#80ff20] -mb-1 z-10"
+              style={{
+                textShadow:
+                  "-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 0 4px #40aa00",
+              }}
+            >
+              {hud.level}
+            </span>
+          )}
+          {/* XP Progress Bar */}
+          <div className="relative h-2 w-full rounded-2xs border border-black/80 bg-black/70 overflow-hidden shadow-sm">
+            <div
+              className="h-full bg-gradient-to-r from-[#55ff22] via-[#80ff20] to-[#b3ff30] transition-all duration-150"
+              style={{ width: `${Math.min(100, Math.max(0, hud.xp))}%` }}
+            />
           </div>
         </div>
       )}

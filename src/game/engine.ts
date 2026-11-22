@@ -4,6 +4,8 @@ import {
   BLOCK_DEFS,
   ITEMS,
   RECIPES,
+  SMELTING_RECIPES,
+  getFuelBurnTime,
   type BlockNum,
   type GameModeId,
   type ItemDef,
@@ -23,6 +25,7 @@ import { MobManager } from "./mobs";
 import {
   loadSettings,
   saveWorldSave,
+  type FurnaceData,
   type GameSettings,
   type WorldSave,
 } from "./storage";
@@ -42,6 +45,17 @@ export interface MinecraftHudState {
   heldDef: ItemDef | null;
   heldName: string;
   inventory: Record<string, number>;
+  armorPoints: number; // 0..20 (10 armor shields)
+  armor: {
+    head: ItemId | null;
+    chest: ItemId | null;
+    legs: ItemId | null;
+    feet: ItemId | null;
+  };
+  xp: number; // 0..100
+  level: number;
+  weather: "clear" | "rain" | "thunder";
+  underwater: boolean;
   debug: {
     fps: number;
     x: number;
@@ -141,11 +155,38 @@ export class GameEngine {
     sprinting: false,
     hotbar: [] as Array<{ item: ItemId; count: number } | null>,
     inventory: {} as Record<string, number>,
+    armor: {
+      head: null as ItemId | null,
+      chest: null as ItemId | null,
+      legs: null as ItemId | null,
+      feet: null as ItemId | null,
+    },
+    xp: 0,
+    level: 0,
     selectedSlot: 0,
   };
 
   mobManager: MobManager;
   hungerTimer = 0;
+
+  // Weather System
+  weather: "clear" | "rain" | "thunder" = "clear";
+  weatherTimer = 220;
+  lightningFlashTimer = 0;
+  precipPoints: THREE.Points | null = null;
+  precipPositions: Float32Array | null = null;
+  precipColors: Float32Array | null = null;
+
+  // XP Orbs
+  xpOrbs: Array<{
+    mesh: THREE.Mesh;
+    pos: THREE.Vector3;
+    vel: THREE.Vector3;
+    value: number;
+    age: number;
+  }> = [];
+  xpChimeStreak = 0;
+  xpStreakResetTimer = 0;
 
   // Viewmodel & Held Item
   viewmodelGroup: THREE.Group;
@@ -240,6 +281,14 @@ export class GameEngine {
       while (this.player.hotbar.length < 9) this.player.hotbar.push(null);
     }
     this.player.inventory = save.player?.inventory ? { ...save.player.inventory } : {};
+    if (save.player?.armor) {
+      this.player.armor = { ...save.player.armor };
+    }
+    this.player.xp = save.player?.xp ?? 0;
+    this.player.level = save.player?.level ?? 0;
+    this.weather = save.weather ?? "clear";
+    if (!this.save.chests) this.save.chests = {};
+    if (!this.save.furnaces) this.save.furnaces = {};
 
     // Initial position: find safe spawn if empty
     if (save.player?.pos && (save.player.pos[0] !== 0.5 || save.player.pos[2] !== 0.5)) {
@@ -299,6 +348,9 @@ export class GameEngine {
 
     // Event Listeners
     this.setupInputs();
+
+    // Setup Precipitation Particle System
+    this.initPrecipitation();
 
     // Initial Chunk Load
     this.updateLoadedChunks(true);
@@ -425,21 +477,47 @@ export class GameEngine {
       currentSky.copy(nightSky).lerp(duskSky, dayFactor * 2);
     }
 
+    if (this.weather === "rain" || this.weather === "thunder") {
+      const stormSky = new THREE.Color(0x323a48);
+      currentSky.lerp(stormSky, this.weather === "thunder" ? 0.72 : 0.52);
+    }
+
     if (this.player.headInWater) {
       currentSky.lerp(waterSky, 0.85);
+    }
+
+    if (this.lightningFlashTimer > 0) {
+      currentSky.setHex(0xf4f7ff);
     }
 
     (this.skyMesh.material as THREE.MeshBasicMaterial).color.copy(currentSky);
     if (this.scene.fog) {
       this.scene.fog.color.copy(currentSky);
-      (this.scene.fog as THREE.FogExp2).density = this.player.headInWater ? 0.08 : 0.016;
+      (this.scene.fog as THREE.FogExp2).density = this.player.headInWater
+        ? 0.08
+        : this.weather === "thunder"
+          ? 0.024
+          : this.weather === "rain"
+            ? 0.021
+            : 0.016;
     }
 
     // Light intensities
-    this.sunLight.intensity = Math.max(0, dayFactor * 1.35);
+    let sunInt = Math.max(0, dayFactor * 1.35);
+    if (this.weather === "thunder") sunInt *= 0.2;
+    else if (this.weather === "rain") sunInt *= 0.5;
+    this.sunLight.intensity = sunInt;
     this.sunLight.color.set(isDay ? 0xfff5ea : 0xffa055);
     this.moonLight.intensity = Math.max(0, (1 - dayFactor) * 0.32);
-    this.ambientLight.intensity = 0.18 + dayFactor * 0.42;
+
+    if (this.lightningFlashTimer > 0) {
+      this.ambientLight.intensity = 2.4;
+    } else {
+      let amb = 0.18 + dayFactor * 0.42;
+      if (this.weather === "thunder") amb *= 0.55;
+      else if (this.weather === "rain") amb *= 0.75;
+      this.ambientLight.intensity = amb;
+    }
 
     // Stars opacity at night
     (this.starsMesh.material as THREE.PointsMaterial).opacity = Math.max(0, 1 - dayFactor * 1.8);
@@ -458,6 +536,386 @@ export class GameEngine {
     });
     while (lightIdx < this.torchLights.length) {
       this.torchLights[lightIdx++].intensity = 0;
+    }
+  }
+
+  // --------------------------------------------------------------------------
+  // WEATHER & PRECIPITATION
+  // --------------------------------------------------------------------------
+  private initPrecipitation() {
+    const COUNT = 1200;
+    const geom = new THREE.BufferGeometry();
+    const positions = new Float32Array(COUNT * 3);
+    const colors = new Float32Array(COUNT * 3);
+
+    for (let i = 0; i < COUNT; i++) {
+      positions[i * 3 + 0] = (Math.random() - 0.5) * 36;
+      positions[i * 3 + 1] = Math.random() * 22;
+      positions[i * 3 + 2] = (Math.random() - 0.5) * 36;
+
+      colors[i * 3 + 0] = 0.65;
+      colors[i * 3 + 1] = 0.85;
+      colors[i * 3 + 2] = 1.0;
+    }
+
+    geom.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+    geom.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+
+    const mat = new THREE.PointsMaterial({
+      size: 0.16,
+      vertexColors: true,
+      transparent: true,
+      opacity: 0.72,
+      depthWrite: false,
+    });
+
+    this.precipPoints = new THREE.Points(geom, mat);
+    this.precipPoints.visible = false;
+    this.scene.add(this.precipPoints);
+    this.precipPositions = positions;
+    this.precipColors = colors;
+  }
+
+  private updateWeather(dt: number) {
+    this.weatherTimer -= dt;
+    if (this.weatherTimer <= 0) {
+      if (this.weather === "clear") {
+        this.weather = Math.random() > 0.35 ? "rain" : "thunder";
+        this.weatherTimer = 90 + Math.random() * 90;
+        this.audio.startRain(this.weather === "thunder" ? 0.9 : 0.6);
+        this.callbacks.onNotification?.(
+          this.weather === "thunder" ? "A thunderstorm has started!" : "It started raining!",
+        );
+      } else {
+        this.weather = "clear";
+        this.weatherTimer = 240 + Math.random() * 180;
+        this.audio.stopRain();
+        this.callbacks.onNotification?.("The weather cleared up.");
+      }
+    }
+
+    // Thunder strikes
+    if (this.weather === "thunder") {
+      if (Math.random() < 0.008) {
+        this.lightningFlashTimer = 0.12;
+        this.audio.thunderRumble();
+      }
+    }
+
+    if (this.lightningFlashTimer > 0) {
+      this.lightningFlashTimer -= dt;
+    }
+
+    this.updatePrecipitation(dt);
+  }
+
+  private updatePrecipitation(dt: number) {
+    if (!this.precipPoints || !this.precipPositions || !this.precipColors) return;
+
+    if (this.weather === "clear") {
+      this.precipPoints.visible = false;
+      return;
+    }
+
+    const wx = Math.floor(this.player.pos.x);
+    const wz = Math.floor(this.player.pos.z);
+    const biome = this.world.getBiomeAt(wx, wz);
+
+    // Desert has no precipitation
+    if (biome.name === "Desert") {
+      this.precipPoints.visible = false;
+      return;
+    }
+
+    this.precipPoints.visible = true;
+    const isSnow = biome.name === "Snowy Peaks";
+    const COUNT = this.precipPositions.length / 3;
+
+    const fallSpeed = isSnow ? 2.8 : 25.0;
+    const mat = this.precipPoints.material as THREE.PointsMaterial;
+    mat.size = isSnow ? 0.24 : 0.16;
+
+    const px = this.player.pos.x;
+    const py = this.player.pos.y;
+    const pz = this.player.pos.z;
+
+    const t = performance.now() * 0.001;
+
+    for (let i = 0; i < COUNT; i++) {
+      let x = this.precipPositions[i * 3 + 0];
+      let y = this.precipPositions[i * 3 + 1];
+      let z = this.precipPositions[i * 3 + 2];
+
+      y -= fallSpeed * dt;
+      if (isSnow) {
+        x += Math.sin(t + i) * 0.04;
+        z += Math.cos(t * 0.7 + i) * 0.04;
+      }
+
+      // Wrap around player
+      if (y < py - 2) {
+        y = py + 18 + Math.random() * 4;
+        x = px + (Math.random() - 0.5) * 36;
+        z = pz + (Math.random() - 0.5) * 36;
+      }
+      if (Math.abs(x - px) > 18) x = px + (Math.random() - 0.5) * 36;
+      if (Math.abs(z - pz) > 18) z = pz + (Math.random() - 0.5) * 36;
+
+      this.precipPositions[i * 3 + 0] = x;
+      this.precipPositions[i * 3 + 1] = y;
+      this.precipPositions[i * 3 + 2] = z;
+
+      // Color
+      if (isSnow) {
+        this.precipColors[i * 3 + 0] = 1.0;
+        this.precipColors[i * 3 + 1] = 1.0;
+        this.precipColors[i * 3 + 2] = 1.0;
+      } else {
+        this.precipColors[i * 3 + 0] = 0.65;
+        this.precipColors[i * 3 + 1] = 0.85;
+        this.precipColors[i * 3 + 2] = 1.0;
+      }
+    }
+
+    this.precipPoints.geometry.attributes.position.needsUpdate = true;
+    this.precipPoints.geometry.attributes.color.needsUpdate = true;
+  }
+
+  // --------------------------------------------------------------------------
+  // XP ORBS & LEVELING
+  // --------------------------------------------------------------------------
+  spawnXpOrbs(x: number, y: number, z: number, totalXp: number) {
+    if (totalXp <= 0) return;
+    const count = Math.min(6, Math.max(1, Math.ceil(totalXp / 2)));
+    const perOrb = Math.max(1, Math.round(totalXp / count));
+
+    for (let i = 0; i < count; i++) {
+      const geom = new THREE.BoxGeometry(0.18, 0.18, 0.18);
+      const mat = new THREE.MeshBasicMaterial({ color: 0x88ff20 });
+      const mesh = new THREE.Mesh(geom, mat);
+      const px = x + (Math.random() - 0.5) * 0.4;
+      const py = y + 0.2 + Math.random() * 0.3;
+      const pz = z + (Math.random() - 0.5) * 0.4;
+      mesh.position.set(px, py, pz);
+      this.scene.add(mesh);
+
+      this.xpOrbs.push({
+        mesh,
+        pos: new THREE.Vector3(px, py, pz),
+        vel: new THREE.Vector3(
+          (Math.random() - 0.5) * 2.2,
+          2.5 + Math.random() * 2.0,
+          (Math.random() - 0.5) * 2.2,
+        ),
+        value: perOrb,
+        age: 0,
+      });
+    }
+  }
+
+  addXp(amount: number) {
+    this.player.xp += amount;
+    while (this.player.xp >= 100) {
+      this.player.xp -= 100;
+      this.player.level += 1;
+      this.audio.levelUp();
+      this.callbacks.onNotification?.(`LEVEL UP! You reached Level ${this.player.level}!`);
+    }
+  }
+
+  private updateXpOrbs(dt: number) {
+    if (this.xpStreakResetTimer > 0) {
+      this.xpStreakResetTimer -= dt;
+      if (this.xpStreakResetTimer <= 0) {
+        this.xpChimeStreak = 0;
+      }
+    }
+
+    const playerTarget = new THREE.Vector3(
+      this.player.pos.x,
+      this.player.pos.y + 0.8,
+      this.player.pos.z,
+    );
+
+    for (let i = this.xpOrbs.length - 1; i >= 0; i--) {
+      const orb = this.xpOrbs[i];
+      orb.age += dt;
+
+      // Spin & pulse color
+      orb.mesh.rotation.x += dt * 3.5;
+      orb.mesh.rotation.y += dt * 4.2;
+      const hue = Math.sin(orb.age * 8) > 0 ? 0x88ff20 : 0xd4ff20;
+      (orb.mesh.material as THREE.MeshBasicMaterial).color.setHex(hue);
+
+      const dist = orb.pos.distanceTo(playerTarget);
+
+      // Magnetize towards player if within 6 blocks
+      if (dist < 6.0) {
+        const pullDir = playerTarget.clone().sub(orb.pos).normalize();
+        const pullSpeed = 9.0 * (1 - dist / 7.0);
+        orb.vel.lerp(pullDir.multiplyScalar(pullSpeed), dt * 7.0);
+      } else {
+        // Gravity & drag
+        orb.vel.y -= 12.0 * dt;
+        orb.vel.x *= 0.94;
+        orb.vel.z *= 0.94;
+      }
+
+      orb.pos.addScaledVector(orb.vel, dt);
+      orb.mesh.position.copy(orb.pos);
+
+      // Pickup condition
+      if (dist < 0.75) {
+        this.addXp(orb.value);
+        this.audio.xpChime(this.xpChimeStreak++);
+        this.xpStreakResetTimer = 1.2;
+
+        this.scene.remove(orb.mesh);
+        orb.mesh.geometry.dispose();
+        (orb.mesh.material as THREE.Material).dispose();
+        this.xpOrbs.splice(i, 1);
+        continue;
+      }
+
+      // Despawn if older than 5 minutes
+      if (orb.age > 300) {
+        this.scene.remove(orb.mesh);
+        orb.mesh.geometry.dispose();
+        (orb.mesh.material as THREE.Material).dispose();
+        this.xpOrbs.splice(i, 1);
+      }
+    }
+  }
+
+  // --------------------------------------------------------------------------
+  // ARMOR & DEFENSE
+  // --------------------------------------------------------------------------
+  getArmorPoints(): number {
+    let total = 0;
+    const a = this.player.armor;
+    if (!a) return 0;
+    if (a.head) total += ITEMS[a.head]?.armor?.defense || 0;
+    if (a.chest) total += ITEMS[a.chest]?.armor?.defense || 0;
+    if (a.legs) total += ITEMS[a.legs]?.armor?.defense || 0;
+    if (a.feet) total += ITEMS[a.feet]?.armor?.defense || 0;
+    return Math.min(20, total);
+  }
+
+  equipArmor(item: ItemId): boolean {
+    const def = ITEMS[item];
+    if (!def || !def.armor) return false;
+    const slot = def.armor.slot;
+    const old = this.player.armor[slot];
+
+    this.consumeItem(item, 1);
+    this.player.armor[slot] = item;
+    if (old) {
+      this.addItem(old, 1);
+    }
+    this.audio.armorEquip();
+    return true;
+  }
+
+  unequipArmor(slot: "head" | "chest" | "legs" | "feet") {
+    const item = this.player.armor[slot];
+    if (!item) return;
+    this.player.armor[slot] = null;
+    this.addItem(item, 1);
+    this.audio.armorEquip();
+  }
+
+  // --------------------------------------------------------------------------
+  // CHEST & FURNACE DATA HELPERS
+  // --------------------------------------------------------------------------
+  getChestSlots(posKey: string): Array<{ item: ItemId; count: number } | null> {
+    if (!this.save.chests) this.save.chests = {};
+    if (!this.save.chests[posKey]) {
+      this.save.chests[posKey] = Array(27).fill(null);
+    }
+    return this.save.chests[posKey];
+  }
+
+  setChestSlots(posKey: string, slots: Array<{ item: ItemId; count: number } | null>) {
+    if (!this.save.chests) this.save.chests = {};
+    this.save.chests[posKey] = slots;
+  }
+
+  getFurnaceData(posKey: string): FurnaceData {
+    if (!this.save.furnaces) this.save.furnaces = {};
+    if (!this.save.furnaces[posKey]) {
+      this.save.furnaces[posKey] = {
+        input: null,
+        fuel: null,
+        output: null,
+        burnTime: 0,
+        maxBurnTime: 0,
+        cookProgress: 0,
+      };
+    }
+    return this.save.furnaces[posKey];
+  }
+
+  setFurnaceData(posKey: string, data: FurnaceData) {
+    if (!this.save.furnaces) this.save.furnaces = {};
+    this.save.furnaces[posKey] = data;
+  }
+
+  private updateFurnaces(dt: number) {
+    if (!this.save.furnaces) return;
+    for (const [posKey, furnace] of Object.entries(this.save.furnaces)) {
+      if (!furnace) continue;
+
+      // 1. Burn fuel
+      if (furnace.burnTime > 0) {
+        furnace.burnTime = Math.max(0, furnace.burnTime - dt);
+      }
+
+      // 2. Can smelt?
+      const recipe = furnace.input
+        ? SMELTING_RECIPES.find((r) => r.input === furnace.input!.item)
+        : null;
+
+      const canAcceptOutput =
+        recipe &&
+        (!furnace.output ||
+          (furnace.output.item === recipe.output && furnace.output.count < 64));
+
+      // 3. Needs fuel and has fuel?
+      if (furnace.burnTime <= 0 && canAcceptOutput && furnace.fuel && furnace.fuel.count > 0) {
+        const fuelDuration = getFuelBurnTime(furnace.fuel.item);
+        if (fuelDuration > 0) {
+          furnace.burnTime = fuelDuration;
+          furnace.maxBurnTime = fuelDuration;
+          furnace.fuel.count -= 1;
+          if (furnace.fuel.count <= 0) furnace.fuel = null;
+        }
+      }
+
+      // 4. Cook item if burning and valid
+      if (furnace.burnTime > 0 && canAcceptOutput && recipe) {
+        furnace.cookProgress += dt / 6.0; // 6 seconds per item
+        if (Math.random() < 0.04) this.audio.furnaceCrackle();
+
+        if (furnace.cookProgress >= 1.0) {
+          furnace.cookProgress = 0;
+          furnace.input!.count -= 1;
+          if (furnace.input!.count <= 0) furnace.input = null;
+
+          if (!furnace.output) {
+            furnace.output = { item: recipe.output, count: 1 };
+          } else {
+            furnace.output.count += 1;
+          }
+
+          // Spawn XP at furnace position
+          const [fx, fy, fz] = posKey.split(",").map(Number);
+          if (!isNaN(fx)) {
+            this.spawnXpOrbs(fx + 0.5, fy + 0.5, fz + 0.5, Math.ceil(recipe.xp));
+          }
+        }
+      } else if (!canAcceptOutput) {
+        furnace.cookProgress = 0;
+      }
     }
   }
 
@@ -653,8 +1111,9 @@ export class GameEngine {
           rayOrigin,
           rayDir,
           attackDmg,
-          (drops: Array<{ item: ItemId; count: number }>) => {
+          (drops, pos, xp) => {
             drops.forEach((d) => this.addItem(d.item, d.count));
+            if (pos && xp) this.spawnXpOrbs(pos.x, pos.y, pos.z, xp);
           },
         );
 
@@ -754,7 +1213,7 @@ export class GameEngine {
   // --------------------------------------------------------------------------
   // FIRST-PERSON VIEWMODEL
   // --------------------------------------------------------------------------
-  private rebuildViewmodel() {
+  rebuildViewmodel() {
     if (this.heldItemMesh) {
       this.viewmodelGroup.remove(this.heldItemMesh);
       this.heldItemMesh = null;
@@ -1077,8 +1536,14 @@ export class GameEngine {
     this.markBlockDirty(x, y, z);
 
     // Give drop in survival mode
-    if (this.save.gameMode === "survival" && def.drop) {
-      this.addItem(def.drop, 1);
+    if (this.save.gameMode === "survival") {
+      if (def.drop) {
+        this.addItem(def.drop, 1);
+      }
+      if (block === BLOCK.COAL_ORE) this.spawnXpOrbs(x + 0.5, y + 0.5, z + 0.5, 1);
+      else if (block === BLOCK.IRON_ORE) this.spawnXpOrbs(x + 0.5, y + 0.5, z + 0.5, 2);
+      else if (block === BLOCK.GOLD_ORE) this.spawnXpOrbs(x + 0.5, y + 0.5, z + 0.5, 3);
+      else if (block === BLOCK.DIAMOND_ORE) this.spawnXpOrbs(x + 0.5, y + 0.5, z + 0.5, 5);
     }
 
     // Recheck targeting
@@ -1118,6 +1583,14 @@ export class GameEngine {
         if (this.save.gameMode === "survival") {
           this.consumeHeldItem(1);
         }
+        return;
+      }
+    }
+
+    // 2.5) Armor Equipping from hotbar
+    if (heldDef?.armor) {
+      if (this.equipArmor(heldDef.id)) {
+        this.swingAnim = 0.45;
         return;
       }
     }
@@ -1639,7 +2112,12 @@ export class GameEngine {
   applyDamage(amount: number) {
     if (this.save.gameMode === "creative" || this.isDead) return;
 
-    this.player.health = Math.max(0, this.player.health - amount);
+    // Apply Armor reduction (up to 80% reduction for 20 armor points)
+    const armorPoints = this.getArmorPoints();
+    const reduction = armorPoints * 0.04;
+    const finalAmount = Math.max(1, Math.round(amount * (1 - reduction)));
+
+    this.player.health = Math.max(0, this.player.health - finalAmount);
     this.audio.hurt();
     this.hurtFlash = true;
     this.lastHurtTime = performance.now();
@@ -1787,14 +2265,22 @@ export class GameEngine {
         this.player.pos,
         isDay,
         (dmg) => this.applyDamage(dmg),
-        (drops) => drops.forEach((d) => this.addItem(d.item, d.count)),
+        (drops, pos, xp) => {
+          drops.forEach((d) => this.addItem(d.item, d.count));
+          if (pos && xp) this.spawnXpOrbs(pos.x, pos.y, pos.z, xp);
+        },
         (ex, ey, ez) => this.detonateTNT(ex, ey, ez),
       );
 
-      // 10) Procedural Ambient Music Update
+      // 10) Weather, XP Orbs & Furnace Simulation
+      this.updateWeather(dt);
+      this.updateXpOrbs(dt);
+      this.updateFurnaces(dt);
+
+      // 11) Procedural Ambient Music Update
       this.audio.updateAmbient(dt);
 
-      // 11) Hunger & Natural Regeneration
+      // 12) Hunger & Natural Regeneration
       if (this.save.gameMode === "survival") {
         this.hungerTimer += dt;
         if (this.hungerTimer >= 4.0) {
@@ -1856,6 +2342,12 @@ export class GameEngine {
       heldDef,
       heldName,
       inventory: this.player.inventory,
+      armorPoints: this.getArmorPoints(),
+      armor: this.player.armor,
+      xp: Math.round(this.player.xp),
+      level: this.player.level,
+      weather: this.weather,
+      underwater: this.player.headInWater,
       debug: {
         fps: this.fpsCounter,
         x: Math.round(this.player.pos.x * 10) / 10,
@@ -1894,10 +2386,14 @@ export class GameEngine {
       oxygen: this.player.oxygen,
       hotbar: this.player.hotbar,
       inventory: this.player.inventory,
+      armor: this.player.armor,
+      xp: this.player.xp,
+      level: this.player.level,
       selectedSlot: this.player.selectedSlot,
       flying: this.player.flying,
       spawnPos: this.save.player?.spawnPos,
     };
+    this.save.weather = this.weather;
     this.save.edits = this.world.exportEdits();
     saveWorldSave(this.save);
     if (this.callbacks.onWorldSaved) {
@@ -2004,6 +2500,20 @@ export class GameEngine {
     this.audio.dispose();
     this.atlas.dispose();
     this.mobManager.dispose();
+
+    if (this.precipPoints) {
+      this.scene.remove(this.precipPoints);
+      this.precipPoints.geometry.dispose();
+      (this.precipPoints.material as THREE.Material).dispose();
+      this.precipPoints = null;
+    }
+
+    this.xpOrbs.forEach((orb) => {
+      this.scene.remove(orb.mesh);
+      orb.mesh.geometry.dispose();
+      (orb.mesh.material as THREE.Material).dispose();
+    });
+    this.xpOrbs = [];
 
     for (const record of this.chunkMeshes.values()) {
       if (record.opaqueMesh) {
