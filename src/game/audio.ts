@@ -664,4 +664,114 @@ export class GameAudio {
     sparkle.start(t0 + 0.2);
     sparkle.stop(t0 + 0.68);
   }
+
+  endermanStare() {
+    if (!this.ctx || !this.master || this.muted) return;
+    const ctx = this.ctx;
+    const master = this.master;
+    const t0 = ctx.currentTime;
+
+    // Distorted static drone
+    const osc = ctx.createOscillator();
+    const lfo = ctx.createOscillator();
+    const lfoGain = ctx.createGain();
+    const filter = ctx.createBiquadFilter();
+    const gain = ctx.createGain();
+
+    osc.type = "sawtooth";
+    osc.frequency.setValueAtTime(95, t0);
+    osc.frequency.linearRampToValueAtTime(140, t0 + 0.3);
+    osc.frequency.exponentialRampToValueAtTime(70, t0 + 0.9);
+
+    lfo.type = "square";
+    lfo.frequency.setValueAtTime(28, t0);
+    lfoGain.gain.setValueAtTime(45, t0);
+    lfo.connect(lfoGain);
+    lfoGain.connect(osc.frequency);
+
+    filter.type = "bandpass";
+    filter.frequency.setValueAtTime(680, t0);
+    filter.Q.setValueAtTime(4.2, t0);
+
+    gain.gain.setValueAtTime(0.0001, t0);
+    gain.gain.exponentialRampToValueAtTime(0.18, t0 + 0.05);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.95);
+
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(master);
+
+    lfo.start(t0);
+    osc.start(t0);
+    lfo.stop(t0 + 0.96);
+    osc.stop(t0 + 0.96);
+  }
+
+  endermanTeleport() {
+    if (!this.ctx || !this.master || this.muted) return;
+    const ctx = this.ctx;
+    const master = this.master;
+    const t0 = ctx.currentTime;
+
+    // Dimensional warp swoosh
+    const osc = ctx.createOscillator();
+    const filter = ctx.createBiquadFilter();
+    const gain = ctx.createGain();
+
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(1100, t0);
+    osc.frequency.exponentialRampToValueAtTime(180, t0 + 0.28);
+
+    filter.type = "lowpass";
+    filter.frequency.setValueAtTime(1800, t0);
+    filter.frequency.exponentialRampToValueAtTime(300, t0 + 0.28);
+
+    gain.gain.setValueAtTime(0.0001, t0);
+    gain.gain.exponentialRampToValueAtTime(0.22, t0 + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.3);
+
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(master);
+
+    osc.start(t0);
+    osc.stop(t0 + 0.32);
+  }
+
+  ironGolemHit() {
+    if (!this.ctx || !this.master || this.muted) return;
+    const ctx = this.ctx;
+    const master = this.master;
+    const t0 = ctx.currentTime;
+
+    // Heavy anvil / metal impact punch
+    const oscPunch = ctx.createOscillator();
+    const gainPunch = ctx.createGain();
+    oscPunch.type = "triangle";
+    oscPunch.frequency.setValueAtTime(140, t0);
+    oscPunch.frequency.exponentialRampToValueAtTime(45, t0 + 0.22);
+
+    gainPunch.gain.setValueAtTime(0.28, t0);
+    gainPunch.gain.exponentialRampToValueAtTime(0.001, t0 + 0.25);
+
+    oscPunch.connect(gainPunch);
+    gainPunch.connect(master);
+    oscPunch.start(t0);
+    oscPunch.stop(t0 + 0.26);
+
+    // High metal clang ring
+    const oscRing = ctx.createOscillator();
+    const gainRing = ctx.createGain();
+    oscRing.type = "sine";
+    oscRing.frequency.setValueAtTime(880, t0);
+    oscRing.frequency.exponentialRampToValueAtTime(840, t0 + 0.35);
+
+    gainRing.gain.setValueAtTime(0.14, t0);
+    gainRing.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.38);
+
+    oscRing.connect(gainRing);
+    gainRing.connect(master);
+    oscRing.start(t0);
+    oscRing.stop(t0 + 0.4);
+  }
 }

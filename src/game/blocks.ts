@@ -230,7 +230,8 @@ export type ItemId =
   | "item_lapis"
   | "item_book"
   | "block_emerald_ore"
-  | "item_emerald";
+  | "item_emerald"
+  | "ender_pearl";
 
 export type ToolKind = "pickaxe" | "axe" | "shovel" | "sword" | "hoe" | "bow";
 export type ArmorSlot = "head" | "chest" | "legs" | "feet";
@@ -1425,6 +1426,13 @@ export const ITEMS: Record<ItemId, ItemDef> = {
     name: "Emerald",
     short: "EMRLD",
     color: "#10b981",
+    category: "material",
+  },
+  ender_pearl: {
+    id: "ender_pearl",
+    name: "Ender Pearl",
+    short: "PEARL",
+    color: "#0f766e",
     category: "material",
   },
 };

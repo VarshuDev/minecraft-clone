@@ -3,7 +3,7 @@ import { type InfiniteWorld } from "./world";
 import { BLOCK, BLOCK_DEFS, type ItemId, type VillagerProfession, type VillagerTrade, getVillagerTrades } from "./blocks";
 import { type GameAudio } from "./audio";
 
-export type MobType = "zombie" | "skeleton" | "creeper" | "pig" | "cow" | "sheep" | "pigman" | "ghast" | "villager";
+export type MobType = "zombie" | "skeleton" | "creeper" | "pig" | "cow" | "sheep" | "pigman" | "ghast" | "villager" | "enderman" | "iron_golem";
 
 export interface MobEntity {
   id: string;
@@ -58,6 +58,12 @@ export interface ArrowEntity {
   stuckTimer: number;
 }
 
+export interface EnderPearlEntity {
+  mesh: THREE.Mesh;
+  pos: THREE.Vector3;
+  vel: THREE.Vector3;
+}
+
 export class MobManager {
   world: InfiniteWorld;
   audio: GameAudio;
@@ -65,6 +71,7 @@ export class MobManager {
 
   mobs: MobEntity[] = [];
   arrows: ArrowEntity[] = [];
+  pearls: EnderPearlEntity[] = [];
   spawnTimer = 0;
 
   // Shared Materials
@@ -106,6 +113,15 @@ export class MobManager {
   private matVillagerEye = new THREE.MeshLambertMaterial({ color: 0x224c28 });
   private matVillagerWhite = new THREE.MeshLambertMaterial({ color: 0xf5f5f5 });
   private matVillagerBrow = new THREE.MeshLambertMaterial({ color: 0x3e2718 });
+
+  private matEndermanSkin = new THREE.MeshLambertMaterial({ color: 0x121212 });
+  private matEndermanEyes = new THREE.MeshLambertMaterial({ color: 0xd946ef, emissive: 0x86198f });
+  private matGolemIron = new THREE.MeshLambertMaterial({ color: 0xd4d4d8 });
+  private matGolemTorso = new THREE.MeshLambertMaterial({ color: 0xa1a1aa });
+  private matGolemVines = new THREE.MeshLambertMaterial({ color: 0x4d7c0f });
+  private matGolemEyes = new THREE.MeshLambertMaterial({ color: 0xdc2626 });
+  private matGolemNose = new THREE.MeshLambertMaterial({ color: 0x92400e });
+  private matPearl = new THREE.MeshLambertMaterial({ color: 0x0f766e, emissive: 0x115e59 });
 
   constructor(world: InfiniteWorld, scene: THREE.Scene, audio: GameAudio) {
     this.world = world;
@@ -168,6 +184,16 @@ export class MobManager {
         limbs = this.buildVillagerModel(group, originalColors, profession);
         maxHealth = 20;
         isHostile = false;
+        break;
+      case "enderman":
+        limbs = this.buildEndermanModel(group, originalColors);
+        maxHealth = 40;
+        isHostile = false; // Neutral until stare/attacked
+        break;
+      case "iron_golem":
+        limbs = this.buildIronGolemModel(group, originalColors);
+        maxHealth = 100;
+        isHostile = false; // Friendly to player, hostile to monsters
         break;
     }
 
@@ -656,6 +682,197 @@ export class MobManager {
     return { head, body, leftArm: arms, rightArm: arms, leftLeg, rightLeg };
   }
 
+  private buildEndermanModel(group: THREE.Group, colors: Map<THREE.Mesh, THREE.Color>) {
+    // 2.9 blocks tall, slender silhouette
+    const head = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.34, 0.34), this.matEndermanSkin);
+    head.position.set(0, 2.45, 0);
+    this.registerMesh(head, colors);
+    group.add(head);
+
+    // Glowing purple slit eyes
+    const eyeL = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.03, 0.02), this.matEndermanEyes);
+    eyeL.position.set(-0.08, 2.45, 0.175);
+    group.add(eyeL);
+
+    const eyeR = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.03, 0.02), this.matEndermanEyes);
+    eyeR.position.set(0.08, 2.45, 0.175);
+    group.add(eyeR);
+
+    // Slender torso
+    const body = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.65, 0.16), this.matEndermanSkin);
+    body.position.set(0, 1.95, 0);
+    this.registerMesh(body, colors);
+    group.add(body);
+
+    // Long thin arms reaching almost to knees
+    const armGeo = new THREE.BoxGeometry(0.09, 1.45, 0.09);
+    const leftArm = new THREE.Mesh(armGeo, this.matEndermanSkin);
+    leftArm.position.set(-0.21, 1.55, 0);
+    this.registerMesh(leftArm, colors);
+    group.add(leftArm);
+
+    const rightArm = new THREE.Mesh(armGeo, this.matEndermanSkin);
+    rightArm.position.set(0.21, 1.55, 0);
+    this.registerMesh(rightArm, colors);
+    group.add(rightArm);
+
+    // Long thin legs
+    const legGeo = new THREE.BoxGeometry(0.1, 1.62, 0.1);
+    const leftLeg = new THREE.Mesh(legGeo, this.matEndermanSkin);
+    leftLeg.position.set(-0.08, 0.81, 0);
+    this.registerMesh(leftLeg, colors);
+    group.add(leftLeg);
+
+    const rightLeg = new THREE.Mesh(legGeo, this.matEndermanSkin);
+    rightLeg.position.set(0.08, 0.81, 0);
+    this.registerMesh(rightLeg, colors);
+    group.add(rightLeg);
+
+    return { head, body, leftArm, rightArm, leftLeg, rightLeg };
+  }
+
+  private buildIronGolemModel(group: THREE.Group, colors: Map<THREE.Mesh, THREE.Color>) {
+    // 2.7 blocks tall, heavy and imposing
+    const head = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.48, 0.4), this.matGolemIron);
+    head.position.set(0, 2.15, 0.08);
+    this.registerMesh(head, colors);
+    group.add(head);
+
+    // 3D Villager-like nose
+    const nose = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.22, 0.12), this.matGolemNose);
+    nose.position.set(0, 2.05, 0.32);
+    this.registerMesh(nose, colors);
+    group.add(nose);
+
+    // Red eyes
+    const eyeL = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.06, 0.02), this.matGolemEyes);
+    eyeL.position.set(-0.11, 2.22, 0.29);
+    group.add(eyeL);
+
+    const eyeR = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.06, 0.02), this.matGolemEyes);
+    eyeR.position.set(0.11, 2.22, 0.29);
+    group.add(eyeR);
+
+    // Massive broad chest
+    const body = new THREE.Mesh(new THREE.BoxGeometry(0.96, 0.78, 0.52), this.matGolemIron);
+    body.position.set(0, 1.52, 0);
+    this.registerMesh(body, colors);
+    group.add(body);
+
+    // Moss vines on chest
+    const vine = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.46, 0.03), this.matGolemVines);
+    vine.position.set(0.18, 1.52, 0.27);
+    this.registerMesh(vine, colors);
+    group.add(vine);
+
+    // Lower waist
+    const waist = new THREE.Mesh(new THREE.BoxGeometry(0.68, 0.3, 0.42), this.matGolemTorso);
+    waist.position.set(0, 1.05, 0);
+    this.registerMesh(waist, colors);
+    group.add(waist);
+
+    // Huge swinging arms reaching down
+    const armGeo = new THREE.BoxGeometry(0.26, 1.35, 0.26);
+    const leftArm = new THREE.Mesh(armGeo, this.matGolemIron);
+    leftArm.position.set(-0.62, 1.25, 0);
+    this.registerMesh(leftArm, colors);
+    group.add(leftArm);
+
+    const rightArm = new THREE.Mesh(armGeo, this.matGolemIron);
+    rightArm.position.set(0.62, 1.25, 0);
+    this.registerMesh(rightArm, colors);
+    group.add(rightArm);
+
+    // Thick columnar legs
+    const legGeo = new THREE.BoxGeometry(0.32, 0.9, 0.32);
+    const leftLeg = new THREE.Mesh(legGeo, this.matGolemIron);
+    leftLeg.position.set(-0.22, 0.45, 0);
+    this.registerMesh(leftLeg, colors);
+    group.add(leftLeg);
+
+    const rightLeg = new THREE.Mesh(legGeo, this.matGolemIron);
+    rightLeg.position.set(0.22, 0.45, 0);
+    this.registerMesh(rightLeg, colors);
+    group.add(rightLeg);
+
+    return { head, body, leftArm, rightArm, leftLeg, rightLeg };
+  }
+
+  teleportEnderman(mob: MobEntity, nearPos?: THREE.Vector3): boolean {
+    const center = nearPos || mob.pos;
+    for (let attempts = 0; attempts < 20; attempts++) {
+      const angle = Math.random() * Math.PI * 2;
+      const dist = nearPos ? 3.0 + Math.random() * 4.0 : 8.0 + Math.random() * 12.0;
+      const tx = Math.floor(center.x + Math.cos(angle) * dist);
+      const tz = Math.floor(center.z + Math.sin(angle) * dist);
+
+      for (let ty = Math.min(60, Math.floor(center.y) + 6); ty >= Math.max(4, Math.floor(center.y) - 8); ty--) {
+        const floor = this.world.getBlock(tx, ty, tz);
+        const air1 = this.world.getBlock(tx, ty + 1, tz);
+        const air2 = this.world.getBlock(tx, ty + 2, tz);
+        const air3 = this.world.getBlock(tx, ty + 3, tz);
+
+        if (floor !== BLOCK.AIR && floor !== BLOCK.WATER && floor !== BLOCK.LAVA && air1 === BLOCK.AIR && air2 === BLOCK.AIR && air3 === BLOCK.AIR) {
+          mob.pos.set(tx + 0.5, ty + 1.05, tz + 0.5);
+          mob.vel.set(0, 0, 0);
+          mob.group.position.copy(mob.pos);
+          this.audio.endermanTeleport();
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  shootEnderPearl(origin: THREE.Vector3, direction: THREE.Vector3) {
+    const geo = new THREE.SphereGeometry(0.14, 8, 8);
+    const mesh = new THREE.Mesh(geo, this.matPearl);
+    mesh.position.copy(origin);
+    this.scene.add(mesh);
+
+    this.pearls.push({
+      mesh,
+      pos: origin.clone(),
+      vel: direction.clone().normalize().multiplyScalar(24.0),
+    });
+  }
+
+  private updatePearls(dt: number, onPlayerTeleport?: (pos: THREE.Vector3) => void) {
+    for (let i = this.pearls.length - 1; i >= 0; i--) {
+      const p = this.pearls[i];
+      p.vel.y -= 18.0 * dt; // gravity arc
+      const step = p.vel.clone().multiplyScalar(dt);
+      const nextPos = p.pos.clone().add(step);
+
+      const bx = Math.floor(nextPos.x);
+      const by = Math.floor(nextPos.y);
+      const bz = Math.floor(nextPos.z);
+      const b = this.world.getBlock(bx, by, bz);
+
+      if (b !== BLOCK.AIR && b !== BLOCK.WATER && BLOCK_DEFS[b]?.solid) {
+        this.scene.remove(p.mesh);
+        this.pearls.splice(i, 1);
+        onPlayerTeleport?.(nextPos);
+        continue;
+      }
+
+      let hitMob = false;
+      for (const mob of this.mobs) {
+        if (!mob.dead && nextPos.distanceTo(mob.pos.clone().add(new THREE.Vector3(0, 1.0, 0))) < 1.0) {
+          this.scene.remove(p.mesh);
+          this.pearls.splice(i, 1);
+          onPlayerTeleport?.(nextPos);
+          hitMob = true;
+          break;
+        }
+      }
+      if (hitMob) continue;
+
+      p.pos.copy(nextPos);
+      p.mesh.position.copy(p.pos);
+    }
+  }
+
   // --------------------------------------------------------------------------
   // ARROW SHOOTING & PROJECTILES
   // --------------------------------------------------------------------------
@@ -702,6 +919,8 @@ export class MobManager {
     onPlayerDamage: (dmg: number) => void,
     onMobDefeated: (drops: Array<{ item: ItemId; count: number }>, pos: THREE.Vector3, xp: number) => void,
     onExplosion: (x: number, y: number, z: number) => void,
+    playerLookDir?: THREE.Vector3,
+    onPlayerTeleport?: (pos: THREE.Vector3) => void,
   ) {
     // 1) Natural Mob Spawning around player (up to 16 active mobs)
     this.spawnTimer += dt;
@@ -834,18 +1053,91 @@ export class MobManager {
             }
           } else if (mob.state === "chase") {
             // Chase player forward
-            const speed = mob.type === "zombie" ? 2.8 : mob.type === "creeper" ? 3.4 : mob.type === "pigman" ? 3.6 : 3.0;
+            const speed = mob.type === "zombie" ? 2.8 : mob.type === "creeper" ? 3.4 : mob.type === "pigman" ? 3.6 : mob.type === "enderman" ? 4.8 : 3.0;
             mob.vel.x = Math.sin(mob.yaw) * speed;
             mob.vel.z = Math.cos(mob.yaw) * speed;
 
             // Melee contact attack on player
-            if (distToPlayer < 1.35 && mob.attackCooldown <= 0 && mob.type !== "creeper") {
-              mob.attackCooldown = 1.2;
-              onPlayerDamage(mob.type === "pigman" ? 5 : mob.type === "zombie" ? 3 : 2);
+            if (distToPlayer < 1.4 && mob.attackCooldown <= 0 && mob.type !== "creeper") {
+              mob.attackCooldown = 1.1;
+              const dmg = mob.type === "enderman" ? 7 : mob.type === "pigman" ? 5 : mob.type === "zombie" ? 3 : 2;
+              onPlayerDamage(dmg);
+              if (mob.type === "enderman" && Math.random() < 0.45) {
+                this.teleportEnderman(mob, playerPos);
+              }
             }
           }
         } else {
           mob.state = "wander";
+        }
+      }
+
+      // Enderman Neutral Stare Detection & Water Damage
+      if (mob.type === "enderman") {
+        const blockFeet = this.world.getBlock(Math.floor(mob.pos.x), Math.floor(mob.pos.y), Math.floor(mob.pos.z));
+        if (blockFeet === BLOCK.WATER) {
+          mob.health -= dt * 6;
+          this.audio.splash();
+          this.teleportEnderman(mob);
+        }
+
+        if (!mob.isHostile && playerLookDir) {
+          const headPos = mob.pos.clone().add(new THREE.Vector3(0, 2.45, 0));
+          const toHead = headPos.clone().sub(playerPos.clone().add(new THREE.Vector3(0, 1.6, 0)));
+          const dist = toHead.length();
+          if (dist < 28) {
+            toHead.normalize();
+            if (playerLookDir.dot(toHead) > 0.978) {
+              mob.isHostile = true;
+              mob.state = "chase";
+              this.audio.endermanStare();
+              this.teleportEnderman(mob, playerPos);
+            }
+          }
+        }
+      }
+
+      // Iron Golem AI (Protector of Villagers)
+      if (mob.type === "iron_golem") {
+        let threat: MobEntity | null = null;
+        let minDist = 16;
+        for (const other of this.mobs) {
+          if (!other.dead && (other.type === "zombie" || other.type === "skeleton" || other.type === "creeper")) {
+            const d = other.pos.distanceTo(mob.pos);
+            if (d < minDist) {
+              minDist = d;
+              threat = other;
+            }
+          }
+        }
+
+        if (threat) {
+          mob.state = "chase";
+          const dir = threat.pos.clone().sub(mob.pos);
+          mob.yaw = Math.atan2(dir.x, dir.z);
+          const speed = 3.2;
+          mob.vel.x = Math.sin(mob.yaw) * speed;
+          mob.vel.z = Math.cos(mob.yaw) * speed;
+
+          if (minDist < 2.0 && mob.attackCooldown <= 0) {
+            mob.attackCooldown = 1.0;
+            // Uppercut fling!
+            threat.vel.y = 8.5;
+            threat.vel.x = Math.sin(mob.yaw) * 4.5;
+            threat.vel.z = Math.cos(mob.yaw) * 4.5;
+            this.applyDamageToMob(threat, 18, onMobDefeated);
+            this.audio.ironGolemHit();
+            if (mob.limbs.rightArm) mob.limbs.rightArm.rotation.x = -Math.PI * 0.7;
+          }
+        } else {
+          // Wander peacefully around village
+          if (mob.stateTimer <= 0) {
+            mob.stateTimer = 4.0 + Math.random() * 5.0;
+            mob.yaw = Math.random() * Math.PI * 2;
+          }
+          const speed = 0.9;
+          mob.vel.x = Math.sin(mob.yaw) * speed;
+          mob.vel.z = Math.cos(mob.yaw) * speed;
         }
       }
 
@@ -944,6 +1236,13 @@ export class MobManager {
         continue;
       }
 
+      // Enderman dodges incoming arrows
+      for (const mob of this.mobs) {
+        if (!mob.dead && mob.type === "enderman" && nextPos.distanceTo(mob.pos.clone().add(new THREE.Vector3(0, 1.5, 0))) < 3.2) {
+          this.teleportEnderman(mob);
+        }
+      }
+
       // Check collision against Player (if shot by Skeleton)
       if (arr.shooter === "skeleton") {
         if (nextPos.distanceTo(playerPos.clone().add(new THREE.Vector3(0, 0.9, 0))) < 0.75) {
@@ -974,6 +1273,9 @@ export class MobManager {
       arr.mesh.position.copy(arr.pos);
       arr.mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, -1), arr.vel.clone().normalize());
     }
+
+    // 4) Update Ender Pearls
+    this.updatePearls(dt, onPlayerTeleport);
   }
 
   // --------------------------------------------------------------------------
@@ -996,6 +1298,19 @@ export class MobManager {
     });
 
     if (mob.type === "pigman") {
+      mob.isHostile = true;
+      mob.state = "chase";
+    }
+
+    if (mob.type === "enderman" && mob.health > 0) {
+      mob.isHostile = true;
+      mob.state = "chase";
+      if (Math.random() < 0.7) {
+        this.teleportEnderman(mob);
+      }
+    }
+
+    if (mob.type === "iron_golem" && mob.health > 0) {
       mob.isHostile = true;
       mob.state = "chase";
     }
@@ -1039,6 +1354,13 @@ export class MobManager {
           drops.push({ item: "item_emerald", count: 1 });
           if (Math.random() < 0.6) drops.push({ item: "bread", count: 1 + Math.floor(Math.random() * 2) });
           break;
+        case "enderman":
+          drops.push({ item: "ender_pearl", count: 1 + (Math.random() < 0.5 ? 1 : 0) });
+          break;
+        case "iron_golem":
+          drops.push({ item: "iron_ingot", count: 3 + Math.floor(Math.random() * 3) });
+          drops.push({ item: "poppy", count: 1 + Math.floor(Math.random() * 2) });
+          break;
       }
 
       const isHostile =
@@ -1046,7 +1368,8 @@ export class MobManager {
         mob.type === "skeleton" ||
         mob.type === "creeper" ||
         mob.type === "pigman" ||
-        mob.type === "ghast";
+        mob.type === "ghast" ||
+        mob.type === "enderman";
       const xp = isHostile ? 5 : 2;
       onMobDefeated(drops.filter((d) => d.count > 0), mob.pos.clone(), xp);
     }
@@ -1211,10 +1534,12 @@ export class MobManager {
         const above2 = this.world.getBlock(sx, y + 2, sz);
         if (b !== BLOCK.AIR && b !== BLOCK.LAVA && above1 === BLOCK.AIR && above2 === BLOCK.AIR) {
           const r = Math.random();
-          if (r < 0.72) {
+          if (r < 0.65) {
             this.spawnMob("pigman", sx + 0.5, y + 1.05, sz + 0.5);
-          } else {
+          } else if (r < 0.85) {
             this.spawnMob("ghast", sx + 0.5, Math.min(45, y + 5), sz + 0.5);
+          } else {
+            this.spawnMob("enderman", sx + 0.5, y + 1.05, sz + 0.5);
           }
           break;
         }
@@ -1238,7 +1563,7 @@ export class MobManager {
         if (!isDay || y < 22) {
           // Nighttime surface or underground dark cave: spawn hostile mob!
           const r = Math.random();
-          const type: MobType = r < 0.45 ? "zombie" : r < 0.75 ? "skeleton" : "creeper";
+          const type: MobType = r < 0.38 ? "zombie" : r < 0.65 ? "skeleton" : r < 0.86 ? "creeper" : "enderman";
           this.spawnMob(type, sx + 0.5, y + 1.05, sz + 0.5);
         } else if (b === BLOCK.GRASS) {
           // Daylight surface grass: spawn peaceful animal!
@@ -1260,5 +1585,9 @@ export class MobManager {
       this.scene.remove(arr.mesh);
     }
     this.arrows = [];
+    for (const p of this.pearls) {
+      this.scene.remove(p.mesh);
+    }
+    this.pearls = [];
   }
 }

@@ -990,12 +990,16 @@ export class GameEngine {
           this.buildAndAttachChunkMesh(cx, cz);
           this.dirtyChunks.delete(key);
 
-          // Village Villager Natural Spawning
+          // Village Villager Natural Spawning & Iron Golem Guardian
           if (this.world.isVillageChunk(cx, cz) && !this.spawnedVillages.has(key)) {
             this.spawnedVillages.add(key);
             const villagerSpawns = this.world.getVillageVillagerSpawns(cx, cz);
             for (const sp of villagerSpawns) {
               this.mobManager.spawnMob("villager", sp.x, sp.y, sp.z, sp.profession);
+            }
+            if (villagerSpawns.length > 0) {
+              const sp0 = villagerSpawns[0];
+              this.mobManager.spawnMob("iron_golem", cx * 16 + 7.5, sp0.y, cz * 16 + 7.5);
             }
           }
         }
@@ -1338,7 +1342,7 @@ export class GameEngine {
           "/clear - Clear inventory",
           "/xp <add|set> <amount> - Modify player XP or level",
           "/dimension <overworld|nether> - Travel between dimensions",
-          "/spawn villager [profession] - Spawn an NPC villager for trading",
+          "/spawn <mob> [profession] - Spawn any mob (villager, enderman, iron_golem, etc.)",
         ];
         helpLines.forEach((line) => {
           this.callbacks.onChatMessage?.({
@@ -1373,12 +1377,13 @@ export class GameEngine {
 
       case "spawn": {
         const entity = args[0]?.toLowerCase();
-        if (entity === "villager") {
-          const prof = (args[1]?.toLowerCase() || "farmer") as any;
+        const validMobs = ["zombie", "skeleton", "creeper", "pig", "cow", "sheep", "pigman", "ghast", "villager", "enderman", "iron_golem"];
+        if (entity && validMobs.includes(entity)) {
           const px = this.player.pos.x - Math.sin(this.player.yaw) * 2.5;
           const pz = this.player.pos.z - Math.cos(this.player.yaw) * 2.5;
-          this.mobManager.spawnMob("villager", px, this.player.pos.y, pz, prof);
-          const msg = `Spawned Villager (${prof}) at ${px.toFixed(1)}, ${this.player.pos.y.toFixed(1)}, ${pz.toFixed(1)}`;
+          const prof = entity === "villager" ? ((args[1]?.toLowerCase() || "farmer") as any) : undefined;
+          this.mobManager.spawnMob(entity as any, px, this.player.pos.y, pz, prof);
+          const msg = `Spawned ${entity.toUpperCase()}${prof ? ` (${prof})` : ""} at ${px.toFixed(1)}, ${this.player.pos.y.toFixed(1)}, ${pz.toFixed(1)}`;
           this.callbacks.onChatMessage?.({
             id: `msg_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
             text: msg,
@@ -1386,7 +1391,7 @@ export class GameEngine {
           });
           return { success: true, message: msg };
         }
-        const err = "Usage: /spawn villager [farmer|weaponsmith|librarian|cleric]";
+        const err = "Usage: /spawn <zombie|skeleton|creeper|pig|cow|sheep|pigman|ghast|villager|enderman|iron_golem> [profession]";
         this.callbacks.onChatMessage?.({
           id: `msg_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
           text: err,
@@ -2050,6 +2055,19 @@ export class GameEngine {
         this.swingAnim = 0.55;
         return;
       }
+    }
+
+    // 1.5) Ender Pearl Throwing
+    if (held?.item === "ender_pearl") {
+      if (this.save.gameMode === "survival") {
+        this.consumeHeldItem(1);
+      }
+      const rayDir = new THREE.Vector3(0, 0, -1).applyQuaternion(this.camera.quaternion).normalize();
+      const origin = this.camera.position.clone().add(rayDir.clone().multiplyScalar(0.4));
+      this.mobManager.shootEnderPearl(origin, rayDir);
+      this.audio.jump();
+      this.swingAnim = 0.5;
+      return;
     }
 
     // 2) Food consumption
@@ -3456,6 +3474,7 @@ export class GameEngine {
 
       // 9) Mobs & Entity AI
       const isDay = this.save.dayTime < 12000 || this.save.dayTime > 23000;
+      const playerLookDir = new THREE.Vector3(0, 0, -1).applyQuaternion(this.camera.quaternion).normalize();
       this.mobManager.update(
         dt,
         this.player.pos,
@@ -3466,6 +3485,17 @@ export class GameEngine {
           if (pos && xp) this.spawnXpOrbs(pos.x, pos.y, pos.z, xp);
         },
         (ex, ey, ez) => this.detonateTNT(ex, ey, ez),
+        playerLookDir,
+        (hitPos) => {
+          this.player.pos.set(hitPos.x, hitPos.y + 0.1, hitPos.z);
+          this.player.vel.set(0, 0, 0);
+          this.spawnBlockShards(hitPos.x, hitPos.y + 0.6, hitPos.z, ["#8b5cf6", "#a855f7", "#c084fc", "#ffffff"], 24);
+          this.audio.portalTravel();
+          if (this.save.gameMode === "survival") {
+            this.applyDamage(5); // 2.5 hearts fall damage from pearl
+          }
+          this.callbacks.onNotification?.("Teleported via Ender Pearl!");
+        },
       );
 
       // 10) Weather, XP Orbs, Furnace & Crop Simulation
