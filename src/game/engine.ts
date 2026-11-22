@@ -123,6 +123,12 @@ export class GameEngine {
   // World & Save
   save: WorldSave;
   world: InfiniteWorld;
+  overworld: InfiniteWorld;
+  netherWorld: InfiniteWorld;
+  currentDimension: "overworld" | "nether" = "overworld";
+  portalTimer = 0;
+  portalCooldown = 0;
+  lavaDamageTimer = 0;
   settings: GameSettings;
   chunkMeshes = new Map<string, ChunkMeshRecord>();
   dirtyChunks = new Set<string>();
@@ -273,8 +279,11 @@ export class GameEngine {
     // Create Block Atlas & Materials
     this.atlas = createBlockAtlas();
 
-    // Create Infinite World
-    this.world = new InfiniteWorld(save.seed, save.edits);
+    // Create Infinite World (Overworld + Nether)
+    this.overworld = new InfiniteWorld(save.seed, save.edits, "overworld");
+    this.netherWorld = new InfiniteWorld(save.seed, save.netherEdits, "nether");
+    this.currentDimension = save.dimension ?? "overworld";
+    this.world = this.currentDimension === "nether" ? this.netherWorld : this.overworld;
 
     // Mob Manager & Entities
     this.mobManager = new MobManager(this.world, this.scene, this.audio);
@@ -443,6 +452,11 @@ export class GameEngine {
   }
 
   private updateDayNightCycle(dt: number) {
+    if (this.currentDimension === "nether") {
+      this.skyMesh.position.copy(this.player.pos);
+      return;
+    }
+
     // 24000 ticks per Minecraft day. 1 tick per ~0.05s -> full cycle ~ 20 mins (or ~12 mins speeded)
     const tickSpeed = 20; // ticks per real second
     this.save.dayTime = (this.save.dayTime + dt * tickSpeed) % 24000;
@@ -639,7 +653,7 @@ export class GameEngine {
   private updatePrecipitation(dt: number) {
     if (!this.precipPoints || !this.precipPositions || !this.precipColors) return;
 
-    if (this.weather === "clear") {
+    if (this.weather === "clear" || this.currentDimension === "nether") {
       this.precipPoints.visible = false;
       return;
     }
@@ -1302,6 +1316,7 @@ export class GameEngine {
           "/seed - Display world seed",
           "/clear - Clear inventory",
           "/xp <add|set> <amount> - Modify player XP or level",
+          "/dimension <overworld|nether> - Travel between dimensions",
         ];
         helpLines.forEach((line) => {
           this.callbacks.onChatMessage?.({
@@ -1311,6 +1326,27 @@ export class GameEngine {
           });
         });
         return { success: true, message: helpLines.join("\n") };
+      }
+
+      case "dimension": {
+        const dim = args[0]?.toLowerCase();
+        if (dim === "nether" || dim === "overworld") {
+          this.teleportDimension(dim);
+          const msg = `Teleported to dimension: ${dim.toUpperCase()}`;
+          this.callbacks.onChatMessage?.({
+            id: `msg_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+            text: msg,
+            type: "command",
+          });
+          return { success: true, message: msg };
+        }
+        const err = "Usage: /dimension <overworld|nether>";
+        this.callbacks.onChatMessage?.({
+          id: `msg_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+          text: err,
+          type: "error",
+        });
+        return { success: false, message: err };
       }
 
       case "gamemode": {
@@ -2061,6 +2097,18 @@ export class GameEngine {
       return;
     }
 
+    // 9.8) Flint and Steel
+    if (held?.item === "flint_and_steel") {
+      this.audio.flintAndSteel();
+      this.spawnSparkleParticles(x + 0.5, y + 1.2, z + 0.5);
+      this.swingAnim = 0.55;
+      const ignited = this.tryIgniteNetherPortal(x, y, z);
+      if (ignited) {
+        this.callbacks.onNotification?.("Nether Portal activated!");
+      }
+      return;
+    }
+
     // 10) TNT check: right click ignites TNT
     if (block === BLOCK.TNT) {
       this.detonateTNT(x, y, z);
@@ -2102,6 +2150,38 @@ export class GameEngine {
     // Place block
     this.world.setBlock(px, py, pz, placeBlockId);
     this.markBlockDirty(px, py, pz);
+
+    // Fluid interactions: Water + Lava
+    if (placeBlockId === BLOCK.WATER) {
+      const neighbors = [
+        [px + 1, py, pz], [px - 1, py, pz],
+        [px, py + 1, pz], [px, py - 1, pz],
+        [px, py, pz + 1], [px, py, pz - 1],
+      ];
+      for (const [nbx, nby, nbz] of neighbors) {
+        if (this.world.getBlock(nbx, nby, nbz) === BLOCK.LAVA) {
+          this.world.setBlock(nbx, nby, nbz, BLOCK.OBSIDIAN);
+          this.markBlockDirty(nbx, nby, nbz);
+          this.audio.steamHiss();
+          this.spawnSparkleParticles(nbx + 0.5, nby + 0.8, nbz + 0.5);
+        }
+      }
+    } else if (placeBlockId === BLOCK.LAVA) {
+      const neighbors = [
+        [px + 1, py, pz], [px - 1, py, pz],
+        [px, py + 1, pz], [px, py - 1, pz],
+        [px, py, pz + 1], [px, py, pz - 1],
+      ];
+      for (const [nbx, nby, nbz] of neighbors) {
+        if (this.world.getBlock(nbx, nby, nbz) === BLOCK.WATER) {
+          this.world.setBlock(px, py, pz, BLOCK.OBSIDIAN);
+          this.markBlockDirty(px, py, pz);
+          this.audio.steamHiss();
+          this.spawnSparkleParticles(px + 0.5, py + 0.8, pz + 0.5);
+          break;
+        }
+      }
+    }
 
     const placeDef = BLOCK_DEFS[placeBlockId];
     this.audio.place(placeDef.sound);
@@ -2230,6 +2310,183 @@ export class GameEngine {
           this.audio.doorToggle(true);
         }
       }
+    }
+  }
+
+  tryIgniteNetherPortal(clickedX: number, clickedY: number, clickedZ: number): boolean {
+    const candidates = [
+      [clickedX, clickedY + 1, clickedZ],
+      [clickedX, clickedY, clickedZ],
+      [clickedX + this.targetNormal.x, clickedY + this.targetNormal.y, clickedZ + this.targetNormal.z],
+    ];
+
+    for (const [px, py, pz] of candidates) {
+      // Check X-axis frame (width along X, height along Y)
+      for (let ox = -1; ox <= 0; ox++) {
+        for (let oy = 0; oy >= -2; oy--) {
+          const ix = px + ox;
+          const iy = py + oy;
+          const iz = pz;
+
+          const b0 = this.world.getBlock(ix, iy - 1, iz);
+          const b1 = this.world.getBlock(ix + 1, iy - 1, iz);
+          const t0 = this.world.getBlock(ix, iy + 3, iz);
+          const t1 = this.world.getBlock(ix + 1, iy + 3, iz);
+          const l0 = this.world.getBlock(ix - 1, iy, iz);
+          const l1 = this.world.getBlock(ix - 1, iy + 1, iz);
+          const l2 = this.world.getBlock(ix - 1, iy + 2, iz);
+          const r0 = this.world.getBlock(ix + 2, iy, iz);
+          const r1 = this.world.getBlock(ix + 2, iy + 1, iz);
+          const r2 = this.world.getBlock(ix + 2, iy + 2, iz);
+
+          if (
+            b0 === BLOCK.OBSIDIAN && b1 === BLOCK.OBSIDIAN &&
+            t0 === BLOCK.OBSIDIAN && t1 === BLOCK.OBSIDIAN &&
+            l0 === BLOCK.OBSIDIAN && l1 === BLOCK.OBSIDIAN && l2 === BLOCK.OBSIDIAN &&
+            r0 === BLOCK.OBSIDIAN && r1 === BLOCK.OBSIDIAN && r2 === BLOCK.OBSIDIAN
+          ) {
+            for (let dx = 0; dx < 2; dx++) {
+              for (let dy = 0; dy < 3; dy++) {
+                this.world.setBlock(ix + dx, iy + dy, iz, BLOCK.NETHER_PORTAL);
+                this.markBlockDirty(ix + dx, iy + dy, iz);
+              }
+            }
+            this.audio.portalTravel();
+            return true;
+          }
+
+          // Check Z-axis frame (width along Z, height along Y)
+          const bZ0 = this.world.getBlock(ix, iy - 1, iz);
+          const bZ1 = this.world.getBlock(ix, iy - 1, iz + 1);
+          const tZ0 = this.world.getBlock(ix, iy + 3, iz);
+          const tZ1 = this.world.getBlock(ix, iy + 3, iz + 1);
+          const lZ0 = this.world.getBlock(ix, iy, iz - 1);
+          const lZ1 = this.world.getBlock(ix, iy + 1, iz - 1);
+          const lZ2 = this.world.getBlock(ix, iy + 2, iz - 1);
+          const rZ0 = this.world.getBlock(ix, iy, iz + 2);
+          const rZ1 = this.world.getBlock(ix, iy + 1, iz + 2);
+          const rZ2 = this.world.getBlock(ix, iy + 2, iz + 2);
+
+          if (
+            bZ0 === BLOCK.OBSIDIAN && bZ1 === BLOCK.OBSIDIAN &&
+            tZ0 === BLOCK.OBSIDIAN && tZ1 === BLOCK.OBSIDIAN &&
+            lZ0 === BLOCK.OBSIDIAN && lZ1 === BLOCK.OBSIDIAN && lZ2 === BLOCK.OBSIDIAN &&
+            rZ0 === BLOCK.OBSIDIAN && rZ1 === BLOCK.OBSIDIAN && rZ2 === BLOCK.OBSIDIAN
+          ) {
+            for (let dz = 0; dz < 2; dz++) {
+              for (let dy = 0; dy < 3; dy++) {
+                this.world.setBlock(ix, iy + dy, iz + dz, BLOCK.NETHER_PORTAL);
+                this.markBlockDirty(ix, iy + dy, iz + dz);
+              }
+            }
+            this.audio.portalTravel();
+            return true;
+          }
+        }
+      }
+    }
+    return false;
+  }
+
+  buildPortalFrame(world: InfiniteWorld, x: number, y: number, z: number) {
+    for (let dx = -1; dx <= 2; dx++) {
+      for (let dy = -1; dy <= 3; dy++) {
+        const isBorder = dx === -1 || dx === 2 || dy === -1 || dy === 3;
+        const targetBlock = isBorder ? BLOCK.OBSIDIAN : BLOCK.NETHER_PORTAL;
+        world.setBlock(x + dx, y + dy, z, targetBlock);
+      }
+    }
+    for (let dx = -2; dx <= 3; dx++) {
+      for (let dy = 0; dy <= 3; dy++) {
+        for (let dz = -2; dz <= 2; dz++) {
+          if (dz !== 0 || dx < -1 || dx > 2 || dy > 2) {
+            const cur = world.getBlock(x + dx, y + dy, z + dz);
+            if (cur !== BLOCK.OBSIDIAN && cur !== BLOCK.NETHER_PORTAL) {
+              world.setBlock(x + dx, y + dy, z + dz, BLOCK.AIR);
+            }
+          }
+        }
+      }
+    }
+    for (let dx = -2; dx <= 3; dx++) {
+      for (let dz = -2; dz <= 2; dz++) {
+        world.setBlock(x + dx, y - 1, z + dz, BLOCK.OBSIDIAN);
+      }
+    }
+  }
+
+  teleportDimension(targetDimension: "overworld" | "nether") {
+    if (this.currentDimension === targetDimension) return;
+
+    for (const record of this.chunkMeshes.values()) {
+      if (record.opaqueMesh) {
+        this.scene.remove(record.opaqueMesh);
+        record.opaqueMesh.geometry.dispose();
+      }
+      if (record.waterMesh) {
+        this.scene.remove(record.waterMesh);
+        record.waterMesh.geometry.dispose();
+      }
+    }
+    this.chunkMeshes.clear();
+    this.dirtyChunks.clear();
+
+    this.currentDimension = targetDimension;
+    this.world = this.currentDimension === "nether" ? this.netherWorld : this.overworld;
+    this.mobManager.world = this.world;
+    this.mobManager.mobs.forEach((m) => this.scene.remove(m.group));
+    this.mobManager.mobs = [];
+
+    let destX: number;
+    let destY: number;
+    let destZ: number;
+
+    if (this.currentDimension === "nether") {
+      destX = Math.round(this.player.pos.x / 8);
+      destZ = Math.round(this.player.pos.z / 8);
+      destY = 26;
+      this.buildPortalFrame(this.netherWorld, destX, destY, destZ);
+      this.callbacks.onNotification?.("Entering the Nether Dimension...");
+    } else {
+      destX = Math.round(this.player.pos.x * 8);
+      destZ = Math.round(this.player.pos.z * 8);
+      destY = 32;
+      this.buildPortalFrame(this.overworld, destX, destY, destZ);
+      this.callbacks.onNotification?.("Returning to the Overworld...");
+    }
+
+    this.player.pos.set(destX + 0.5, destY + 0.1, destZ + 0.5);
+    this.player.vel.set(0, 0, 0);
+    this.portalCooldown = 4.5;
+    this.portalTimer = 0;
+
+    this.updateAtmosphereForDimension();
+    this.audio.portalTravel();
+    this.updateLoadedChunks(true);
+  }
+
+  updateAtmosphereForDimension() {
+    if (this.currentDimension === "nether") {
+      this.scene.fog = new THREE.FogExp2(0x380b0b, 0.035);
+      this.scene.background = new THREE.Color(0x280606);
+      this.sunMesh.visible = false;
+      this.moonMesh.visible = false;
+      this.starsMesh.visible = false;
+      this.ambientLight.color.setHex(0xff5533);
+      this.ambientLight.intensity = 0.85;
+      this.sunLight.color.setHex(0xdd2211);
+      this.sunLight.intensity = 0.35;
+      if (this.weather !== "clear") {
+        this.audio.stopRain();
+      }
+    } else {
+      this.scene.fog = new THREE.FogExp2(0x78a7ff, 0.018);
+      this.sunMesh.visible = true;
+      this.moonMesh.visible = true;
+      this.starsMesh.visible = true;
+      this.ambientLight.color.setHex(0xffffff);
+      this.ambientLight.intensity = 0.45;
+      this.updateDayNightCycle(0);
     }
   }
 
@@ -2409,6 +2666,42 @@ export class GameEngine {
     if (!wasInWater && p.inWater) this.audio.splash();
     if (wasInWater && !p.inWater) this.audio.splash();
 
+    // Check Nether Portal standing
+    const inPortal = feetBlock === BLOCK.NETHER_PORTAL || headBlock === BLOCK.NETHER_PORTAL;
+    if (this.portalCooldown > 0) {
+      this.portalCooldown -= dt;
+    }
+    if (inPortal && this.portalCooldown <= 0) {
+      this.portalTimer += dt;
+      if (this.portalTimer >= 2.0) {
+        this.portalTimer = 0;
+        const targetDim = this.currentDimension === "overworld" ? "nether" : "overworld";
+        this.teleportDimension(targetDim);
+        return;
+      }
+    } else if (!inPortal) {
+      this.portalTimer = Math.max(0, this.portalTimer - dt * 2.0);
+    }
+
+    // Check Lava Status
+    const inLava = feetBlock === BLOCK.LAVA || headBlock === BLOCK.LAVA;
+    if (inLava) {
+      if (this.save.gameMode === "survival") {
+        this.lavaDamageTimer += dt;
+        if (this.lavaDamageTimer >= 0.55) {
+          this.lavaDamageTimer = 0;
+          this.applyDamage(3);
+          this.audio.hurt();
+        }
+      }
+    } else {
+      this.lavaDamageTimer = 0;
+    }
+
+    // Check Soul Sand underneath
+    const groundBlock = this.world.getBlock(Math.floor(p.pos.x), Math.floor(p.pos.y - 0.2), Math.floor(p.pos.z));
+    const onSoulSand = groundBlock === BLOCK.SOUL_SAND && p.onGround;
+
     // Creative Flight Mode
     if (p.flying) {
       const flySpeed = (p.sprinting ? 18 : 10) * dt;
@@ -2424,7 +2717,7 @@ export class GameEngine {
     if (p.hunger <= 6) {
       p.sprinting = false;
     }
-    let baseSpeed = p.inWater ? 2.8 : p.sprinting ? 6.8 : 4.4;
+    let baseSpeed = p.inWater ? 2.8 : inLava ? 1.8 : onSoulSand ? 2.2 : p.sprinting ? 6.8 : 4.4;
     const accel = p.onGround ? 28 : p.inWater ? 12 : 7;
     const targetVelX = moveDir.x * baseSpeed;
     const targetVelZ = moveDir.z * baseSpeed;
@@ -2462,6 +2755,12 @@ export class GameEngine {
       if (this.keys["ShiftLeft"]) {
         p.vel.y = -3.0; // diving down
       }
+      p.fallDistance = 0;
+    } else if (inLava) {
+      // Lava viscous buoyancy
+      p.vel.y += -3.5 * dt;
+      p.vel.y *= 0.76;
+      if (this.keys["Space"]) p.vel.y = 2.4;
       p.fallDistance = 0;
     } else {
       // Normal Air Gravity
@@ -2907,7 +3206,7 @@ export class GameEngine {
 
     const wx = Math.floor(this.player.pos.x);
     const wz = Math.floor(this.player.pos.z);
-    const biome = this.world.getBiomeAt(wx, wz).name;
+    const biome = this.currentDimension === "nether" ? "Nether Wastes" : this.world.getBiomeAt(wx, wz).name;
 
     // Compass facing
     let facing = "South";
@@ -2985,7 +3284,9 @@ export class GameEngine {
       spawnPos: this.save.player?.spawnPos,
     };
     this.save.weather = this.weather;
-    this.save.edits = this.world.exportEdits();
+    this.save.dimension = this.currentDimension;
+    this.save.edits = this.overworld.exportEdits();
+    this.save.netherEdits = this.netherWorld.exportEdits();
     saveWorldSave(this.save);
     if (this.callbacks.onWorldSaved) {
       this.callbacks.onWorldSaved();

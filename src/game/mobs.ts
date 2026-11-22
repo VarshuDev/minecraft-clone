@@ -3,7 +3,7 @@ import { type InfiniteWorld } from "./world";
 import { BLOCK, BLOCK_DEFS, type ItemId } from "./blocks";
 import { type GameAudio } from "./audio";
 
-export type MobType = "zombie" | "skeleton" | "creeper" | "pig" | "cow" | "sheep";
+export type MobType = "zombie" | "skeleton" | "creeper" | "pig" | "cow" | "sheep" | "pigman" | "ghast";
 
 export interface MobEntity {
   id: string;
@@ -40,6 +40,7 @@ export interface MobEntity {
     legFR?: THREE.Object3D;
     legBL?: THREE.Object3D;
     legBR?: THREE.Object3D;
+    tentacles?: THREE.Object3D[];
   };
   originalColors: Map<THREE.Mesh, THREE.Color>;
 }
@@ -85,6 +86,13 @@ export class MobManager {
 
   private matWoodBow = new THREE.MeshLambertMaterial({ color: 0x6e451f });
 
+  private matPigmanSkin = new THREE.MeshLambertMaterial({ color: 0xdf8a8a });
+  private matPigmanRot = new THREE.MeshLambertMaterial({ color: 0x4a7e37 });
+  private matPigmanPants = new THREE.MeshLambertMaterial({ color: 0x47362b });
+  private matGoldSword = new THREE.MeshLambertMaterial({ color: 0xffd43b });
+  private matGhastWhite = new THREE.MeshLambertMaterial({ color: 0xf0f0f0 });
+  private matGhastEyes = new THREE.MeshLambertMaterial({ color: 0xcc2222 });
+
   constructor(world: InfiniteWorld, scene: THREE.Scene, audio: GameAudio) {
     this.world = world;
     this.scene = scene;
@@ -128,6 +136,16 @@ export class MobManager {
         limbs = this.buildSheepModel(group, originalColors);
         maxHealth = 8;
         isHostile = false;
+        break;
+      case "pigman":
+        limbs = this.buildPigmanModel(group, originalColors);
+        maxHealth = 20;
+        isHostile = false; // Neutral until provoked
+        break;
+      case "ghast":
+        limbs = this.buildGhastModel(group, originalColors);
+        maxHealth = 12;
+        isHostile = true;
         break;
     }
 
@@ -213,6 +231,96 @@ export class MobManager {
     group.add(rightLeg);
 
     return { head, body, leftArm, rightArm, leftLeg, rightLeg };
+  }
+
+  private buildPigmanModel(group: THREE.Group, colors: Map<THREE.Mesh, THREE.Color>) {
+    // Head: half pink, half rotten green
+    const head = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.44, 0.44), this.matPigmanSkin);
+    head.position.set(0, 1.62, 0);
+    this.registerMesh(head, colors);
+    group.add(head);
+
+    // Snout
+    const snout = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.14, 0.1), this.matPigSnout);
+    snout.position.set(0, 1.55, 0.25);
+    this.registerMesh(snout, colors);
+    group.add(snout);
+
+    // Torso: leather vest / rotten flesh
+    const body = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.68, 0.24), this.matPigmanRot);
+    body.position.set(0, 1.08, 0);
+    this.registerMesh(body, colors);
+    group.add(body);
+
+    // Arms
+    const armGeo = new THREE.BoxGeometry(0.18, 0.64, 0.18);
+    const leftArm = new THREE.Mesh(armGeo, this.matPigmanSkin);
+    leftArm.position.set(-0.32, 1.34, 0.32);
+    leftArm.rotation.x = -Math.PI / 2;
+    this.registerMesh(leftArm, colors);
+    group.add(leftArm);
+
+    const rightArm = new THREE.Mesh(armGeo, this.matPigmanRot);
+    rightArm.position.set(0.32, 1.34, 0.32);
+    rightArm.rotation.x = -Math.PI / 2;
+    this.registerMesh(rightArm, colors);
+    group.add(rightArm);
+
+    // Golden Sword held in right hand!
+    const swordBlade = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.55, 0.08), this.matGoldSword);
+    swordBlade.position.set(0.32, 1.65, 0.45);
+    swordBlade.rotation.x = -Math.PI / 3;
+    this.registerMesh(swordBlade, colors);
+    group.add(swordBlade);
+
+    // Legs
+    const legGeo = new THREE.BoxGeometry(0.2, 0.72, 0.2);
+    const leftLeg = new THREE.Mesh(legGeo, this.matPigmanPants);
+    leftLeg.position.set(-0.12, 0.36, 0);
+    this.registerMesh(leftLeg, colors);
+    group.add(leftLeg);
+
+    const rightLeg = new THREE.Mesh(legGeo, this.matPigmanPants);
+    rightLeg.position.set(0.12, 0.36, 0);
+    this.registerMesh(rightLeg, colors);
+    group.add(rightLeg);
+
+    return { head, body, leftArm, rightArm, leftLeg, rightLeg };
+  }
+
+  private buildGhastModel(group: THREE.Group, colors: Map<THREE.Mesh, THREE.Color>) {
+    // 1.5x1.5x1.5 White Floating Ghost
+    const body = new THREE.Mesh(new THREE.BoxGeometry(1.5, 1.5, 1.5), this.matGhastWhite);
+    body.position.set(0, 1.6, 0);
+    this.registerMesh(body, colors);
+    group.add(body);
+
+    // Red crying eyes
+    const eyeGeo = new THREE.BoxGeometry(0.22, 0.22, 0.04);
+    const leftEye = new THREE.Mesh(eyeGeo, this.matGhastEyes);
+    leftEye.position.set(-0.35, 1.7, 0.78);
+    this.registerMesh(leftEye, colors);
+    group.add(leftEye);
+
+    const rightEye = new THREE.Mesh(eyeGeo, this.matGhastEyes);
+    rightEye.position.set(0.35, 1.7, 0.78);
+    this.registerMesh(rightEye, colors);
+    group.add(rightEye);
+
+    // 9 Dangling Tentacles below body
+    const tentacles: THREE.Object3D[] = [];
+    const tentGeo = new THREE.BoxGeometry(0.14, 0.85, 0.14);
+    for (let tx = -1; tx <= 1; tx++) {
+      for (let tz = -1; tz <= 1; tz++) {
+        const tent = new THREE.Mesh(tentGeo, this.matGhastWhite);
+        tent.position.set(tx * 0.45, 0.45, tz * 0.45);
+        this.registerMesh(tent, colors);
+        group.add(tent);
+        tentacles.push(tent);
+      }
+    }
+
+    return { head: body, body, tentacles };
   }
 
   private buildSkeletonModel(group: THREE.Group, colors: Map<THREE.Mesh, THREE.Color>) {
@@ -514,6 +622,34 @@ export class MobManager {
         }
       }
 
+      // Distance to player
+      const distToPlayer = mob.pos.distanceTo(playerPos);
+
+      // Ghast Floating AI
+      if (mob.type === "ghast") {
+        mob.vel.y = Math.sin(performance.now() * 0.002 + mob.pos.x) * 0.8;
+        if (distToPlayer < 24) {
+          const dir = playerPos.clone().sub(mob.pos).normalize();
+          mob.yaw = Math.atan2(dir.x, dir.z);
+          mob.vel.x = dir.x * 1.5;
+          mob.vel.z = dir.z * 1.5;
+          if (distToPlayer < 2.0 && mob.attackCooldown <= 0) {
+            mob.attackCooldown = 1.5;
+            onPlayerDamage(4);
+          }
+        }
+        mob.pos.addScaledVector(mob.vel, dt);
+        mob.group.position.copy(mob.pos);
+        mob.group.rotation.y = mob.yaw;
+        if (mob.limbs.tentacles) {
+          const tentTime = performance.now() * 0.005;
+          mob.limbs.tentacles.forEach((tent, idx) => {
+            tent.rotation.x = Math.sin(tentTime + idx * 0.7) * 0.25;
+          });
+        }
+        continue;
+      }
+
       // Daylight burning for surface zombies and skeletons
       if (isDay && (mob.type === "zombie" || mob.type === "skeleton")) {
         const topBlock = this.world.getBlock(Math.floor(mob.pos.x), Math.floor(mob.pos.y + 2), Math.floor(mob.pos.z));
@@ -522,9 +658,6 @@ export class MobManager {
           this.applyDamageToMob(mob, dt * 3.5, onMobDefeated);
         }
       }
-
-      // Distance to player
-      const distToPlayer = mob.pos.distanceTo(playerPos);
 
       // AI Decision Tree
       mob.stateTimer -= dt;
@@ -576,14 +709,14 @@ export class MobManager {
             }
           } else if (mob.state === "chase") {
             // Chase player forward
-            const speed = mob.type === "zombie" ? 2.8 : mob.type === "creeper" ? 3.4 : 3.0;
+            const speed = mob.type === "zombie" ? 2.8 : mob.type === "creeper" ? 3.4 : mob.type === "pigman" ? 3.6 : 3.0;
             mob.vel.x = Math.sin(mob.yaw) * speed;
             mob.vel.z = Math.cos(mob.yaw) * speed;
 
             // Melee contact attack on player
             if (distToPlayer < 1.35 && mob.attackCooldown <= 0 && mob.type !== "creeper") {
               mob.attackCooldown = 1.2;
-              onPlayerDamage(mob.type === "zombie" ? 3 : 2);
+              onPlayerDamage(mob.type === "pigman" ? 5 : mob.type === "zombie" ? 3 : 2);
             }
           }
         } else {
@@ -709,6 +842,11 @@ export class MobManager {
       (mesh.material as THREE.MeshLambertMaterial).color.setHex(0xff3333);
     });
 
+    if (mob.type === "pigman") {
+      mob.isHostile = true;
+      mob.state = "chase";
+    }
+
     if (mob.health <= 0) {
       mob.dead = true;
       mob.deathTimer = 0;
@@ -736,9 +874,22 @@ export class MobManager {
         case "sheep":
           drops.push({ item: "wool", count: 1 + Math.floor(Math.random() * 2) });
           break;
+        case "pigman":
+          drops.push({ item: "rotten_flesh", count: 1 + Math.floor(Math.random() * 2) });
+          drops.push({ item: "gold_ingot", count: 1 });
+          if (Math.random() < 0.25) drops.push({ item: "golden_sword", count: 1 });
+          break;
+        case "ghast":
+          drops.push({ item: "gunpowder", count: 2 + Math.floor(Math.random() * 3) });
+          break;
       }
 
-      const isHostile = mob.type === "zombie" || mob.type === "skeleton" || mob.type === "creeper";
+      const isHostile =
+        mob.type === "zombie" ||
+        mob.type === "skeleton" ||
+        mob.type === "creeper" ||
+        mob.type === "pigman" ||
+        mob.type === "ghast";
       const xp = isHostile ? 5 : 2;
       onMobDefeated(drops.filter((d) => d.count > 0), mob.pos.clone(), xp);
     }
@@ -861,6 +1012,28 @@ export class MobManager {
   }
 
   private tryNaturalSpawn(playerPos: THREE.Vector3, isDay: boolean) {
+    if (this.world.dimension === "nether") {
+      const angle = Math.random() * Math.PI * 2;
+      const dist = 14 + Math.random() * 20;
+      const sx = Math.floor(playerPos.x + Math.cos(angle) * dist);
+      const sz = Math.floor(playerPos.z + Math.sin(angle) * dist);
+      for (let y = 50; y >= 14; y--) {
+        const b = this.world.getBlock(sx, y, sz);
+        const above1 = this.world.getBlock(sx, y + 1, sz);
+        const above2 = this.world.getBlock(sx, y + 2, sz);
+        if (b !== BLOCK.AIR && b !== BLOCK.LAVA && above1 === BLOCK.AIR && above2 === BLOCK.AIR) {
+          const r = Math.random();
+          if (r < 0.72) {
+            this.spawnMob("pigman", sx + 0.5, y + 1.05, sz + 0.5);
+          } else {
+            this.spawnMob("ghast", sx + 0.5, Math.min(45, y + 5), sz + 0.5);
+          }
+          break;
+        }
+      }
+      return;
+    }
+
     // Pick random location around player between 16 and 38 blocks away
     const angle = Math.random() * Math.PI * 2;
     const dist = 16 + Math.random() * 22;

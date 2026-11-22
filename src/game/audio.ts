@@ -287,6 +287,31 @@ export class GameAudio {
     this.tone(440, 0.05, { type: "triangle", vol: 0.15, slide: 660 });
   }
 
+  flintAndSteel() {
+    this.noise(0.04, 0.22, 2800, 2.0);
+    this.tone(1200, 0.05, { type: "sawtooth", vol: 0.1, slide: 300 });
+    this.noise(0.12, 0.1, 1600, 1.2, 0.04);
+  }
+
+  portalTravel() {
+    const notes = [130.81, 196.0, 261.63, 392.0];
+    notes.forEach((freq, idx) => {
+      this.tone(freq, 1.6, { type: "sawtooth", vol: 0.08, delay: idx * 0.12, slide: freq * 1.5 });
+      this.tone(freq * 0.5, 1.8, { type: "sine", vol: 0.12, delay: idx * 0.12 });
+    });
+    this.noise(1.8, 0.14, 800, 1.4);
+  }
+
+  steamHiss() {
+    this.noise(0.8, 0.22, 3400, 0.8);
+    this.tone(240, 0.2, { type: "sine", vol: 0.06, slide: 80 });
+  }
+
+  lavaPop() {
+    this.tone(180, 0.08, { type: "triangle", vol: 0.12, slide: 90 });
+    this.noise(0.06, 0.08, 1200, 1.5);
+  }
+
   furnaceCrackle() {
     this.noise(0.035, 0.07, 2400 + Math.random() * 800, 2.2);
     this.tone(180 + Math.random() * 80, 0.04, { type: "sine", vol: 0.04 });

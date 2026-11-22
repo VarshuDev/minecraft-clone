@@ -317,15 +317,22 @@ export function buildChunkGeometries(
           const neighbor = world.getBlock(wx + nx, y + ny, wz + nz);
           if (neighbor !== BLOCK.AIR) {
             const nDef = BLOCK_DEFS[neighbor];
-            // Cull face if neighbor is opaque, OR if both are glass
+            // Cull face if neighbor is opaque, OR if both are same transparent/fluid block
             if (!nDef.transparent) continue;
             if (b === BLOCK.GLASS && neighbor === BLOCK.GLASS) continue;
+            if (b === BLOCK.LAVA && neighbor === BLOCK.LAVA) continue;
+            if (b === BLOCK.NETHER_PORTAL && neighbor === BLOCK.NETHER_PORTAL) continue;
           }
 
           const uv = tileSet[face.uvKind];
           const aoLevels: [number, number, number, number] = [3, 3, 3, 3];
           const vc = opaqueBuf.vCount;
           const height = b === BLOCK.BED ? 0.56 : (b === BLOCK.FARMLAND || b === BLOCK.FARMLAND_MOIST) ? 0.9375 : 1.0;
+          const isEmissiveBlock =
+            b === BLOCK.LAVA ||
+            b === BLOCK.NETHER_PORTAL ||
+            b === BLOCK.GLOWSTONE ||
+            b === BLOCK.REDSTONE_LAMP_LIT;
 
           for (let c = 0; c < 4; c++) {
             const [vx, vy, vz] = face.corners[c];
@@ -334,7 +341,7 @@ export function buildChunkGeometries(
             opaqueBuf.norm.push(nx, ny, nz);
             const ao = vertexAO(world, wx, y, wz, nx, ny, nz, vx, vy, vz);
             aoLevels[c] = ao;
-            const light = AO_CURVE[ao] * face.shade;
+            const light = isEmissiveBlock ? 1.0 : AO_CURVE[ao] * face.shade;
             opaqueBuf.col.push(light, light, light);
           }
 

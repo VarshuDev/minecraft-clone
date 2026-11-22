@@ -777,6 +777,131 @@ function lampOnTile(): TilePair {
   return { albedo: c, emissive: em.c };
 }
 
+function lavaTile(): TilePair {
+  const { c, ctx } = makeCanvas();
+  const em = makeCanvas();
+  noiseFill(ctx, ["#cf3204", "#e04808", "#ff6b08", "#ff9514", "#b02000"], 701);
+  const r = rng(702);
+  for (let i = 0; i < 8; i++) {
+    const x = Math.floor(r() * 14);
+    const y = Math.floor(r() * 14);
+    px(ctx, x, y, "#ffc425", 2, 2);
+    px(ctx, x + 1, y, "#ffe76a", 1, 1);
+  }
+  em.ctx.fillStyle = "#ff6a14";
+  em.ctx.fillRect(0, 0, 16, 16);
+  for (let i = 0; i < 6; i++) {
+    const x = Math.floor(r() * 14);
+    const y = Math.floor(r() * 14);
+    px(em.ctx, x, y, "#ffea80", 2, 2);
+  }
+  return { albedo: c, emissive: em.c };
+}
+
+function obsidianTile(): TilePair {
+  const { c, ctx } = makeCanvas();
+  noiseFill(ctx, ["#16111f", "#1e1429", "#110b1a", "#251833", "#1a1224"], 711);
+  const r = rng(712);
+  for (let i = 0; i < 10; i++) {
+    const x = Math.floor(r() * 15);
+    const y = Math.floor(r() * 15);
+    px(ctx, x, y, "#3b2254", 1, 2);
+    px(ctx, x + 1, y + 1, "#532b7a", 1, 1);
+  }
+  shadeEdge(ctx);
+  return { albedo: c };
+}
+
+function netherrackTile(): TilePair {
+  const { c, ctx } = makeCanvas();
+  noiseFill(ctx, ["#691818", "#781d1d", "#5c1313", "#872222", "#4a0e0e", "#912b2b"], 721);
+  blobs(ctx, "#400c0c", 722, 5);
+  blobs(ctx, "#992e2e", 723, 4);
+  shadeEdge(ctx);
+  return { albedo: c };
+}
+
+function quartzOreTile(): TilePair {
+  const { c, ctx } = makeCanvas();
+  noiseFill(ctx, ["#691818", "#781d1d", "#5c1313", "#872222", "#4a0e0e"], 731);
+  const veins = [
+    [3, 4], [4, 4], [4, 5], [5, 5],
+    [9, 2], [10, 2], [10, 3], [11, 3],
+    [2, 11], [3, 11], [3, 12],
+    [10, 9], [11, 9], [11, 10], [12, 10], [12, 11],
+    [6, 8], [7, 8], [7, 7]
+  ];
+  for (const [x, y] of veins) {
+    px(ctx, x, y, "#eae5e0");
+    px(ctx, x, y + 1, "#ffffff");
+  }
+  shadeEdge(ctx);
+  return { albedo: c };
+}
+
+function soulSandTile(): TilePair {
+  const { c, ctx } = makeCanvas();
+  noiseFill(ctx, ["#4a372c", "#543e32", "#402f25", "#5c4437", "#38281f"], 741);
+  px(ctx, 3, 4, "#2b1e17", 2, 2);
+  px(ctx, 7, 4, "#2b1e17", 2, 2);
+  px(ctx, 5, 8, "#2b1e17", 2, 3);
+  px(ctx, 11, 9, "#30221a", 2, 2);
+  px(ctx, 14, 9, "#30221a", 2, 2);
+  px(ctx, 12, 12, "#30221a", 2, 2);
+  shadeEdge(ctx);
+  return { albedo: c };
+}
+
+function portalTile(): TilePair {
+  const { c, ctx } = makeCanvas();
+  const em = makeCanvas();
+  noiseFill(ctx, ["#4c126e", "#6b1a9c", "#8724c4", "#a132e6", "#340b4d"], 751);
+  const r = rng(752);
+  for (let i = 0; i < 12; i++) {
+    const x = Math.floor(r() * 15);
+    const y = Math.floor(r() * 15);
+    px(ctx, x, y, "#c663ff", 2, 1);
+  }
+  em.ctx.fillStyle = "#8a1fd1";
+  em.ctx.fillRect(0, 0, 16, 16);
+  for (let i = 0; i < 8; i++) {
+    const x = Math.floor(r() * 15);
+    const y = Math.floor(r() * 15);
+    px(em.ctx, x, y, "#df94ff", 2, 2);
+  }
+  return { albedo: c, emissive: em.c };
+}
+
+function gravelTile(): TilePair {
+  const { c, ctx } = makeCanvas();
+  noiseFill(ctx, ["#807d79", "#8c8985", "#73706c", "#96938f", "#6b6865"], 761);
+  blobs(ctx, "#595754", 762, 5);
+  blobs(ctx, "#a6a39f", 763, 4);
+  shadeEdge(ctx);
+  return { albedo: c };
+}
+
+function quartzBlockTile(): TilePair {
+  const { c, ctx } = makeCanvas();
+  noiseFill(ctx, ["#ebe8e1", "#f2f0ea", "#e3dfd7", "#f7f6f2"], 771);
+  px(ctx, 0, 0, "#d4cfc5", 16, 1);
+  px(ctx, 0, 0, "#d4cfc5", 1, 16);
+  px(ctx, 0, 15, "#bcb6aa", 16, 1);
+  px(ctx, 15, 0, "#bcb6aa", 1, 16);
+  px(ctx, 2, 2, "#ded9cf", 12, 1);
+  px(ctx, 2, 2, "#ded9cf", 1, 12);
+  px(ctx, 2, 13, "#cac4b8", 12, 1);
+  px(ctx, 13, 2, "#cac4b8", 1, 12);
+  return { albedo: c };
+}
+
+function quartzTopTile(): TilePair {
+  const { c, ctx } = makeCanvas();
+  noiseFill(ctx, ["#ede9e1", "#f5f3ec", "#e6e2da", "#faf9f5"], 781);
+  shadeEdge(ctx);
+  return { albedo: c };
+}
+
 function crackTex(stage: number) {
   const { c, ctx } = makeCanvas(16, 16);
   ctx.clearRect(0, 0, 16, 16);
@@ -898,10 +1023,19 @@ type TileKey =
   | "redstoneTorch"
   | "lever"
   | "lampOff"
-  | "lampOn";
+  | "lampOn"
+  | "lava"
+  | "obsidian"
+  | "netherrack"
+  | "quartzOre"
+  | "soulSand"
+  | "netherPortal"
+  | "gravel"
+  | "quartzBlock"
+  | "quartzTop";
 
 const ATLAS_COLS = 8;
-const ATLAS_ROWS = 8;
+const ATLAS_ROWS = 10;
 const CELL = 18;
 
 export function createBlockAtlas(): BlockAtlas {
@@ -961,6 +1095,15 @@ export function createBlockAtlas(): BlockAtlas {
     lever: leverTile(),
     lampOff: lampOffTile(),
     lampOn: lampOnTile(),
+    lava: lavaTile(),
+    obsidian: obsidianTile(),
+    netherrack: netherrackTile(),
+    quartzOre: quartzOreTile(),
+    soulSand: soulSandTile(),
+    netherPortal: portalTile(),
+    gravel: gravelTile(),
+    quartzBlock: quartzBlockTile(),
+    quartzTop: quartzTopTile(),
   };
 
   const W = ATLAS_COLS * CELL;
@@ -1059,6 +1202,14 @@ export function createBlockAtlas(): BlockAtlas {
     [BLOCK.LEVER]: u("lever"),
     [BLOCK.REDSTONE_LAMP]: u("lampOff"),
     [BLOCK.REDSTONE_LAMP_LIT]: u("lampOn"),
+    [BLOCK.LAVA]: u("lava"),
+    [BLOCK.OBSIDIAN]: u("obsidian"),
+    [BLOCK.NETHERRACK]: u("netherrack"),
+    [BLOCK.NETHER_QUARTZ_ORE]: u("quartzOre"),
+    [BLOCK.SOUL_SAND]: u("soulSand"),
+    [BLOCK.NETHER_PORTAL]: u("netherPortal"),
+    [BLOCK.GRAVEL]: u("gravel"),
+    [BLOCK.QUARTZ_BLOCK]: { top: uvByKey.quartzTop, bottom: uvByKey.quartzTop, side: uvByKey.quartzBlock },
   };
 
   const crackTextures = [crackTex(0), crackTex(1), crackTex(2)];

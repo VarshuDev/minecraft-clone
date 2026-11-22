@@ -6,6 +6,7 @@ export const WORLD_HEIGHT = 64;
 export const SEA_LEVEL = 22;
 
 export type BiomeName = "Plains" | "Oak Forest" | "Desert" | "Snowy Peaks" | "Ocean";
+export type Dimension = "overworld" | "nether";
 
 export const chunkCoord = (v: number) => Math.floor(v / CHUNK_SIZE);
 export const chunkKey = (cx: number, cz: number) => `${cx}|${cz}`;
@@ -15,6 +16,7 @@ const localIdx = (lx: number, y: number, lz: number) => (y << 8) | (lz << 4) | l
 
 export class InfiniteWorld {
   readonly seed: number;
+  readonly dimension: Dimension;
   private terrainNoise: SeededNoise;
   private biomeNoise: SeededNoise;
   private caveNoise: SeededNoise;
@@ -28,8 +30,9 @@ export class InfiniteWorld {
   /** Emissive light-casting blocks (torches / glowstone) */
   lightBlocks = new Map<string, { x: number; y: number; z: number; color: number }>();
 
-  constructor(seed: number, initialEdits?: Record<string, number>) {
+  constructor(seed: number, initialEdits?: Record<string, number>, dimension: Dimension = "overworld") {
     this.seed = seed;
+    this.dimension = dimension;
     this.terrainNoise = new SeededNoise(seed);
     this.biomeNoise = new SeededNoise(seed ^ 0x51a7e3);
     this.caveNoise = new SeededNoise(seed ^ 0x9e3779b9);
@@ -106,6 +109,10 @@ export class InfiniteWorld {
     const key = chunkKey(cx, cz);
     const existing = this.chunks.get(key);
     if (existing) return existing;
+
+    if (this.dimension === "nether") {
+      return this.generateNetherChunk(cx, cz);
+    }
 
     const data = new Uint8Array(CHUNK_SIZE * WORLD_HEIGHT * CHUNK_SIZE);
     const baseX = cx * CHUNK_SIZE;
@@ -243,6 +250,101 @@ export class InfiniteWorld {
     return data;
   }
 
+  private generateNetherChunk(cx: number, cz: number): Uint8Array {
+    const key = chunkKey(cx, cz);
+    const data = new Uint8Array(CHUNK_SIZE * WORLD_HEIGHT * CHUNK_SIZE);
+    const baseX = cx * CHUNK_SIZE;
+    const baseZ = cz * CHUNK_SIZE;
+    const LAVA_LEVEL = 13;
+
+    for (let lx = 0; lx < CHUNK_SIZE; lx++) {
+      const wx = baseX + lx;
+      for (let lz = 0; lz < CHUNK_SIZE; lz++) {
+        const wz = baseZ + lz;
+
+        // Soul sand shore noise
+        const soulSandPatch = this.biomeNoise.fbm2(wx * 0.05 + 13.5, wz * 0.05 - 28.1, 2) > 0.12;
+
+        for (let y = 0; y < WORLD_HEIGHT; y++) {
+          let b: BlockNum = BLOCK.NETHERRACK;
+
+          // Bedrock Floor & Ceiling
+          if (y === 0 || y === WORLD_HEIGHT - 1) {
+            b = BLOCK.BEDROCK;
+          } else if (y <= 2 && hashCoords(wx, y, wz, this.seed + 101) < 0.65) {
+            b = BLOCK.BEDROCK;
+          } else if (y >= WORLD_HEIGHT - 3 && hashCoords(wx, y, wz, this.seed + 202) < 0.65) {
+            b = BLOCK.BEDROCK;
+          } else {
+            // 3D Caverns
+            const c1 = this.caveNoise.noise3(wx * 0.048, y * 0.062, wz * 0.048);
+            const c2 = this.detailNoise.noise3(wx * 0.082 + 25, y * 0.082 - 31, wz * 0.082 + 63) * 0.45;
+            const density = c1 + c2;
+
+            if (density > -0.05) {
+              // Open cavern: lava below LAVA_LEVEL, air above
+              b = y <= LAVA_LEVEL ? BLOCK.LAVA : BLOCK.AIR;
+            } else {
+              // Solid nether terrain
+              if (soulSandPatch && y >= 11 && y <= 16) {
+                b = BLOCK.SOUL_SAND;
+              } else if (hashCoords(wx, y, wz, this.seed + 313) < 0.035 && y <= 25) {
+                b = BLOCK.GRAVEL;
+              } else if (y >= 10 && y <= 58 && hashCoords(wx, y, wz, this.seed + 414) < 0.038) {
+                b = BLOCK.NETHER_QUARTZ_ORE;
+              }
+            }
+          }
+
+          data[localIdx(lx, y, lz)] = b;
+        }
+      }
+    }
+
+    // Glowstone stalactites hanging from ceiling caverns
+    for (let lx = 1; lx < CHUNK_SIZE - 1; lx++) {
+      const wx = baseX + lx;
+      for (let lz = 1; lz < CHUNK_SIZE - 1; lz++) {
+        const wz = baseZ + lz;
+        if (hashCoords(wx, 50, wz, this.seed + 777) < 0.028) {
+          // Find cavern ceiling
+          for (let y = WORLD_HEIGHT - 6; y >= 25; y--) {
+            const above = data[localIdx(lx, y + 1, lz)];
+            const curr = data[localIdx(lx, y, lz)];
+            if ((above === BLOCK.NETHERRACK || above === BLOCK.BEDROCK) && curr === BLOCK.AIR) {
+              const clusterLen = 2 + Math.floor(hashCoords(wx, y, wz, this.seed) * 3);
+              for (let dy = 0; dy < clusterLen; dy++) {
+                if (y - dy > 15 && data[localIdx(lx, y - dy, lz)] === BLOCK.AIR) {
+                  data[localIdx(lx, y - dy, lz)] = BLOCK.GLOWSTONE;
+                  if (dy === 0 && hashCoords(wx + 1, y, wz, this.seed) > 0.4 && lx < CHUNK_SIZE - 1) {
+                    data[localIdx(lx + 1, y, lz)] = BLOCK.GLOWSTONE;
+                  }
+                  if (dy === 0 && hashCoords(wx, y, wz + 1, this.seed) > 0.4 && lz < CHUNK_SIZE - 1) {
+                    data[localIdx(lx, y, lz + 1)] = BLOCK.GLOWSTONE;
+                  }
+                }
+              }
+              break;
+            }
+          }
+        }
+      }
+    }
+
+    // Re-apply any saved player edits in this chunk
+    const edits = this.editsByChunk.get(key);
+    if (edits) {
+      for (const [wx, y, wz, b] of edits) {
+        if (y >= 0 && y < WORLD_HEIGHT) {
+          data[localIdx(wx - baseX, y, wz - baseZ)] = b;
+        }
+      }
+    }
+
+    this.chunks.set(key, data);
+    return data;
+  }
+
   unloadChunk(cx: number, cz: number) {
     this.chunks.delete(chunkKey(cx, cz));
   }
@@ -270,6 +372,31 @@ export class InfiniteWorld {
   }
 
   findSpawn(): { x: number; y: number; z: number } {
+    if (this.dimension === "nether") {
+      // Find a safe solid block above lava with 2 air blocks above it
+      for (let r = 0; r <= 32; r += 2) {
+        for (let a = 0; a < 8; a++) {
+          const wx = Math.round(Math.cos((a / 8) * Math.PI * 2) * r);
+          const wz = Math.round(Math.sin((a / 8) * Math.PI * 2) * r);
+          this.ensureChunk(chunkCoord(wx), chunkCoord(wz));
+          for (let y = 16; y <= 45; y++) {
+            const b = this.getBlock(wx, y, wz);
+            const above1 = this.getBlock(wx, y + 1, wz);
+            const above2 = this.getBlock(wx, y + 2, wz);
+            if (
+              (b === BLOCK.NETHERRACK || b === BLOCK.SOUL_SAND || b === BLOCK.GRAVEL) &&
+              above1 === BLOCK.AIR &&
+              above2 === BLOCK.AIR
+            ) {
+              return { x: wx + 0.5, y: y + 1.05, z: wz + 0.5 };
+            }
+          }
+        }
+      }
+      this.ensureChunk(0, 0);
+      return { x: 0.5, y: 22, z: 0.5 };
+    }
+
     // Search outward from (0,0) for dry land above sea level
     for (let r = 0; r <= 48; r += 2) {
       for (let a = 0; a < 8; a++) {

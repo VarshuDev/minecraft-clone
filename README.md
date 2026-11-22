@@ -48,6 +48,11 @@
 | <img src="assets/screenshots/farming_and_redstone.png" alt="Farming & Redstone" width="440" /> | <img src="assets/screenshots/underground_cave_mining.png" alt="Redstone Cave" width="440" /> |
 | *4 Wheat Growth Stages, Farmland Hydration & Bone Meal* | *Redstone Ore, Floor Wires, Levers, Lit Lamps & TNT* |
 
+| THE NETHER DIMENSION & LAVA SEAS | ACTIVATED NETHER PORTALS |
+| :---: | :---: |
+| <img src="assets/screenshots/nether_dimension.png" alt="The Nether Dimension" width="440" /> | <img src="assets/screenshots/nether_portal_overworld.png" alt="Nether Portal in Overworld" width="440" /> |
+| *Netherrack Caverns, Lava Oceans, Soul Sand & Nether Mobs* | *4x5 Obsidian Portal Frame, Flint & Steel Ignition & Travel* |
+
 </div>
 
 <br/>
@@ -162,6 +167,7 @@
   - `/kill`: Slay Steve for respawn testing.
   - `/seed`: Inspect the active world generation seed.
   - `/clear`: Wipe player inventory and hotbar.
+  - `/dimension <overworld|nether>`: Teleport between the Overworld and Nether dimensions.
   - `/xp <add|set> <amount>`: Add XP or set experience level.
   - `/help`: Detailed command syntax and descriptions.
 - **Player Chat**: Messages without `/` are displayed in authentic `<Steve> message` chat formatting!
@@ -179,6 +185,25 @@
 - **Redstone Lamps**: Unlit lamps (`#3d2817`) ignite into brilliant glowing amber lamps (`#ffe27a`) with emissive light when powered!
 - **Power Automation**: Powering adjacent `TNT` primes and detonates it; powering `Wooden Doors` swings them open/closed!
 
+### 15. The Nether Dimension & Obsidian Portals
+- **Authentic Nether Dimension Generation**:
+  - `Bedrock Ceiling & Floor`: Solid unbreakable bedrock barriers at $Y = 63$ and $Y = 0$ with stalactites and stalagmites.
+  - `Netherrack Caverns & Lava Ocean`: 3D noise tunnels carved through blood-red Netherrack with an ocean of bubbling Lava at $Y = 1..13$.
+  - `Soul Sand Shores & Pockets`: Eerie brown soul sand banks that slow player walking speed by 50%.
+  - `Nether Quartz Veins & Glowstone`: Rich veins of glistening Nether Quartz ore embedded in cavern walls and hanging Glowstone clusters illuminating the ceilings.
+  - `Crimson Atmosphere`: Thick red fog (`#380b0b`), deep crimson ambient illumination, and celestial suppression.
+- **Obsidian Nether Portals**:
+  - Build vertical $4 \times 5$ Obsidian frames (along X or Z axis).
+  - Strike the portal with **Flint and Steel** to ignite swirling purple portal blocks with spark particles and sound.
+  - Standing inside the portal for 2.0 seconds triggers dimensional teleportation with canonical **8:1 coordinate compression** between Overworld and Nether!
+  - Generates reciprocal exit portal frames with safe platform footing at destination coordinates.
+- **Lava Dynamics & Fluid Quenching**:
+  - High-viscosity fluid physics (slows player to 45% speed) with periodic burn damage ticks.
+  - Pouring or placing Water adjacent to Lava immediately quenches it into **Obsidian** with steam hiss audio and smoke particle bursts!
+- **Nether Mob Species**:
+  - `Zombie Pigman`: Neutral mob with half-pig half-zombie skin wielding a 3D Golden Sword. Peaceful until attacked, then rallies in relentless aggressive pursuit. Drops gold ingots and rotten flesh.
+  - `Ghast`: Floating 1.5-meter flying ghost with red crying eyes and 9 swaying dangling tentacles that drifts through Nether caverns. Drops gunpowder.
+
 <br/>
 
 <div align="center">
@@ -195,20 +220,21 @@
 
 <br/>
 
-The engine includes **55+ canonical block types & functional items** generated procedurally without external image files:
+The engine includes **60+ canonical block types & functional items** generated procedurally without external image files:
 
 | BLOCK CATEGORY | INCLUDED BLOCK TYPES |
 | :--- | :--- |
-| **Terrain & Rock** | `Grass Block`, `Dirt`, `Stone`, `Cobblestone`, `Deepslate`, `Bedrock`, `Sand`, `Sandstone` |
-| **Nature & Fluids**| `Oak Log`, `Oak Leaves`, `Cactus`, `Water`, `Snow`, `Ice`, `Poppy`, `Dandelion` |
-| **Building**       | `Oak Planks`, `Bricks`, `Stone Bricks`, `Glass` |
-| **Mineral Ores**   | `Coal Ore`, `Iron Ore`, `Gold Ore`, `Diamond Ore`, `Redstone Ore` |
+| **Terrain & Rock** | `Grass Block`, `Dirt`, `Stone`, `Cobblestone`, `Deepslate`, `Bedrock`, `Sand`, `Sandstone`, `Gravel` |
+| **The Nether**     | `Netherrack`, `Lava (Fluid)`, `Obsidian`, `Nether Quartz Ore`, `Soul Sand`, `Nether Portal`, `Block of Quartz` |
+| **Nature & Fluids**| `Oak Log`, `Oak Leaves`, `Cactus`, `Water (Fluid)`, `Snow`, `Ice`, `Poppy`, `Dandelion` |
+| **Building**       | `Oak Planks`, `Bricks`, `Stone Bricks`, `Glass`, `Block of Quartz` |
+| **Mineral Ores**   | `Coal Ore`, `Iron Ore`, `Gold Ore`, `Diamond Ore`, `Redstone Ore`, `Nether Quartz Ore` |
 | **Agriculture**    | `Farmland`, `Moist Farmland`, `Wheat Crops (Stages 1-4)`, `Wheat Seeds`, `Wheat`, `Bone Meal` |
 | **Redstone Power** | `Redstone Wire`, `Redstone Torch`, `Lever`, `Redstone Lamp (Unlit/Lit)`, `TNT Block` |
 | **Functional & Home** | `Crafting Table`, `Furnace`, `Chest`, `Bed`, `Wooden Door`, `Ladder`, `Torch`, `Glowstone` |
 | **Armor & Defense**| `Iron Helmet/Chestplate/Leggings/Boots`, `Diamond Helmet/Chestplate/Leggings/Boots`, `Leather Tunic/Boots` |
-| **Weapons & Tools**| `Wooden/Stone/Iron/Diamond Swords`, `Bow & Arrows`, `Pickaxes`, `Axes`, `Shovels`, `Wooden Hoe` |
-| **Food & Mob Drops**| `Apple`, `Bread`, `Raw/Cooked Porkchop`, `Steak`, `Rotten Flesh`, `Bone`, `Gunpowder`, `String`, `Feather`, `Leather`, `Wool` |
+| **Weapons & Tools**| `Wooden/Stone/Iron/Diamond Swords`, `Golden Sword`, `Bow & Arrows`, `Pickaxes`, `Axes`, `Shovels`, `Wooden Hoe`, `Flint and Steel` |
+| **Food & Mob Drops**| `Apple`, `Bread`, `Raw/Cooked Porkchop`, `Steak`, `Rotten Flesh`, `Bone`, `Gunpowder`, `String`, `Feather`, `Leather`, `Wool`, `Flint`, `Quartz`, `Gold Ingot` |
 
 <br/>
 
@@ -271,6 +297,9 @@ Pressing `E` opens the **2x2 Player Inventory Crafting Grid**, while right-click
 | Lever             | 1x Stick + 1x Cobbl| Mechanical power switch|
 | Redstone Torch    | 1x Stick + 1x Redst| Power generator        |
 | Redstone Lamp     | 1x Glowst + 4x Red | Switchable amber light  |
+| Flint and Steel   | 1x Iron + 1x Flint | Ignites Nether Portals |
+| Golden Sword      | 2x Gold + 1x Stick | +5 Attack Damage       |
+| Block of Quartz   | 4x Nether Quartz   | Smooth white building  |
 +-------------------+--------------------+------------------------+
 ```
 
@@ -290,6 +319,7 @@ Right-click any placed **Furnace** to smelt raw minerals, meats, and materials u
 | Sand              | Clear Glass        | 1/8 Coal (+0.2 XP)      |
 | Cobblestone       | Smooth Stone       | 1/8 Coal (+0.2 XP)      |
 | Dirt              | Baked Bricks       | 1/8 Coal (+0.3 XP)      |
+| Nether Quartz Ore | Nether Quartz      | 1/8 Coal (+1.0 XP)      |
 +-------------------+--------------------+-------------------------+
 ```
 
@@ -400,14 +430,15 @@ Creates a self-contained, single-file bundle in `dist/index.html` (under 916 kB,
 ```text
 [+] Rendering Engine       : Three.js WebGL Renderer (PCF Shadow Maps, ACES Filmic)
 [+] Chunk Dimensions       : 16 x 64 x 16 Voxels per Column
-[+] Sea Level Height       : Y = 22
+[+] Active Dimensions      : Overworld & The Nether (8:1 Coordinate Ratio)
+[+] Sea Level Height       : Y = 22 (Overworld) / Y = 13 Lava Ocean (Nether)
 [+] Active Render Distance : 7x7 Chunks (49 Chunks / 112x112 Block Viewport)
-[+] Texture Atlas          : 8x6 Procedural Grid (18x18px Padded Gutter Cells)
-[+] Mobs & Entities        : 6 Species (Zombie, Skeleton, Creeper, Pig, Cow, Sheep)
+[+] Texture Atlas          : 8x10 Procedural Grid (80 Canonical 18x18px Gutter Cells)
+[+] Mobs & Entities        : 8 Species (Zombie, Skeleton, Creeper, Pig, Cow, Sheep, Zombie Pigman, Ghast)
 [+] Sound Synthesizer      : Web Audio API (Zero External MP3/WAV Audio Files)
 [+] Ambient Soundtrack     : Procedural C418-Style Calm Piano Synthesizer
-[+] Build Output           : Single-File HTML (~915 kB / ~243 kB gzipped)
-[+] Persistence            : Web Storage API (World Edits, Inventory, Seed, Time, Spawn)
+[+] Build Output           : Single-File HTML (~1,006 kB / ~264 kB gzipped)
+[+] Persistence            : Web Storage API (Multi-World Edits, Dimensions, Inventory, Seed)
 ```
 
 <br/>

@@ -45,6 +45,14 @@ export const BLOCK = {
   LEVER: 43,
   REDSTONE_LAMP: 44,
   REDSTONE_LAMP_LIT: 45,
+  LAVA: 46,
+  OBSIDIAN: 47,
+  NETHERRACK: 48,
+  NETHER_QUARTZ_ORE: 49,
+  SOUL_SAND: 50,
+  NETHER_PORTAL: 51,
+  GRAVEL: 52,
+  QUARTZ_BLOCK: 53,
 } as const;
 
 export type BlockNum = (typeof BLOCK)[keyof typeof BLOCK];
@@ -133,7 +141,18 @@ export type ItemId =
   | "lever"
   | "redstone_torch"
   | "redstone_lamp"
-  | "block_redstone_ore";
+  | "block_redstone_ore"
+  | "flint"
+  | "flint_and_steel"
+  | "quartz"
+  | "golden_sword"
+  | "block_obsidian"
+  | "block_netherrack"
+  | "block_quartz_ore"
+  | "block_soul_sand"
+  | "block_gravel"
+  | "block_quartz"
+  | "block_lava";
 
 export type ToolKind = "pickaxe" | "axe" | "shovel" | "sword" | "hoe" | "bow";
 export type ArmorSlot = "head" | "chest" | "legs" | "feet";
@@ -730,6 +749,104 @@ export const BLOCK_DEFS: Record<BlockNum, BlockDef> = {
     sound: "glass",
     colors: { top: "#ffc83b", left: "#ffa710", right: "#ff8800" },
   },
+  [BLOCK.LAVA]: {
+    id: BLOCK.LAVA,
+    name: "Lava",
+    hardness: 100,
+    drop: "block_lava",
+    shards: ["#ff4500", "#ff8c00", "#ffa500"],
+    solid: false,
+    transparent: false,
+    liquid: true,
+    emitsLight: true,
+    lightColor: 0xff6600,
+    sound: "water",
+    colors: { top: "#ff5722", left: "#e64a19", right: "#bf360c" },
+  },
+  [BLOCK.OBSIDIAN]: {
+    id: BLOCK.OBSIDIAN,
+    name: "Obsidian",
+    hardness: 8.0,
+    preferredTool: "pickaxe",
+    drop: "block_obsidian",
+    shards: ["#1e1429", "#2e1b40", "#45285e"],
+    solid: true,
+    transparent: false,
+    sound: "stone",
+    colors: { top: "#241830", left: "#191024", right: "#120a1c" },
+  },
+  [BLOCK.NETHERRACK]: {
+    id: BLOCK.NETHERRACK,
+    name: "Netherrack",
+    hardness: 0.4,
+    preferredTool: "pickaxe",
+    drop: "block_netherrack",
+    shards: ["#701b1b", "#541414", "#8c2626"],
+    solid: true,
+    transparent: false,
+    sound: "stone",
+    colors: { top: "#7a2020", left: "#611717", right: "#450e0e" },
+  },
+  [BLOCK.NETHER_QUARTZ_ORE]: {
+    id: BLOCK.NETHER_QUARTZ_ORE,
+    name: "Nether Quartz Ore",
+    hardness: 1.5,
+    preferredTool: "pickaxe",
+    drop: "quartz",
+    shards: ["#701b1b", "#f0e6df", "#ffffff"],
+    solid: true,
+    transparent: false,
+    sound: "stone",
+    colors: { top: "#eee4dc", left: "#7a2020", right: "#611717" },
+  },
+  [BLOCK.SOUL_SAND]: {
+    id: BLOCK.SOUL_SAND,
+    name: "Soul Sand",
+    hardness: 0.5,
+    preferredTool: "shovel",
+    drop: "block_soul_sand",
+    shards: ["#594235", "#473328", "#38271e"],
+    solid: true,
+    transparent: false,
+    sound: "sand",
+    colors: { top: "#543e32", left: "#422f25", right: "#30221a" },
+  },
+  [BLOCK.NETHER_PORTAL]: {
+    id: BLOCK.NETHER_PORTAL,
+    name: "Nether Portal",
+    hardness: 9999,
+    shards: ["#b53df5", "#7c1ec2"],
+    solid: false,
+    transparent: true,
+    emitsLight: true,
+    lightColor: 0xaa33ff,
+    sound: "glass",
+    colors: { top: "#a832f0", left: "#851ec7", right: "#630ea1" },
+  },
+  [BLOCK.GRAVEL]: {
+    id: BLOCK.GRAVEL,
+    name: "Gravel",
+    hardness: 0.6,
+    preferredTool: "shovel",
+    drop: "block_gravel",
+    shards: ["#7a7977", "#8f8d8a", "#636260"],
+    solid: true,
+    transparent: false,
+    sound: "sand",
+    colors: { top: "#8c8a87", left: "#787673", right: "#63615e" },
+  },
+  [BLOCK.QUARTZ_BLOCK]: {
+    id: BLOCK.QUARTZ_BLOCK,
+    name: "Block of Quartz",
+    hardness: 1.2,
+    preferredTool: "pickaxe",
+    drop: "block_quartz",
+    shards: ["#edebe6", "#dedbd5", "#f7f6f2"],
+    solid: true,
+    transparent: false,
+    sound: "stone",
+    colors: { top: "#f2f0ec", left: "#e3e0d8", right: "#d1cec4" },
+  },
 };
 
 export interface FoodDef {
@@ -1043,6 +1160,92 @@ export const ITEMS: Record<ItemId, ItemDef> = {
     color: "#ff2200",
     category: "block",
   },
+  flint: {
+    id: "flint",
+    name: "Flint",
+    short: "FLINT",
+    color: "#383838",
+    category: "material",
+  },
+  flint_and_steel: {
+    id: "flint_and_steel",
+    name: "Flint and Steel",
+    short: "STEEL",
+    color: "#d9d7ce",
+    category: "tool",
+    tool: { kind: "pickaxe", speed: 1.0, attackDamage: 1, headColor: 0x888888, tipColor: 0xffaa00, uiColor: "#e6e6e6" },
+  },
+  quartz: {
+    id: "quartz",
+    name: "Nether Quartz",
+    short: "QUARTZ",
+    color: "#edebe6",
+    category: "material",
+  },
+  golden_sword: {
+    id: "golden_sword",
+    name: "Golden Sword",
+    short: "G.SWD",
+    color: "#ffd43b",
+    category: "weapon",
+    tool: { kind: "sword", speed: 1.5, attackDamage: 5, headColor: 0xffd700, tipColor: 0xcca000, uiColor: "#ffe066" },
+  },
+  block_obsidian: {
+    id: "block_obsidian",
+    name: "Obsidian",
+    short: "OBSID",
+    blockId: BLOCK.OBSIDIAN,
+    color: "#241830",
+    category: "block",
+  },
+  block_netherrack: {
+    id: "block_netherrack",
+    name: "Netherrack",
+    short: "NRACK",
+    blockId: BLOCK.NETHERRACK,
+    color: "#7a2020",
+    category: "block",
+  },
+  block_quartz_ore: {
+    id: "block_quartz_ore",
+    name: "Nether Quartz Ore",
+    short: "Q.ORE",
+    blockId: BLOCK.NETHER_QUARTZ_ORE,
+    color: "#eee4dc",
+    category: "block",
+  },
+  block_soul_sand: {
+    id: "block_soul_sand",
+    name: "Soul Sand",
+    short: "SSAND",
+    blockId: BLOCK.SOUL_SAND,
+    color: "#543e32",
+    category: "block",
+  },
+  block_gravel: {
+    id: "block_gravel",
+    name: "Gravel",
+    short: "GRAVL",
+    blockId: BLOCK.GRAVEL,
+    color: "#8c8a87",
+    category: "block",
+  },
+  block_quartz: {
+    id: "block_quartz",
+    name: "Block of Quartz",
+    short: "QUARTZ",
+    blockId: BLOCK.QUARTZ_BLOCK,
+    color: "#f2f0ec",
+    category: "block",
+  },
+  block_lava: {
+    id: "block_lava",
+    name: "Lava",
+    short: "LAVA",
+    blockId: BLOCK.LAVA,
+    color: "#ff5722",
+    category: "block",
+  },
 };
 
 export interface Recipe {
@@ -1099,6 +1302,9 @@ export const RECIPES: Recipe[] = [
   { id: "lever", out: "lever", count: 1, inputs: [{ item: "stick", count: 1 }, { item: "block_cobble", count: 1 }], note: "Redstone power switch" },
   { id: "redstone_torch", out: "redstone_torch", count: 1, inputs: [{ item: "stick", count: 1 }, { item: "redstone_dust", count: 1 }], note: "Continuous redstone power" },
   { id: "redstone_lamp", out: "redstone_lamp", count: 1, inputs: [{ item: "block_glowstone", count: 1 }, { item: "redstone_dust", count: 4 }], note: "Redstone activated lamp" },
+  { id: "flint_and_steel", out: "flint_and_steel", count: 1, inputs: [{ item: "iron_ingot", count: 1 }, { item: "flint", count: 1 }], note: "Ignite Nether Portals & fire" },
+  { id: "quartz_block", out: "block_quartz", count: 1, inputs: [{ item: "quartz", count: 4 }], note: "Pristine white building block" },
+  { id: "golden_sword", out: "golden_sword", count: 1, inputs: [{ item: "gold_ingot", count: 2 }, { item: "stick", count: 1 }], note: "+5 Attack Damage" },
 ];
 
 export interface SmeltingRecipe {
@@ -1111,6 +1317,7 @@ export const SMELTING_RECIPES: SmeltingRecipe[] = [
   { input: "block_iron_ore", output: "iron_ingot", xp: 1.0 },
   { input: "block_gold_ore", output: "gold_ingot", xp: 1.5 },
   { input: "block_redstone_ore", output: "redstone_dust", xp: 0.7 },
+  { input: "block_quartz_ore", output: "quartz", xp: 1.0 },
   { input: "block_sand", output: "block_glass", xp: 0.2 },
   { input: "block_cobble", output: "block_stone", xp: 0.2 },
   { input: "raw_beef", output: "cooked_beef", xp: 0.5 },
@@ -1181,6 +1388,17 @@ export const CREATIVE_CATALOG: ItemId[] = [
   "apple",
   "cooked_beef",
   "bread",
+  "block_obsidian",
+  "block_netherrack",
+  "block_quartz_ore",
+  "block_soul_sand",
+  "block_gravel",
+  "block_quartz",
+  "block_lava",
+  "flint_and_steel",
+  "golden_sword",
+  "quartz",
+  "flint",
 ];
 
 export const DEFAULT_CREATIVE_HOTBAR: ItemId[] = [

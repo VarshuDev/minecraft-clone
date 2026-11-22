@@ -105,6 +105,15 @@ export function Hud({
           <span className="rounded border border-black/40 bg-black/60 px-2 py-1 text-[10px] tracking-wider text-white shadow">
             {hud.gameMode.toUpperCase()}
           </span>
+          {hud.debug.biome === "Nether Wastes" ? (
+            <span className="rounded border border-red-500/80 bg-red-950/80 px-2 py-1 text-[9px] font-bold text-red-300 shadow">
+              🔥 NETHER
+            </span>
+          ) : (
+            <span className="hidden rounded border border-emerald-500/40 bg-emerald-950/60 px-2 py-1 text-[9px] text-emerald-300 sm:inline">
+              🌐 OVERWORLD
+            </span>
+          )}
           {hud.debug.biome && (
             <span className="hidden rounded border border-black/40 bg-black/50 px-2 py-1 text-[9px] text-emerald-300 sm:inline">
               {hud.debug.biome}
@@ -196,6 +205,7 @@ export function Hud({
               Chunk: {hud.debug.chunkX} / {hud.debug.chunkZ}
             </div>
             <div>Facing: {hud.debug.facing}</div>
+            <div>Dimension: {hud.debug.biome === "Nether Wastes" ? "The Nether" : "The Overworld"}</div>
             <div>Biome: {hud.debug.biome}</div>
             <div>Day Ticks: {hud.debug.dayTimeTicks} / 24000</div>
             <div>Loaded Chunks: {hud.debug.loadedChunks}</div>
