@@ -986,4 +986,114 @@ export class GameAudio {
       osc.stop(noteTime + dur + 0.05);
     });
   }
+
+  potionDrink() {
+    if (!this.ctx || !this.master || this.muted) return;
+    const ctx = this.ctx;
+    const master = this.master;
+    const t0 = ctx.currentTime;
+    for (let i = 0; i < 3; i++) {
+      const gTime = t0 + i * 0.16;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(280 + i * 60, gTime);
+      osc.frequency.exponentialRampToValueAtTime(120, gTime + 0.12);
+      gain.gain.setValueAtTime(0.001, gTime);
+      gain.gain.exponentialRampToValueAtTime(0.18, gTime + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, gTime + 0.14);
+      osc.connect(gain);
+      gain.connect(master);
+      osc.start(gTime);
+      osc.stop(gTime + 0.15);
+    }
+    const bellTime = t0 + 0.52;
+    const bOsc = ctx.createOscillator();
+    const bGain = ctx.createGain();
+    bOsc.type = "triangle";
+    bOsc.frequency.setValueAtTime(659.25, bellTime);
+    bOsc.frequency.exponentialRampToValueAtTime(1318.5, bellTime + 0.18);
+    bGain.gain.setValueAtTime(0.001, bellTime);
+    bGain.gain.exponentialRampToValueAtTime(0.12, bellTime + 0.02);
+    bGain.gain.exponentialRampToValueAtTime(0.001, bellTime + 0.35);
+    bOsc.connect(bGain);
+    bGain.connect(master);
+    bOsc.start(bellTime);
+    bOsc.stop(bellTime + 0.36);
+  }
+
+  potionBrew() {
+    if (!this.ctx || !this.master || this.muted) return;
+    const ctx = this.ctx;
+    const master = this.master;
+    const t0 = ctx.currentTime;
+    for (let i = 0; i < 6; i++) {
+      const bTime = t0 + i * 0.09 + Math.random() * 0.04;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(350 + Math.random() * 200, bTime);
+      osc.frequency.exponentialRampToValueAtTime(800 + Math.random() * 300, bTime + 0.07);
+      gain.gain.setValueAtTime(0.001, bTime);
+      gain.gain.exponentialRampToValueAtTime(0.14, bTime + 0.015);
+      gain.gain.exponentialRampToValueAtTime(0.001, bTime + 0.08);
+      osc.connect(gain);
+      gain.connect(master);
+      osc.start(bTime);
+      osc.stop(bTime + 0.09);
+    }
+    const clink = ctx.createOscillator();
+    const cGain = ctx.createGain();
+    clink.type = "sine";
+    clink.frequency.setValueAtTime(1864, t0 + 0.6);
+    cGain.gain.setValueAtTime(0.001, t0 + 0.6);
+    cGain.gain.exponentialRampToValueAtTime(0.15, t0 + 0.61);
+    cGain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.9);
+    clink.connect(cGain);
+    cGain.connect(master);
+    clink.start(t0 + 0.6);
+    clink.stop(t0 + 0.91);
+  }
+
+  fireworkLaunch() {
+    if (!this.ctx || !this.master || this.muted) return;
+    const ctx = this.ctx;
+    const master = this.master;
+    const t0 = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = "sawtooth";
+    osc.frequency.setValueAtTime(220, t0);
+    osc.frequency.exponentialRampToValueAtTime(1400, t0 + 0.35);
+    gain.gain.setValueAtTime(0.001, t0);
+    gain.gain.exponentialRampToValueAtTime(0.16, t0 + 0.05);
+    gain.gain.exponentialRampToValueAtTime(0.01, t0 + 0.35);
+    osc.connect(gain);
+    gain.connect(master);
+    osc.start(t0);
+    osc.stop(t0 + 0.36);
+    this.noiseBurst({ duration: 0.25, gain: 0.25, freq: 800, type: "bandpass" });
+  }
+
+  elytraWhoosh(speedNorm: number) {
+    if (!this.ctx || !this.master || this.muted) return;
+    const ctx = this.ctx;
+    const master = this.master;
+    const t0 = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const filter = ctx.createBiquadFilter();
+    const gain = ctx.createGain();
+    osc.type = "triangle";
+    osc.frequency.setValueAtTime(120 + speedNorm * 220, t0);
+    filter.type = "lowpass";
+    filter.frequency.setValueAtTime(400 + speedNorm * 800, t0);
+    gain.gain.setValueAtTime(0.001, t0);
+    gain.gain.exponentialRampToValueAtTime(Math.min(0.2, 0.05 + speedNorm * 0.15), t0 + 0.05);
+    gain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.35);
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(master);
+    osc.start(t0);
+    osc.stop(t0 + 0.36);
+  }
 }

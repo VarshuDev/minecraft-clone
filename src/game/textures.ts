@@ -1184,6 +1184,94 @@ function endRodTile(): TilePair {
   return { albedo: c, emissive: em.c };
 }
 
+function brewingStandTile(): TilePair {
+  const { c, ctx } = makeCanvas();
+  const em = makeCanvas();
+  ctx.fillStyle = "rgba(0,0,0,0)";
+  ctx.fillRect(0, 0, 16, 16);
+  em.ctx.fillStyle = "#000000";
+  em.ctx.fillRect(0, 0, 16, 16);
+  // Cobble base plate
+  px(ctx, 1, 14, "#57534e", 14, 2);
+  px(ctx, 2, 13, "#78716c", 12, 1);
+  // Center blaze rod
+  for (let y = 3; y < 13; y++) {
+    px(ctx, 7, y, "#f59e0b", 2, 1);
+    px(ctx, 8, y, "#fef08a", 1, 1);
+    px(em.ctx, 7, y, "#f59e0b", 2, 1);
+  }
+  // Brewing arms / potion brackets
+  px(ctx, 3, 6, "#44403c", 10, 1);
+  px(ctx, 2, 7, "#44403c", 2, 3);
+  px(ctx, 12, 7, "#44403c", 2, 3);
+  // Bubble glints
+  px(ctx, 2, 10, "#38bdf8", 2, 2);
+  px(ctx, 12, 10, "#fb7185", 2, 2);
+  return { albedo: c, emissive: em.c };
+}
+
+function netherWartTile(): TilePair {
+  const { c, ctx } = makeCanvas();
+  ctx.fillStyle = "rgba(0,0,0,0)";
+  ctx.fillRect(0, 0, 16, 16);
+  // Nether wart stalks and swollen crimson bulbous heads
+  // Left stem & bulb
+  px(ctx, 3, 10, "#450a0a", 2, 6);
+  px(ctx, 2, 6, "#991b1b", 4, 4);
+  px(ctx, 3, 5, "#dc2626", 2, 2);
+  px(ctx, 4, 6, "#f87171", 1, 1);
+  // Center taller bulb
+  px(ctx, 7, 8, "#450a0a", 2, 8);
+  px(ctx, 6, 3, "#991b1b", 4, 5);
+  px(ctx, 7, 2, "#dc2626", 2, 2);
+  px(ctx, 8, 3, "#f87171", 1, 1);
+  // Right bulb
+  px(ctx, 11, 11, "#450a0a", 2, 5);
+  px(ctx, 10, 7, "#991b1b", 4, 4);
+  px(ctx, 11, 6, "#dc2626", 2, 2);
+  return { albedo: c };
+}
+
+function endStoneBrickTile(): TilePair {
+  const { c, ctx } = makeCanvas();
+  noiseFill(ctx, ["#dedea0", "#d4d494", "#e8e8b0", "#c8c884"], 911);
+  // Brick mortar lines
+  for (let x = 0; x < 16; x++) {
+    px(ctx, x, 0, "#a3a362");
+    px(ctx, x, 7, "#a3a362");
+    px(ctx, x, 8, "#b8b872");
+    px(ctx, x, 15, "#8a8a4f");
+  }
+  for (let y = 1; y < 7; y++) {
+    px(ctx, 8, y, "#a3a362");
+  }
+  for (let y = 9; y < 15; y++) {
+    px(ctx, 0, y, "#a3a362");
+    px(ctx, 15, y, "#8a8a4f");
+  }
+  shadeEdge(ctx);
+  return { albedo: c };
+}
+
+function purpurPillarTile(): TilePair {
+  const { c, ctx } = makeCanvas();
+  noiseFill(ctx, ["#a878a8", "#9e689e", "#8c568c"], 921);
+  // Fluted pillar vertical ridges
+  for (let y = 0; y < 16; y++) {
+    px(ctx, 0, y, "#6c3f6c");
+    px(ctx, 1, y, "#c293c2");
+    px(ctx, 3, y, "#6c3f6c");
+    px(ctx, 4, y, "#c293c2");
+    px(ctx, 7, y, "#6c3f6c");
+    px(ctx, 8, y, "#c293c2");
+    px(ctx, 11, y, "#6c3f6c");
+    px(ctx, 12, y, "#c293c2");
+    px(ctx, 15, y, "#522b52");
+  }
+  shadeEdge(ctx);
+  return { albedo: c };
+}
+
 function crackTex(stage: number) {
   const { c, ctx } = makeCanvas(16, 16);
   ctx.clearRect(0, 0, 16, 16);
@@ -1327,7 +1415,11 @@ type TileKey =
   | "endPortal"
   | "dragonEgg"
   | "purpur"
-  | "endRod";
+  | "endRod"
+  | "brewingStand"
+  | "netherWart"
+  | "endStoneBrick"
+  | "purpurPillar";
 
 const ATLAS_COLS = 8;
 const ATLAS_ROWS = 12;
@@ -1412,6 +1504,10 @@ export function createBlockAtlas(): BlockAtlas {
     dragonEgg: dragonEggTile(),
     purpur: purpurTile(),
     endRod: endRodTile(),
+    brewingStand: brewingStandTile(),
+    netherWart: netherWartTile(),
+    endStoneBrick: endStoneBrickTile(),
+    purpurPillar: purpurPillarTile(),
   };
 
   const W = ATLAS_COLS * CELL;
@@ -1529,6 +1625,10 @@ export function createBlockAtlas(): BlockAtlas {
     [BLOCK.DRAGON_EGG]: u("dragonEgg"),
     [BLOCK.PURPUR_BLOCK]: u("purpur"),
     [BLOCK.END_ROD]: u("endRod"),
+    [BLOCK.BREWING_STAND]: u("brewingStand"),
+    [BLOCK.NETHER_WART]: u("netherWart"),
+    [BLOCK.END_STONE_BRICK]: u("endStoneBrick"),
+    [BLOCK.PURPUR_PILLAR]: { top: uvByKey.purpur, bottom: uvByKey.purpur, side: uvByKey.purpurPillar },
   };
 
   const crackTextures = [crackTex(0), crackTex(1), crackTex(2)];

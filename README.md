@@ -300,6 +300,36 @@
   - Crafted from 1x Ender Pearl and 1x Blaze Powder.
   - Right-clicking in open air casts the Eye into the heavens: it floats gracefully in the direction of the nearest Stronghold, providing full survival progression!
 
+### 20. Alchemical Potion Brewing & Status Effects
+- **Brewing Stand Workstation**:
+  - Crafted with 1x Blaze Rod and 3x Cobblestone. Features authentic tripod flask brackets, center heating rod, and live bubbling progress.
+  - Right-clicking opens the interactive Brewing Stand interface with top ingredient slot, 3 potion bottle slots, and Blaze Powder fuel gauge.
+  - Gathers **Nether Wart** from natural soul sand patches in the Nether to brew the foundational **Awkward Potion**.
+- **7 Canonical Potion Concoctions**:
+  - `Potion of Swiftness` (+Sugar): Grants Speed I (+40% movement speed) for 3:00.
+  - `Potion of Strength` (+Blaze Powder): Grants Strength I (+3 melee attack damage) for 3:00.
+  - `Potion of Healing` (+Apple / Gold): Restores 8 Health hearts instantly.
+  - `Potion of Poison` (+Spider Eye): Inflicts damage over time down to 1 HP for 0:15.
+  - `Potion of Night Vision` (+Redstone Dust): Illuminates dark caverns and nocturnal skies at full brightness for 3:00.
+  - `Potion of Fire Resistance` (+Blaze/Magma): Complete immunity to blazing fire and boiling lava for 3:00!
+  - `Potion of Slow Falling` (+Feather): Floats gracefully through the air with zero fall damage for 1:30!
+- **Active HUD Status Effect Cards**:
+  - Top-right HUD displays active effect badges with color-coded borders, emoji icons, and live countdown timers.
+  - Drinking potions plays rhythmic liquid gulps followed by an energizing bell chime (`audio.potionDrink()`) and returns an empty Glass Bottle.
+
+### 21. Elytra Aerodynamics, Firework Rockets & End Cities
+- **Outer End Cities & End Ships**:
+  - Distant outer End islands naturally generate End City towers and floating End Ships at chunk (5, 5).
+  - Constructed with Purpur Blocks, carved Purpur Pillars, End Stone Bricks, and illuminated End Rods.
+  - End Ships hold treasure chests containing Elytra wings and Brewing Stands!
+- **Elytra Gliding Aerodynamics**:
+  - Equipping an **Elytra** in the chestplate slot allows deploying wings mid-air by pressing Space during a fall!
+  - Pitch-controlled flight mechanics: looking downward converts potential altitude into forward velocity up to 24 blocks/sec, while pitching up trades airspeed for vertical lift!
+  - Real-time rushing wind audio (`audio.elytraWhoosh()`) scales in pitch and amplitude with flight velocity.
+- **Firework Rocket Aerial Propulsion**:
+  - Crafted from Gunpowder and Paper.
+  - Right-clicking with a Firework Rocket while gliding triggers explosive rocket thruster bursts, propelling Steve skyward with +16 velocity boost, festive spark trails, and audio!
+
 <br/>
 
 <div align="center">
@@ -321,16 +351,18 @@ The engine includes **70+ canonical block types & functional items** generated p
 | BLOCK CATEGORY | INCLUDED BLOCK TYPES |
 | :--- | :--- |
 | **Terrain & Rock** | `Grass Block`, `Dirt`, `Stone`, `Cobblestone`, `Deepslate`, `Bedrock`, `Sand`, `Sandstone`, `Gravel` |
-| **The Nether**     | `Netherrack`, `Lava (Fluid)`, `Obsidian`, `Nether Quartz Ore`, `Soul Sand`, `Nether Portal`, `Block of Quartz` |
+| **The Nether**     | `Netherrack`, `Lava (Fluid)`, `Obsidian`, `Nether Quartz Ore`, `Soul Sand`, `Nether Portal`, `Block of Quartz`, `Nether Wart` |
+| **The End**        | `End Stone`, `End Portal Frame`, `End Portal (Void)`, `Obsidian Pillars`, `Ender Crystals`, `Dragon Egg`, `Purpur Block`, `Purpur Pillar`, `End Stone Bricks`, `End Rod` |
 | **Nature & Fluids**| `Oak Log`, `Oak Leaves`, `Cactus`, `Water (Fluid)`, `Snow`, `Ice`, `Poppy`, `Dandelion` |
-| **Building**       | `Oak Planks`, `Bricks`, `Stone Bricks`, `Glass`, `Block of Quartz`, `Bookshelf` |
+| **Building**       | `Oak Planks`, `Bricks`, `Stone Bricks`, `Glass`, `Block of Quartz`, `Bookshelf`, `End Stone Bricks`, `Purpur Blocks` |
 | **Mineral Ores**   | `Coal Ore`, `Iron Ore`, `Gold Ore`, `Diamond Ore`, `Redstone Ore`, `Nether Quartz Ore`, `Lapis Lazuli Ore`, `Emerald Ore` |
-| **Agriculture**    | `Farmland`, `Moist Farmland`, `Wheat Crops (Stages 1-4)`, `Wheat Seeds`, `Wheat`, `Bone Meal` |
+| **Agriculture**    | `Farmland`, `Moist Farmland`, `Wheat Crops (Stages 1-4)`, `Wheat Seeds`, `Wheat`, `Bone Meal`, `Nether Wart`, `Sugar` |
 | **Redstone Power** | `Redstone Wire`, `Redstone Torch`, `Lever`, `Redstone Lamp (Unlit/Lit)`, `TNT Block` |
-| **Functional & Home** | `Crafting Table`, `Furnace`, `Chest`, `Bed`, `Wooden Door`, `Ladder`, `Torch`, `Glowstone`, `Enchanting Table` |
-| **Armor & Defense**| `Iron Helmet/Chestplate/Leggings/Boots`, `Diamond Helmet/Chestplate/Leggings/Boots`, `Leather Tunic/Boots` |
-| **Weapons & Tools**| `Wooden/Stone/Iron/Diamond Swords`, `Golden Sword`, `Bow & Arrows`, `Pickaxes`, `Axes`, `Shovels`, `Wooden Hoe`, `Flint and Steel` |
-| **Food & Mob Drops**| `Apple`, `Bread`, `Raw/Cooked Porkchop`, `Steak`, `Rotten Flesh`, `Bone`, `Gunpowder`, `String`, `Feather`, `Leather`, `Wool`, `Flint`, `Quartz`, `Gold Ingot`, `Lapis Lazuli`, `Book`, `Emerald` |
+| **Functional & Home** | `Crafting Table`, `Furnace`, `Chest`, `Bed`, `Wooden Door`, `Ladder`, `Torch`, `Glowstone`, `Enchanting Table`, `Brewing Stand` |
+| **Potions & Alchemy** | `Glass Bottle`, `Water Bottle`, `Awkward Potion`, `Potion of Swiftness`, `Potion of Strength`, `Potion of Healing`, `Potion of Poison`, `Potion of Night Vision`, `Potion of Fire Resistance`, `Potion of Slow Falling` |
+| **Armor & Elytra** | `Elytra Wings`, `Defensive Shield`, `Iron Armor (Full Set)`, `Diamond Armor (Full Set)`, `Leather Armor` |
+| **Weapons & Tools**| `Wooden/Stone/Iron/Diamond Swords`, `Golden Sword`, `Bow & Arrows`, `Pickaxes`, `Axes`, `Shovels`, `Wooden Hoe`, `Flint and Steel`, `Firework Rockets`, `Eye of Ender` |
+| **Food & Mob Drops**| `Apple`, `Bread`, `Raw/Cooked Porkchop`, `Steak`, `Rotten Flesh`, `Bone`, `Gunpowder`, `String`, `Spider Eye`, `Feather`, `Leather`, `Wool`, `Flint`, `Quartz`, `Gold Ingot`, `Lapis Lazuli`, `Book`, `Emerald`, `Ender Pearl`, `Blaze Rod`, `Blaze Powder` |
 
 <br/>
 

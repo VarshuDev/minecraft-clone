@@ -45,6 +45,13 @@ export interface FurnaceData {
   cookProgress: number;
 }
 
+export interface BrewingStandData {
+  bottles: Array<{ item: ItemId; count: number } | null>;
+  ingredient: { item: ItemId; count: number } | null;
+  fuel: number;
+  brewProgress: number;
+}
+
 export interface WorldSave {
   id: string;
   name: string;
@@ -59,6 +66,7 @@ export interface WorldSave {
   endEdits?: Record<string, number>;
   chests?: Record<string, Array<{ item: ItemId; count: number } | null>>;
   furnaces?: Record<string, FurnaceData>;
+  brewingStands?: Record<string, BrewingStandData>;
   createdAt: number;
   updatedAt: number;
 }

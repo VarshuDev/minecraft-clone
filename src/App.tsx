@@ -19,6 +19,7 @@ import { CraftingModal } from "@/components/CraftingModal";
 import { ChestModal } from "@/components/ChestModal";
 import { FurnaceModal } from "@/components/FurnaceModal";
 import { EnchantingModal } from "@/components/EnchantingModal";
+import { BrewingModal } from "@/components/BrewingModal";
 import { TradingModal } from "@/components/TradingModal";
 import { type MobEntity } from "@/game/mobs";
 import { DeathScreen, PauseScreen, VictoryScreen } from "@/components/Overlays";
@@ -84,6 +85,7 @@ export default function App() {
   const [furnacePosKey, setFurnacePosKey] = useState<string | null>(null);
   const [isEnchantingOpen, setIsEnchantingOpen] = useState(false);
   const [enchantingBookshelfCount, setEnchantingBookshelfCount] = useState(0);
+  const [brewingPosKey, setBrewingPosKey] = useState<string | null>(null);
   const [tradingVillager, setTradingVillager] = useState<MobEntity | null>(null);
 
   // Chat & Command Console state
@@ -122,6 +124,7 @@ export default function App() {
       setChestPosKey(null);
       setFurnacePosKey(null);
       setIsEnchantingOpen(false);
+      setBrewingPosKey(null);
       setTradingVillager(null);
 
       // Clean up previous engine
@@ -148,6 +151,9 @@ export default function App() {
           onOpenEnchanting: (bookshelfCount) => {
             setEnchantingBookshelfCount(bookshelfCount);
             setIsEnchantingOpen(true);
+          },
+          onOpenBrewing: (posKey) => {
+            setBrewingPosKey(posKey);
           },
           onOpenTrading: (villager) => {
             setTradingVillager(villager);
@@ -324,6 +330,22 @@ export default function App() {
 
   const handleUpdateFurnace = useCallback((posKey: string, data: any) => {
     gameRef.current?.setFurnaceData(posKey, data);
+  }, []);
+
+  const handleCloseBrewing = useCallback(() => {
+    setBrewingPosKey(null);
+    if (screen === "playing") {
+      try {
+        const p = hostRef.current?.requestPointerLock() as unknown as Promise<void> | undefined;
+        if (p && typeof p.catch === "function") p.catch(() => {});
+      } catch {
+        /* ignore */
+      }
+    }
+  }, [screen]);
+
+  const handleUpdateBrewing = useCallback((posKey: string, data: any) => {
+    gameRef.current?.setBrewingData(posKey, data);
   }, []);
 
   const handleUpdatePlayerInventory = useCallback(
@@ -533,6 +555,27 @@ export default function App() {
           inventory={hud.inventory}
           onClose={handleCloseTrading}
           onTrade={handleTrade}
+        />
+      )}
+
+      {/* Brewing Stand Modal */}
+      {brewingPosKey && (
+        <BrewingModal
+          isOpen={true}
+          brewingPosKey={brewingPosKey}
+          brewingData={
+            gameRef.current?.getBrewingData(brewingPosKey) || {
+              bottles: [null, null, null],
+              ingredient: null,
+              fuel: 0,
+              brewProgress: 0,
+            }
+          }
+          inventory={hud.inventory}
+          hotbar={hud.hotbar}
+          onClose={handleCloseBrewing}
+          onUpdateBrewing={handleUpdateBrewing}
+          onUpdatePlayerInventory={handleUpdatePlayerInventory}
         />
       )}
 

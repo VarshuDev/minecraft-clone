@@ -28,6 +28,7 @@ import { PlayerCharacterModel } from "./playerModel";
 import {
   loadSettings,
   saveWorldSave,
+  type BrewingStandData,
   type FurnaceData,
   type GameSettings,
   type WorldSave,
@@ -88,6 +89,8 @@ export interface MinecraftHudState {
     maxHealth: number;
   } | null;
   isBlocking?: boolean;
+  isGliding?: boolean;
+  statusEffects?: Array<{ id: string; name: string; duration: number; icon: string; color: string }>;
 }
 
 export interface EngineCallbacks {
@@ -96,6 +99,7 @@ export interface EngineCallbacks {
   onOpenChest?: (chestPosKey: string) => void;
   onOpenFurnace?: (furnacePosKey: string) => void;
   onOpenEnchanting?: (bookshelfCount: number) => void;
+  onOpenBrewing?: (brewingPosKey: string) => void;
   onOpenTrading?: (villager: MobEntity) => void;
   onOpenChat?: (initialText?: string) => void;
   onChatMessage?: (msg: { id: string; text: string; type: "chat" | "system" | "command" | "error" }) => void;
@@ -193,6 +197,9 @@ export class GameEngine {
 
   mobManager: MobManager;
   hungerTimer = 0;
+  statusEffects: Map<string, { duration: number; level: number; icon: string; name: string; color: string }> = new Map();
+  poisonTimer = 0;
+  isGliding = false;
 
   // Weather System
   weather: "clear" | "rain" | "thunder" = "clear";
@@ -334,6 +341,7 @@ export class GameEngine {
     this.weather = save.weather ?? "clear";
     if (!this.save.chests) this.save.chests = {};
     if (!this.save.furnaces) this.save.furnaces = {};
+    if (!this.save.brewingStands) this.save.brewingStands = {};
 
     // Initial position: find safe spawn if empty
     if (save.player?.pos && (save.player.pos[0] !== 0.5 || save.player.pos[2] !== 0.5)) {
@@ -571,6 +579,7 @@ export class GameEngine {
       let amb = 0.18 + dayFactor * 0.42;
       if (this.weather === "thunder") amb *= 0.55;
       else if (this.weather === "rain") amb *= 0.75;
+      if (this.statusEffects.has("night_vision")) amb = Math.max(amb, 0.95);
       this.ambientLight.intensity = amb;
     }
 
@@ -924,6 +933,128 @@ export class GameEngine {
   setFurnaceData(posKey: string, data: FurnaceData) {
     if (!this.save.furnaces) this.save.furnaces = {};
     this.save.furnaces[posKey] = data;
+  }
+
+  getBrewingData(posKey: string): BrewingStandData {
+    if (!this.save.brewingStands) this.save.brewingStands = {};
+    if (!this.save.brewingStands[posKey]) {
+      this.save.brewingStands[posKey] = {
+        bottles: [null, null, null],
+        ingredient: null,
+        fuel: 0,
+        brewProgress: 0,
+      };
+    }
+    return this.save.brewingStands[posKey];
+  }
+
+  setBrewingData(posKey: string, data: BrewingStandData) {
+    if (!this.save.brewingStands) this.save.brewingStands = {};
+    this.save.brewingStands[posKey] = data;
+  }
+
+  private updateBrewingStands(dt: number) {
+    if (!this.save.brewingStands) return;
+    for (const [posKey, stand] of Object.entries(this.save.brewingStands)) {
+      if (!stand) continue;
+      if (!stand.ingredient || stand.ingredient.count <= 0) {
+        stand.brewProgress = 0;
+        continue;
+      }
+      const hasBottles = stand.bottles.some((b) => b !== null && b.count > 0);
+      if (!hasBottles) {
+        stand.brewProgress = 0;
+        continue;
+      }
+      const ing = stand.ingredient.item;
+      let targetPotion: ItemId | null = null;
+      if (ing === "nether_wart") targetPotion = "potion_awkward";
+      else if (ing === "sugar") targetPotion = "potion_speed";
+      else if (ing === "blaze_powder") targetPotion = "potion_strength";
+      else if (ing === "spider_eye") targetPotion = "potion_poison";
+      else if (ing === "apple") targetPotion = "potion_healing";
+      else if (ing === "redstone_dust") targetPotion = "potion_night_vision";
+      else if (ing === "feather") targetPotion = "potion_slow_falling";
+
+      if (!targetPotion) {
+        stand.brewProgress = 0;
+        continue;
+      }
+
+      const canTransform = stand.bottles.some((b) => {
+        if (!b) return false;
+        if (ing === "nether_wart" && b.item === "potion_water") return true;
+        if (ing !== "nether_wart" && (b.item === "potion_awkward" || b.item === "potion_water")) return true;
+        return false;
+      });
+
+      if (!canTransform) {
+        stand.brewProgress = 0;
+        continue;
+      }
+
+      stand.brewProgress += dt * 0.25; // 4 seconds brewing cycle
+      if (stand.brewProgress >= 1.0) {
+        stand.brewProgress = 0;
+        stand.bottles = stand.bottles.map((b) => {
+          if (!b) return null;
+          if (ing === "nether_wart" && b.item === "potion_water") {
+            return { item: targetPotion!, count: 1 };
+          }
+          if (ing !== "nether_wart" && (b.item === "potion_awkward" || b.item === "potion_water")) {
+            return { item: targetPotion!, count: 1 };
+          }
+          return b;
+        });
+        stand.ingredient.count -= 1;
+        if (stand.ingredient.count <= 0) {
+          stand.ingredient = null;
+        }
+        this.audio.potionBrew();
+      }
+    }
+  }
+
+  drinkPotion(potionItem: ItemId) {
+    this.audio.potionDrink();
+    if (this.save.gameMode === "survival") {
+      this.consumeHeldItem(1);
+      this.addToInventory("glass_bottle", 1);
+    }
+    switch (potionItem) {
+      case "potion_speed":
+        this.statusEffects.set("speed", { duration: 180, level: 1, icon: "⚡", name: "Swiftness", color: "#67e8f9" });
+        this.callbacks.onNotification?.("Applied Speed I (3:00)!");
+        break;
+      case "potion_strength":
+        this.statusEffects.set("strength", { duration: 180, level: 1, icon: "⚔️", name: "Strength", color: "#f43f5e" });
+        this.callbacks.onNotification?.("Applied Strength I (3:00)!");
+        break;
+      case "potion_healing":
+        this.player.health = Math.min(this.player.maxHealth, this.player.health + 8);
+        this.callbacks.onNotification?.("Restored 8 Health!");
+        break;
+      case "potion_poison":
+        this.statusEffects.set("poison", { duration: 15, level: 1, icon: "☠️", name: "Poison", color: "#4ade80" });
+        this.callbacks.onNotification?.("Inflicted with Poison (0:15)!");
+        break;
+      case "potion_night_vision":
+        this.statusEffects.set("night_vision", { duration: 180, level: 1, icon: "👁️", name: "Night Vision", color: "#3b82f6" });
+        this.callbacks.onNotification?.("Applied Night Vision (3:00)!");
+        break;
+      case "potion_fire_resistance":
+        this.statusEffects.set("fire_resistance", { duration: 180, level: 1, icon: "🔥", name: "Fire Resistance", color: "#f97316" });
+        this.callbacks.onNotification?.("Applied Fire Resistance (3:00)!");
+        break;
+      case "potion_slow_falling":
+        this.statusEffects.set("slow_falling", { duration: 90, level: 1, icon: "🪶", name: "Slow Falling", color: "#fbcfe8" });
+        this.callbacks.onNotification?.("Applied Slow Falling (1:30)!");
+        break;
+      case "potion_water":
+        this.statusEffects.delete("poison");
+        this.callbacks.onNotification?.("Refreshed with pure water!");
+        break;
+    }
   }
 
   private updateFurnaces(dt: number) {
@@ -2142,6 +2273,38 @@ export class GameEngine {
       }
     }
 
+    // 2.2) Potion Drinking
+    if (held?.item && held.item.startsWith("potion_")) {
+      this.drinkPotion(held.item);
+      this.swingAnim = 0.55;
+      return;
+    }
+
+    // 2.3) Water Bottle filling
+    if (held?.item === "glass_bottle" && this.targetBlock && this.targetBlock.block === BLOCK.WATER) {
+      if (this.save.gameMode === "survival") {
+        this.consumeHeldItem(1);
+        this.addToInventory("potion_water", 1);
+      }
+      this.audio.splash();
+      this.callbacks.onNotification?.("Filled Water Bottle!");
+      this.swingAnim = 0.5;
+      return;
+    }
+
+    // 2.4) Firework Rocket Boost while gliding
+    if (held?.item === "firework_rocket" && this.isGliding) {
+      if (this.save.gameMode === "survival") {
+        this.consumeHeldItem(1);
+      }
+      const rayDir = new THREE.Vector3(0, 0, -1).applyQuaternion(this.camera.quaternion).normalize();
+      this.player.vel.addScaledVector(rayDir, 16);
+      this.audio.fireworkLaunch();
+      this.spawnBlockShards(this.player.pos.x, this.player.pos.y, this.player.pos.z, ["#ef4444", "#3b82f6", "#eab308", "#10b981"], 24);
+      this.swingAnim = 0.5;
+      return;
+    }
+
     // 2.5) Armor Equipping from hotbar
     if (heldDef?.armor) {
       if (this.equipArmor(heldDef.id)) {
@@ -2219,6 +2382,13 @@ export class GameEngine {
       bookshelfCount = Math.min(15, bookshelfCount);
       this.audio.spellBookOpen();
       this.callbacks.onOpenEnchanting?.(bookshelfCount);
+      return;
+    }
+
+    // 5.6) Brewing Stand check: opens Brewing modal
+    if (block === BLOCK.BREWING_STAND) {
+      if (this.isPointerLocked) document.exitPointerLock();
+      this.callbacks.onOpenBrewing?.(`${x},${y},${z}`);
       return;
     }
 
@@ -2792,8 +2962,19 @@ export class GameEngine {
   handleVictory() {
     this.isVictory = true;
     if (this.isPointerLocked) document.exitPointerLock();
+    const chestKey = "0,35,0";
+    if (!this.save.chests) this.save.chests = {};
+    this.save.chests[chestKey] = [
+      { item: "elytra", count: 1 },
+      { item: "firework_rocket", count: 64 },
+      { item: "dragon_egg", count: 1 },
+      { item: "diamond", count: 16 },
+      null, null, null, null, null,
+    ];
+    this.world.setBlock(0, 35, 0, BLOCK.CHEST);
+    this.markBlockDirty(0, 35, 0);
     this.callbacks.onVictory?.();
-    this.callbacks.onNotification?.("Victory! You have slain the Ender Dragon!");
+    this.callbacks.onNotification?.("Victory! You have slain the Ender Dragon! Elytra unlocked!");
   }
 
   spawnSparkleParticles(x: number, y: number, z: number) {
@@ -3168,7 +3349,7 @@ export class GameEngine {
     // Check Lava Status
     const inLava = feetBlock === BLOCK.LAVA || headBlock === BLOCK.LAVA;
     if (inLava) {
-      if (this.save.gameMode === "survival") {
+      if (this.save.gameMode === "survival" && !this.statusEffects.has("fire_resistance")) {
         this.lavaDamageTimer += dt;
         if (this.lavaDamageTimer >= 0.55) {
           this.lavaDamageTimer = 0;
@@ -3195,11 +3376,38 @@ export class GameEngine {
       return;
     }
 
+    // Elytra Gliding Toggle & Mechanics
+    const hasElytra = this.player.armor.chest === "elytra" || this.hasItem("elytra");
+    if (hasElytra && !p.onGround && !p.inWater && !inLava && !p.flying) {
+      if (this.keys["Space"] && !this.isGliding && p.vel.y < -0.5) {
+        this.isGliding = true;
+        this.callbacks.onNotification?.("Gliding with Elytra!");
+      }
+    }
+    if (p.onGround || p.inWater || inLava || p.flying) {
+      this.isGliding = false;
+    }
+
+    if (this.isGliding) {
+      p.fallDistance = 0;
+      const lookDir = new THREE.Vector3(0, 0, -1).applyQuaternion(this.camera.quaternion).normalize();
+      const curSpeed = p.vel.length();
+      const targetSpeed = THREE.MathUtils.clamp(curSpeed - lookDir.y * 12.0 * dt, 6.0, 24.0);
+      p.vel.copy(lookDir.clone().multiplyScalar(targetSpeed));
+      p.vel.y = Math.max(-14, p.vel.y - 1.5 * dt);
+      if (Math.random() < 0.08) {
+        this.audio.elytraWhoosh(targetSpeed / 24);
+      }
+      this.moveWithCollision(dt);
+      return;
+    }
+
     // Walking / Sprinting Speeds
     if (p.hunger <= 6) {
       p.sprinting = false;
     }
     let baseSpeed = p.inWater ? 2.8 : inLava ? 1.8 : onSoulSand ? 2.2 : p.sprinting ? 6.8 : 4.4;
+    if (this.statusEffects.has("speed")) baseSpeed *= 1.4;
     if (this.isShieldBlocking) baseSpeed *= 0.65;
     const accel = p.onGround ? 28 : p.inWater ? 12 : 7;
     const targetVelX = moveDir.x * baseSpeed;
@@ -3250,6 +3458,12 @@ export class GameEngine {
       const gravity = -24.0;
       p.vel.y += gravity * dt;
 
+      // Slow Falling effect
+      if (this.statusEffects.has("slow_falling") && p.vel.y < -2.2) {
+        p.vel.y = -2.2;
+        p.fallDistance = 0;
+      }
+
       // Jump
       if (this.keys["Space"] && p.onGround) {
         p.vel.y = 8.4;
@@ -3258,7 +3472,7 @@ export class GameEngine {
       }
 
       // Fall Distance Tracking
-      if (p.vel.y < 0) {
+      if (p.vel.y < 0 && !this.statusEffects.has("slow_falling")) {
         p.fallDistance += -p.vel.y * dt;
       }
     }
@@ -3714,8 +3928,31 @@ export class GameEngine {
       this.updateWeather(dt);
       this.updateXpOrbs(dt);
       this.updateFurnaces(dt);
+      this.updateBrewingStands(dt);
       this.updateCrops(dt);
       this.updateEnchantingTables(dt, now);
+
+      // Status effects tick
+      if (this.statusEffects.size > 0) {
+        for (const [key, effect] of this.statusEffects.entries()) {
+          effect.duration -= dt;
+          if (effect.duration <= 0) {
+            this.statusEffects.delete(key);
+            this.callbacks.onNotification?.(`Effect ${effect.name} wore off.`);
+          }
+        }
+        if (this.statusEffects.has("poison") && this.save.gameMode === "survival") {
+          this.poisonTimer += dt;
+          if (this.poisonTimer >= 2.0) {
+            this.poisonTimer = 0;
+            if (this.player.health > 1) {
+              this.player.health = Math.max(1, this.player.health - 1);
+              this.audio.hurt();
+              this.hurtFlash = true;
+            }
+          }
+        }
+      }
 
       // 11) Procedural Ambient Music Update
       this.audio.updateAmbient(dt);
@@ -3824,6 +4061,14 @@ export class GameEngine {
       hurtFlash: this.hurtFlash,
       boss,
       isBlocking: this.isShieldBlocking,
+      isGliding: this.isGliding,
+      statusEffects: Array.from(this.statusEffects.entries()).map(([id, eff]) => ({
+        id,
+        name: eff.name,
+        duration: Math.ceil(eff.duration),
+        icon: eff.icon,
+        color: eff.color,
+      })),
     });
   }
 

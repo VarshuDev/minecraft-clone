@@ -304,6 +304,12 @@ export class InfiniteWorld {
               // Solid nether terrain
               if (soulSandPatch && y >= 11 && y <= 16) {
                 b = BLOCK.SOUL_SAND;
+                if (hashCoords(wx, y + 1, wz, this.seed + 515) < 0.28) {
+                  const aboveIdx = localIdx(lx, y + 1, lz);
+                  if (data[aboveIdx] === BLOCK.AIR) {
+                    data[aboveIdx] = BLOCK.NETHER_WART;
+                  }
+                }
               } else if (hashCoords(wx, y, wz, this.seed + 313) < 0.035 && y <= 25) {
                 b = BLOCK.GRAVEL;
               } else if (y >= 10 && y <= 58 && hashCoords(wx, y, wz, this.seed + 414) < 0.038) {
@@ -454,6 +460,11 @@ export class InfiniteWorld {
           setB(lx, 35, lz, BLOCK.AIR);
         }
       }
+    }
+
+    // 5) Outer End City & Floating End Ship at chunk (5, 5)
+    if (cx === 5 && cz === 5) {
+      this.buildEndCityChunk(data, baseX, baseZ);
     }
 
     // Re-apply any saved player edits in this chunk
@@ -733,6 +744,63 @@ export class InfiniteWorld {
       const hasEye = idx === 1 || idx === 7;
       setB(fx, fy, fz, hasEye ? BLOCK.END_PORTAL_FRAME_EYE : BLOCK.END_PORTAL_FRAME);
     });
+  }
+
+  private buildEndCityChunk(data: Uint8Array, baseX: number, baseZ: number) {
+    const setB = (lx: number, y: number, lz: number, b: BlockNum) => {
+      if (lx >= 0 && lx < CHUNK_SIZE && lz >= 0 && lz < CHUNK_SIZE && y >= 0 && y < WORLD_HEIGHT) {
+        data[localIdx(lx, y, lz)] = b;
+      }
+    };
+
+    // Island foundation
+    for (let lx = 1; lx < 15; lx++) {
+      for (let lz = 1; lz < 15; lz++) {
+        for (let y = 30; y <= 35; y++) {
+          setB(lx, y, lz, BLOCK.END_STONE);
+        }
+      }
+    }
+
+    // End City Main Tower (Purpur Blocks, Purpur Pillars, End Stone Bricks)
+    for (let y = 36; y <= 50; y++) {
+      for (let dx = 4; dx <= 11; dx++) {
+        for (let dz = 4; dz <= 11; dz++) {
+          const isWall = dx === 4 || dx === 11 || dz === 4 || dz === 11;
+          const isCorner = (dx === 4 || dx === 11) && (dz === 4 || dz === 11);
+          if (isCorner) {
+            setB(dx, y, dz, BLOCK.PURPUR_PILLAR);
+          } else if (isWall) {
+            setB(dx, y, dz, y % 4 === 0 ? BLOCK.END_STONE_BRICK : BLOCK.PURPUR_BLOCK);
+          } else if (y === 36 || y === 43 || y === 50) {
+            setB(dx, y, dz, BLOCK.END_STONE_BRICK);
+          }
+        }
+      }
+    }
+
+    // Windows & End Rods
+    setB(7, 40, 4, BLOCK.END_ROD);
+    setB(8, 40, 4, BLOCK.END_ROD);
+    setB(7, 47, 11, BLOCK.END_ROD);
+    setB(8, 47, 11, BLOCK.END_ROD);
+    setB(4, 40, 7, BLOCK.END_ROD);
+    setB(11, 40, 7, BLOCK.END_ROD);
+
+    // End Ship floating beside tower at X=10..15, Y=44..48
+    for (let sy = 44; sy <= 47; sy++) {
+      for (let sx = 10; sx < 16; sx++) {
+        for (let sz = 1; sz < 6; sz++) {
+          setB(sx, sy, sz, BLOCK.PURPUR_BLOCK);
+        }
+      }
+    }
+    // End Ship bow & mast with glowing End Rods & chest & brewing stand
+    setB(13, 48, 3, BLOCK.END_ROD);
+    setB(13, 49, 3, BLOCK.END_ROD);
+    setB(13, 50, 3, BLOCK.END_ROD);
+    setB(11, 48, 3, BLOCK.CHEST);
+    setB(12, 48, 3, BLOCK.BREWING_STAND);
   }
 
   findSpawn(): { x: number; y: number; z: number } {

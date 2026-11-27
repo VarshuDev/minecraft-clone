@@ -64,6 +64,10 @@ export const BLOCK = {
   DRAGON_EGG: 62,
   PURPUR_BLOCK: 63,
   END_ROD: 64,
+  BREWING_STAND: 65,
+  NETHER_WART: 66,
+  END_STONE_BRICK: 67,
+  PURPUR_PILLAR: 68,
 } as const;
 
 export type BlockNum = (typeof BLOCK)[keyof typeof BLOCK];
@@ -248,7 +252,26 @@ export type ItemId =
   | "blaze_rod"
   | "blaze_powder"
   | "eye_of_ender"
-  | "shield";
+  | "shield"
+  | "block_brewing_stand"
+  | "block_nether_wart"
+  | "block_end_stone_brick"
+  | "block_purpur_pillar"
+  | "glass_bottle"
+  | "potion_water"
+  | "potion_awkward"
+  | "potion_speed"
+  | "potion_strength"
+  | "potion_healing"
+  | "potion_poison"
+  | "potion_night_vision"
+  | "potion_fire_resistance"
+  | "potion_slow_falling"
+  | "nether_wart"
+  | "sugar"
+  | "paper"
+  | "firework_rocket"
+  | "elytra";
 
 export type ToolKind = "pickaxe" | "axe" | "shovel" | "sword" | "hoe" | "bow";
 export type ArmorSlot = "head" | "chest" | "legs" | "feet";
@@ -256,7 +279,7 @@ export type ArmorSlot = "head" | "chest" | "legs" | "feet";
 export interface ArmorDef {
   slot: ArmorSlot;
   defense: number; // In half-shields (e.g. 2 = 1 full shield)
-  material: "leather" | "iron" | "diamond";
+  material: "leather" | "iron" | "diamond" | "elytra";
 }
 
 export interface BlockDef {
@@ -1071,6 +1094,54 @@ export const BLOCK_DEFS: Record<BlockNum, BlockDef> = {
     sound: "glass",
     colors: { top: "#ffffff", left: "#e0e7ff", right: "#cbd5e1" },
   },
+  [BLOCK.BREWING_STAND]: {
+    id: BLOCK.BREWING_STAND,
+    name: "Brewing Stand",
+    hardness: 0.8,
+    preferredTool: "pickaxe",
+    drop: "block_brewing_stand",
+    shards: ["#78716c", "#f59e0b", "#d97706"],
+    solid: true,
+    transparent: true,
+    sound: "stone",
+    colors: { top: "#78716c", left: "#57534e", right: "#44403c" },
+  },
+  [BLOCK.NETHER_WART]: {
+    id: BLOCK.NETHER_WART,
+    name: "Nether Wart",
+    hardness: 0.2,
+    drop: "nether_wart",
+    shards: ["#881337", "#9f1239", "#4c0519"],
+    solid: false,
+    transparent: true,
+    isFlower: true,
+    sound: "grass",
+    colors: { top: "#881337", left: "#9f1239", right: "#4c0519" },
+  },
+  [BLOCK.END_STONE_BRICK]: {
+    id: BLOCK.END_STONE_BRICK,
+    name: "End Stone Bricks",
+    hardness: 3.0,
+    preferredTool: "pickaxe",
+    drop: "block_end_stone_brick",
+    shards: ["#dfdf9f", "#e6e6b8", "#c8c880"],
+    solid: true,
+    transparent: false,
+    sound: "stone",
+    colors: { top: "#dfdf9f", left: "#c8c880", right: "#b8b870" },
+  },
+  [BLOCK.PURPUR_PILLAR]: {
+    id: BLOCK.PURPUR_PILLAR,
+    name: "Purpur Pillar",
+    hardness: 1.5,
+    preferredTool: "pickaxe",
+    drop: "block_purpur_pillar",
+    shards: ["#a878a8", "#8b578b", "#c293c2"],
+    solid: true,
+    transparent: false,
+    sound: "stone",
+    colors: { top: "#b285b2", left: "#966196", right: "#704270" },
+  },
 };
 
 export interface FoodDef {
@@ -1606,6 +1677,148 @@ export const ITEMS: Record<ItemId, ItemDef> = {
     category: "tool",
     defense: 4,
   },
+  block_brewing_stand: {
+    id: "block_brewing_stand",
+    name: "Brewing Stand",
+    short: "BREW",
+    blockId: BLOCK.BREWING_STAND,
+    color: "#f59e0b",
+    category: "block",
+  },
+  block_nether_wart: {
+    id: "block_nether_wart",
+    name: "Nether Wart",
+    short: "WART",
+    blockId: BLOCK.NETHER_WART,
+    color: "#881337",
+    category: "block",
+  },
+  block_end_stone_brick: {
+    id: "block_end_stone_brick",
+    name: "End Stone Bricks",
+    short: "E.BRICK",
+    blockId: BLOCK.END_STONE_BRICK,
+    color: "#dedea0",
+    category: "block",
+  },
+  block_purpur_pillar: {
+    id: "block_purpur_pillar",
+    name: "Purpur Pillar",
+    short: "P.PILLAR",
+    blockId: BLOCK.PURPUR_PILLAR,
+    color: "#966196",
+    category: "block",
+  },
+  nether_wart: {
+    id: "nether_wart",
+    name: "Nether Wart",
+    short: "WART",
+    color: "#881337",
+    category: "material",
+  },
+  glass_bottle: {
+    id: "glass_bottle",
+    name: "Glass Bottle",
+    short: "BOTTLE",
+    color: "#cbd5e1",
+    category: "material",
+  },
+  potion_water: {
+    id: "potion_water",
+    name: "Water Bottle",
+    short: "H2O",
+    color: "#38bdf8",
+    category: "tool",
+  },
+  potion_awkward: {
+    id: "potion_awkward",
+    name: "Awkward Potion",
+    short: "AWKWARD",
+    color: "#818cf8",
+    category: "tool",
+  },
+  potion_speed: {
+    id: "potion_speed",
+    name: "Potion of Swiftness",
+    short: "SPEED",
+    color: "#67e8f9",
+    category: "tool",
+  },
+  potion_strength: {
+    id: "potion_strength",
+    name: "Potion of Strength",
+    short: "STR",
+    color: "#f43f5e",
+    category: "tool",
+  },
+  potion_healing: {
+    id: "potion_healing",
+    name: "Potion of Healing",
+    short: "HEAL",
+    color: "#fb7185",
+    category: "tool",
+  },
+  potion_poison: {
+    id: "potion_poison",
+    name: "Potion of Poison",
+    short: "POISON",
+    color: "#4ade80",
+    category: "tool",
+  },
+  potion_night_vision: {
+    id: "potion_night_vision",
+    name: "Potion of Night Vision",
+    short: "VISION",
+    color: "#3b82f6",
+    category: "tool",
+  },
+  potion_fire_resistance: {
+    id: "potion_fire_resistance",
+    name: "Potion of Fire Resistance",
+    short: "FIRE.R",
+    color: "#f97316",
+    category: "tool",
+  },
+  potion_slow_falling: {
+    id: "potion_slow_falling",
+    name: "Potion of Slow Falling",
+    short: "SLOW.F",
+    color: "#fbcfe8",
+    category: "tool",
+  },
+  sugar: {
+    id: "sugar",
+    name: "Sugar",
+    short: "SUGAR",
+    color: "#f8fafc",
+    category: "material",
+  },
+  paper: {
+    id: "paper",
+    name: "Paper",
+    short: "PAPER",
+    color: "#f1f5f9",
+    category: "material",
+  },
+  firework_rocket: {
+    id: "firework_rocket",
+    name: "Firework Rocket",
+    short: "ROCKET",
+    color: "#ef4444",
+    category: "tool",
+  },
+  elytra: {
+    id: "elytra",
+    name: "Elytra",
+    short: "ELYTRA",
+    color: "#64748b",
+    category: "armor",
+    armor: {
+      slot: "chest",
+      defense: 0,
+      material: "elytra",
+    },
+  },
 };
 
 export interface Recipe {
@@ -1673,6 +1886,13 @@ export const RECIPES: Recipe[] = [
   { id: "shield", out: "shield", count: 1, inputs: [{ item: "block_planks", count: 6 }, { item: "iron_ingot", count: 1 }], note: "Right-click to block damage" },
   { id: "purpur_block", out: "block_purpur", count: 4, inputs: [{ item: "block_end_stone", count: 4 }], note: "End city architecture" },
   { id: "end_rod", out: "block_end_rod", count: 4, inputs: [{ item: "blaze_rod", count: 1 }, { item: "quartz", count: 1 }], note: "Glowing End rod light" },
+  { id: "brewing_stand", out: "block_brewing_stand", count: 1, inputs: [{ item: "blaze_rod", count: 1 }, { item: "block_cobble", count: 3 }], note: "Alchemical potion brewing" },
+  { id: "glass_bottle", out: "glass_bottle", count: 3, inputs: [{ item: "block_glass", count: 3 }], note: "Holds liquid potions" },
+  { id: "sugar", out: "sugar", count: 1, inputs: [{ item: "seeds", count: 2 }], note: "Potion ingredient & sweetener" },
+  { id: "paper", out: "paper", count: 3, inputs: [{ item: "wheat", count: 3 }], note: "Crafting material" },
+  { id: "firework_rocket", out: "firework_rocket", count: 3, inputs: [{ item: "gunpowder", count: 1 }, { item: "paper", count: 1 }], note: "Elytra aerial flight boost" },
+  { id: "end_stone_bricks", out: "block_end_stone_brick", count: 4, inputs: [{ item: "block_end_stone", count: 4 }], note: "End castle stonework" },
+  { id: "purpur_pillar", out: "block_purpur_pillar", count: 2, inputs: [{ item: "block_purpur", count: 2 }], note: "Carved End city pillar" },
 ];
 
 export interface SmeltingRecipe {
@@ -1787,6 +2007,25 @@ export const CREATIVE_CATALOG: ItemId[] = [
   "blaze_powder",
   "eye_of_ender",
   "shield",
+  "block_brewing_stand",
+  "block_nether_wart",
+  "block_end_stone_brick",
+  "block_purpur_pillar",
+  "glass_bottle",
+  "potion_water",
+  "potion_awkward",
+  "potion_speed",
+  "potion_strength",
+  "potion_healing",
+  "potion_poison",
+  "potion_night_vision",
+  "potion_fire_resistance",
+  "potion_slow_falling",
+  "nether_wart",
+  "sugar",
+  "paper",
+  "firework_rocket",
+  "elytra",
 ];
 
 export const DEFAULT_CREATIVE_HOTBAR: ItemId[] = [

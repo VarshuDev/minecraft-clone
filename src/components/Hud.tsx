@@ -238,6 +238,40 @@ export function Hud({
         </div>
       )}
 
+      {/* Elytra Gliding Indicator */}
+      {hud.isGliding && (
+        <div className="pointer-events-none absolute bottom-28 left-1/2 -translate-x-1/2 flex items-center gap-2 rounded border border-cyan-400 bg-black/80 px-3 py-1 shadow-lg animate-pulse">
+          <span className="text-sm">🪶</span>
+          <span className="text-[10px] font-bold tracking-wider text-cyan-300">GLIDING</span>
+        </div>
+      )}
+
+      {/* Active Potion Status Effects */}
+      {hud.statusEffects && hud.statusEffects.length > 0 && (
+        <div className="pointer-events-none absolute top-14 right-3 flex flex-col items-end gap-1.5 z-20">
+          {hud.statusEffects.map((eff) => {
+            const mins = Math.floor(eff.duration / 60);
+            const secs = eff.duration % 60;
+            const timeStr = `${mins}:${secs < 10 ? "0" : ""}${secs}`;
+            return (
+              <div
+                key={eff.id}
+                className="flex items-center gap-1.5 rounded-sm border border-black/80 bg-black/75 px-2.5 py-1 shadow-md backdrop-blur-xs transition-all"
+                style={{ borderColor: `${eff.color}88` }}
+              >
+                <span className="text-xs">{eff.icon}</span>
+                <span className="text-[10px] font-bold tracking-wide" style={{ color: eff.color }}>
+                  {eff.name}
+                </span>
+                <span className="text-[9px] text-gray-300 font-mono">
+                  {timeStr}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
       {/* F3 Debug Overlay */}
       {hud.isF3Open && (
         <div className="absolute inset-x-3 top-14 flex justify-between text-[10px] leading-relaxed tracking-wide text-white drop-shadow-[0_1px_2px_rgba(0,0,0,1)]">
