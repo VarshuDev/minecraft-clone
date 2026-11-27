@@ -127,3 +127,61 @@ export function DeathScreen({
     </div>
   );
 }
+
+export function VictoryScreen({
+  onContinue,
+  onTitle,
+}: {
+  onContinue: () => void;
+  onTitle: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 font-pixel text-white backdrop-blur-md">
+      <div className="w-full max-w-md rounded border-2 border-purple-500/80 bg-gradient-to-b from-[#18092b] to-[#0c0517] p-6 text-center shadow-[0_0_50px_rgba(168,85,247,0.4)]">
+        <div className="mb-2 text-3xl animate-bounce">🏆</div>
+        <h2 className="mb-1 text-2xl sm:text-3xl font-extrabold tracking-[0.16em] text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-fuchsia-300 to-purple-300 drop-shadow-[0_2px_8px_rgba(0,0,0,1)]">
+          VICTORY ACHIEVED!
+        </h2>
+        <p className="mb-4 text-xs font-semibold text-fuchsia-200/90 tracking-wide">
+          You have conquered The End and slain the Ender Dragon!
+        </p>
+
+        {/* End Poem Box */}
+        <div className="mb-5 rounded border border-purple-500/30 bg-black/60 p-3 text-left text-[9px] leading-relaxed text-purple-200/80 space-y-2">
+          <p className="italic">
+            &ldquo;And the universe said I love you because you are love. And the game was over and the player woke up from the dream. And the player began a new dream. And the player was you.&rdquo;
+          </p>
+          <div className="border-t border-purple-500/20 pt-2 flex flex-wrap gap-2 justify-center">
+            <span className="rounded bg-purple-900/60 px-2 py-0.5 text-[8px] text-fuchsia-300 border border-purple-400/40">
+              🐉 Free the End
+            </span>
+            <span className="rounded bg-purple-900/60 px-2 py-0.5 text-[8px] text-amber-300 border border-amber-400/40">
+              🥚 The Dragon Egg
+            </span>
+            <span className="rounded bg-purple-900/60 px-2 py-0.5 text-[8px] text-emerald-300 border border-emerald-400/40">
+              🌌 End Portal Master
+            </span>
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="space-y-2.5">
+          <button
+            type="button"
+            onClick={onContinue}
+            className="w-full rounded border-2 border-fuchsia-400 bg-gradient-to-r from-purple-600 to-fuchsia-600 py-3 text-[11px] font-bold tracking-wider text-white shadow-[0_4px_16px_rgba(192,132,252,0.5)] hover:from-purple-500 hover:to-fuchsia-500 cursor-pointer"
+          >
+            RETURN TO OVERWORLD &amp; CONTINUE
+          </button>
+          <button
+            type="button"
+            onClick={onTitle}
+            className="w-full rounded border border-white/20 bg-black/60 py-2.5 text-[10px] tracking-wider text-white/80 hover:bg-black/80 hover:text-white cursor-pointer"
+          >
+            SAVE &amp; TITLE SCREEN
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

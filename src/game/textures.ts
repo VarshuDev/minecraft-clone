@@ -1017,6 +1017,173 @@ function emeraldOreTile(): TilePair {
   return { albedo: c };
 }
 
+function endStoneTile(): TilePair {
+  const { c, ctx } = makeCanvas();
+  noiseFill(ctx, ["#eae8be", "#dfdc9f", "#d5d290", "#c8c580", "#dedbad"], 851);
+  const r = rng(852);
+  for (let i = 0; i < 18; i++) {
+    const x = Math.floor(r() * 15);
+    const y = Math.floor(r() * 15);
+    px(ctx, x, y, r() > 0.5 ? "#b8b575" : "#a9a668", 1, 1);
+  }
+  shadeEdge(ctx);
+  return { albedo: c };
+}
+
+function endPortalFrameTopTile(hasEye: boolean): TilePair {
+  const { c, ctx } = makeCanvas();
+  const em = makeCanvas();
+  // Frame border
+  noiseFill(ctx, ["#1e3d36", "#254e44", "#2c5b4d", "#3b7262"], 861);
+  // Outer beveled ring
+  for (let i = 0; i < 16; i++) {
+    px(ctx, i, 0, "#4e8574");
+    px(ctx, 0, i, "#4e8574");
+    px(ctx, i, 15, "#152d27");
+    px(ctx, 15, i, "#152d27");
+  }
+  // Inner socket
+  for (let y = 3; y <= 12; y++) {
+    for (let x = 3; x <= 12; x++) {
+      px(ctx, x, y, "#122622");
+    }
+  }
+  if (hasEye) {
+    // Eye of Ender in center
+    for (let y = 5; y <= 10; y++) {
+      for (let x = 5; x <= 10; x++) {
+        px(ctx, x, y, "#059669");
+        px(em.ctx, x, y, "#059669");
+      }
+    }
+    px(ctx, 6, 6, "#10b981", 4, 4);
+    px(em.ctx, 6, 6, "#10b981", 4, 4);
+    // Dark slit pupil
+    px(ctx, 7, 6, "#022c22", 2, 4);
+    px(em.ctx, 7, 6, "#022c22", 2, 4);
+    // Reflection
+    px(ctx, 6, 6, "#a7f3d0", 1, 1);
+    px(em.ctx, 6, 6, "#a7f3d0", 1, 1);
+  } else {
+    // Subtle dark circular depression
+    px(ctx, 6, 6, "#081311", 4, 4);
+    px(ctx, 7, 7, "#040a09", 2, 2);
+  }
+  return { albedo: c, emissive: hasEye ? em.c : undefined };
+}
+
+function endPortalFrameSideTile(): TilePair {
+  const { c, ctx } = makeCanvas();
+  // Top ornate band
+  noiseFill(ctx, ["#1e3d36", "#254e44", "#2c5b4d", "#3b7262"], 871);
+  // Bottom end stone base
+  for (let y = 6; y < 16; y++) {
+    for (let x = 0; x < 16; x++) {
+      const isAlt = (x * 7 + y * 13) % 4 === 0;
+      px(ctx, x, y, isAlt ? "#d5d290" : "#dfdc9f");
+    }
+  }
+  // Metallic band divider
+  px(ctx, 0, 5, "#4e8574", 16, 1);
+  px(ctx, 0, 6, "#152d27", 16, 1);
+  shadeEdge(ctx);
+  return { albedo: c };
+}
+
+function endPortalTile(): TilePair {
+  const { c, ctx } = makeCanvas();
+  const em = makeCanvas();
+  ctx.fillStyle = "#020617";
+  ctx.fillRect(0, 0, 16, 16);
+  em.ctx.fillStyle = "#020617";
+  em.ctx.fillRect(0, 0, 16, 16);
+  const r = rng(881);
+  // Nebula clouds
+  for (let i = 0; i < 20; i++) {
+    const x = Math.floor(r() * 15);
+    const y = Math.floor(r() * 15);
+    const col = r() > 0.5 ? "#1e1b4b" : "#0f172a";
+    px(ctx, x, y, col, 2, 2);
+    px(em.ctx, x, y, col, 2, 2);
+  }
+  // Star particles
+  const starColors = ["#38bdf8", "#818cf8", "#e0e7ff", "#c084fc", "#34d399"];
+  for (let i = 0; i < 14; i++) {
+    const x = Math.floor(r() * 16);
+    const y = Math.floor(r() * 16);
+    const col = starColors[Math.floor(r() * starColors.length)];
+    px(ctx, x, y, col);
+    px(em.ctx, x, y, col);
+  }
+  return { albedo: c, emissive: em.c };
+}
+
+function dragonEggTile(): TilePair {
+  const { c, ctx } = makeCanvas();
+  const em = makeCanvas();
+  noiseFill(ctx, ["#0a0a0f", "#0f0f15", "#18181b", "#14141e"], 891);
+  em.ctx.fillStyle = "#000000";
+  em.ctx.fillRect(0, 0, 16, 16);
+  const r = rng(892);
+  // Ender dragon purple scales and glowing fissures
+  for (let i = 0; i < 12; i++) {
+    const x = Math.floor(r() * 14);
+    const y = Math.floor(r() * 14);
+    px(ctx, x, y, "#581c87", 2, 1);
+    px(ctx, x + 1, y, "#9333ea", 1, 1);
+    px(em.ctx, x + 1, y, "#c084fc", 1, 1);
+    if (i % 2 === 0) {
+      px(ctx, x, y + 1, "#a855f7", 1, 1);
+      px(em.ctx, x, y + 1, "#e879f9", 1, 1);
+    }
+  }
+  shadeEdge(ctx);
+  return { albedo: c, emissive: em.c };
+}
+
+function purpurTile(): TilePair {
+  const { c, ctx } = makeCanvas();
+  noiseFill(ctx, ["#a878a8", "#9e689e", "#8c568c", "#b584b5"], 901);
+  // Minecraft Purpur checker border pattern
+  for (let i = 0; i < 16; i++) {
+    px(ctx, i, 0, "#6c3f6c");
+    px(ctx, 0, i, "#b584b5");
+    px(ctx, i, 15, "#522b52");
+    px(ctx, 15, i, "#522b52");
+    px(ctx, i, 8, "#6c3f6c");
+    px(ctx, 8, i, "#b584b5");
+  }
+  px(ctx, 2, 2, "#c293c2", 5, 5);
+  px(ctx, 10, 2, "#9e689e", 5, 5);
+  px(ctx, 2, 10, "#9e689e", 5, 5);
+  px(ctx, 10, 10, "#c293c2", 5, 5);
+  shadeEdge(ctx);
+  return { albedo: c };
+}
+
+function endRodTile(): TilePair {
+  const { c, ctx } = makeCanvas();
+  const em = makeCanvas();
+  ctx.fillStyle = "rgba(0,0,0,0)";
+  ctx.fillRect(0, 0, 16, 16);
+  em.ctx.fillStyle = "#000000";
+  em.ctx.fillRect(0, 0, 16, 16);
+  // Base pedestal
+  px(ctx, 5, 14, "#4c1d95", 6, 2);
+  px(ctx, 6, 13, "#6d28d9", 4, 1);
+  // Glowing column
+  for (let y = 1; y < 13; y++) {
+    px(ctx, 6, y, "#ffffff", 4, 1);
+    px(ctx, 7, y, "#fef08a", 2, 1);
+    px(em.ctx, 6, y, "#ffffff", 4, 1);
+    px(em.ctx, 7, y, "#fef08a", 2, 1);
+  }
+  // Tip
+  px(ctx, 7, 0, "#fef9c3", 2, 1);
+  px(em.ctx, 7, 0, "#fef9c3", 2, 1);
+  return { albedo: c, emissive: em.c };
+}
+
 function crackTex(stage: number) {
   const { c, ctx } = makeCanvas(16, 16);
   ctx.clearRect(0, 0, 16, 16);
@@ -1152,10 +1319,18 @@ type TileKey =
   | "enchantSide"
   | "bookshelf"
   | "lapisOre"
-  | "emeraldOre";
+  | "emeraldOre"
+  | "endStone"
+  | "endPortalFrameTop"
+  | "endPortalFrameEyeTop"
+  | "endPortalFrameSide"
+  | "endPortal"
+  | "dragonEgg"
+  | "purpur"
+  | "endRod";
 
 const ATLAS_COLS = 8;
-const ATLAS_ROWS = 10;
+const ATLAS_ROWS = 12;
 const CELL = 18;
 
 export function createBlockAtlas(): BlockAtlas {
@@ -1229,6 +1404,14 @@ export function createBlockAtlas(): BlockAtlas {
     bookshelf: bookshelfTile(),
     lapisOre: lapisOreTile(),
     emeraldOre: emeraldOreTile(),
+    endStone: endStoneTile(),
+    endPortalFrameTop: endPortalFrameTopTile(false),
+    endPortalFrameEyeTop: endPortalFrameTopTile(true),
+    endPortalFrameSide: endPortalFrameSideTile(),
+    endPortal: endPortalTile(),
+    dragonEgg: dragonEggTile(),
+    purpur: purpurTile(),
+    endRod: endRodTile(),
   };
 
   const W = ATLAS_COLS * CELL;
@@ -1339,6 +1522,13 @@ export function createBlockAtlas(): BlockAtlas {
     [BLOCK.BOOKSHELF]: { top: uvByKey.planks, bottom: uvByKey.planks, side: uvByKey.bookshelf },
     [BLOCK.LAPIS_ORE]: u("lapisOre"),
     [BLOCK.EMERALD_ORE]: u("emeraldOre"),
+    [BLOCK.END_STONE]: u("endStone"),
+    [BLOCK.END_PORTAL_FRAME]: { top: uvByKey.endPortalFrameTop, bottom: uvByKey.endStone, side: uvByKey.endPortalFrameSide },
+    [BLOCK.END_PORTAL_FRAME_EYE]: { top: uvByKey.endPortalFrameEyeTop, bottom: uvByKey.endStone, side: uvByKey.endPortalFrameSide },
+    [BLOCK.END_PORTAL]: u("endPortal"),
+    [BLOCK.DRAGON_EGG]: u("dragonEgg"),
+    [BLOCK.PURPUR_BLOCK]: u("purpur"),
+    [BLOCK.END_ROD]: u("endRod"),
   };
 
   const crackTextures = [crackTex(0), crackTex(1), crackTex(2)];

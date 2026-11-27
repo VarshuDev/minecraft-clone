@@ -21,11 +21,11 @@ import { FurnaceModal } from "@/components/FurnaceModal";
 import { EnchantingModal } from "@/components/EnchantingModal";
 import { TradingModal } from "@/components/TradingModal";
 import { type MobEntity } from "@/game/mobs";
-import { DeathScreen, PauseScreen } from "@/components/Overlays";
+import { DeathScreen, PauseScreen, VictoryScreen } from "@/components/Overlays";
 import { TouchControls } from "@/components/TouchControls";
 import { ChatOverlay, type ChatMessage } from "@/components/ChatOverlay";
 
-type Screen = "menu" | "playing" | "paused" | "dead";
+type Screen = "menu" | "playing" | "paused" | "dead" | "victory";
 
 const INITIAL_HUD: MinecraftHudState = {
   health: 20,
@@ -165,6 +165,9 @@ export default function App() {
           },
           onDeath: () => {
             setScreen("dead");
+          },
+          onVictory: () => {
+            setScreen("victory");
           },
           onPauseRequest: () => {
             setScreen((prev) => (prev === "playing" ? "paused" : prev));
@@ -547,6 +550,19 @@ export default function App() {
       {screen === "dead" && (
         <DeathScreen
           onRespawn={handleRespawn}
+          onTitle={handleSaveAndQuit}
+        />
+      )}
+
+      {/* Victory Screen */}
+      {screen === "victory" && (
+        <VictoryScreen
+          onContinue={() => {
+            if (gameRef.current?.currentDimension === "the_end") {
+              gameRef.current?.teleportDimension("overworld");
+            }
+            setScreen("playing");
+          }}
           onTitle={handleSaveAndQuit}
         />
       )}

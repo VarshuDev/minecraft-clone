@@ -23,6 +23,7 @@ import {
 } from "./world";
 import { GameAudio } from "./audio";
 import { MobManager, type MobEntity } from "./mobs";
+import { EnderDragonBoss } from "./dragon";
 import { PlayerCharacterModel } from "./playerModel";
 import {
   loadSettings,
@@ -81,6 +82,12 @@ export interface MinecraftHudState {
   } | null;
   crosshairActive: boolean;
   hurtFlash: boolean;
+  boss?: {
+    name: string;
+    health: number;
+    maxHealth: number;
+  } | null;
+  isBlocking?: boolean;
 }
 
 export interface EngineCallbacks {
@@ -96,6 +103,7 @@ export interface EngineCallbacks {
   onDeath: () => void;
   onPauseRequest: () => void;
   onWorldSaved?: () => void;
+  onVictory?: () => void;
 }
 
 interface ChunkMeshRecord {
@@ -128,7 +136,11 @@ export class GameEngine {
   world: InfiniteWorld;
   overworld: InfiniteWorld;
   netherWorld: InfiniteWorld;
-  currentDimension: "overworld" | "nether" = "overworld";
+  endWorld: InfiniteWorld;
+  currentDimension: "overworld" | "nether" | "the_end" = "overworld";
+  dragon: EnderDragonBoss | null = null;
+  isShieldBlocking = false;
+  isVictory = false;
   portalTimer = 0;
   portalCooldown = 0;
   lavaDamageTimer = 0;
@@ -287,11 +299,16 @@ export class GameEngine {
     // Create Block Atlas & Materials
     this.atlas = createBlockAtlas();
 
-    // Create Infinite World (Overworld + Nether)
+    // Create Infinite World (Overworld + Nether + The End)
     this.overworld = new InfiniteWorld(save.seed, save.edits, "overworld");
     this.netherWorld = new InfiniteWorld(save.seed, save.netherEdits, "nether");
+    this.endWorld = new InfiniteWorld(save.seed ^ 0x7e11d055, save.endEdits, "the_end");
     this.currentDimension = save.dimension ?? "overworld";
-    this.world = this.currentDimension === "nether" ? this.netherWorld : this.overworld;
+    this.world = this.currentDimension === "nether" ? this.netherWorld : this.currentDimension === "the_end" ? this.endWorld : this.overworld;
+
+    if (this.currentDimension === "the_end") {
+      this.dragon = new EnderDragonBoss(this.endWorld, this.scene, this.audio, () => this.handleVictory());
+    }
 
     // Mob Manager & Entities
     this.mobManager = new MobManager(this.world, this.scene, this.audio);
@@ -1187,6 +1204,15 @@ export class GameEngine {
           attackDmg += held.enchantments.sharpness * 1.25;
         }
 
+        // Check if attacking Ender Dragon / Crystals
+        if (this.currentDimension === "the_end" && this.dragon) {
+          const hitDragon = this.dragon.checkRaycast(rayOrigin, rayDir, attackDmg);
+          if (hitDragon) {
+            this.swingAnim = 0.65;
+            return;
+          }
+        }
+
         const hitMob = this.mobManager.attackRaycast(
           rayOrigin,
           rayDir,
@@ -1207,8 +1233,14 @@ export class GameEngine {
         this.isMining = true;
         this.mineHitTimer = 0;
       } else if (e.button === 2) {
-        // Right click: interact / place
+        // Right click: interact / place / shield block
         e.preventDefault();
+        const held = this.getHeldItem();
+        if (held?.item === "shield") {
+          this.isShieldBlocking = true;
+          this.swingAnim = 0.2;
+          return;
+        }
         this.handleRightClick();
       }
     };
@@ -1218,6 +1250,8 @@ export class GameEngine {
         this.isMining = false;
         this.mineProgress = 0;
         this.crackMesh.visible = false;
+      } else if (e.button === 2) {
+        this.isShieldBlocking = false;
       }
     };
 
@@ -2070,6 +2104,30 @@ export class GameEngine {
       return;
     }
 
+    // 1.8) Eye of Ender
+    if (held?.item === "eye_of_ender") {
+      if (this.targetBlock && this.targetBlock.block === BLOCK.END_PORTAL_FRAME) {
+        const { x, y, z } = this.targetBlock;
+        this.world.setBlock(x, y, z, BLOCK.END_PORTAL_FRAME_EYE);
+        this.markBlockDirty(x, y, z);
+        this.audio.glassBreak();
+        this.spawnBlockShards(x, y + 1, z, ["#059669", "#10b981", "#34d399"], 14);
+        if (this.save.gameMode === "survival") {
+          this.consumeHeldItem(1);
+        }
+        this.checkAndActivateEndPortal(x, y, z);
+        this.swingAnim = 0.5;
+        return;
+      } else {
+        if (this.save.gameMode === "survival") {
+          this.consumeHeldItem(1);
+        }
+        this.throwEyeOfEnder();
+        this.swingAnim = 0.5;
+        return;
+      }
+    }
+
     // 2) Food consumption
     if (heldDef?.food) {
       if (this.player.hunger < 20 || heldDef.food.alwaysEdible) {
@@ -2112,6 +2170,20 @@ export class GameEngine {
     if (block === BLOCK.CRAFTING_TABLE) {
       if (this.isPointerLocked) document.exitPointerLock();
       this.callbacks.onOpenCrafting(true);
+      return;
+    }
+
+    // 3.5) Dragon Egg teleportation
+    if (block === BLOCK.DRAGON_EGG) {
+      const dx = (Math.random() > 0.5 ? 1 : -1) * (2 + Math.floor(Math.random() * 3));
+      const dz = (Math.random() > 0.5 ? 1 : -1) * (2 + Math.floor(Math.random() * 3));
+      this.world.setBlock(x, y, z, BLOCK.AIR);
+      this.markBlockDirty(x, y, z);
+      this.world.setBlock(x + dx, y, z + dz, BLOCK.DRAGON_EGG);
+      this.markBlockDirty(x + dx, y, z + dz);
+      this.audio.portalTravel();
+      this.spawnBlockShards(x, y + 0.5, z, ["#581c87", "#7e22ce", "#c084fc"], 16);
+      this.swingAnim = 0.45;
       return;
     }
 
@@ -2536,7 +2608,83 @@ export class GameEngine {
     }
   }
 
-  teleportDimension(targetDimension: "overworld" | "nether") {
+  checkAndActivateEndPortal(startX: number, startY: number, startZ: number) {
+    // Scan within 4 blocks for an End Portal Frame ring
+    for (let cx = startX - 3; cx <= startX + 3; cx++) {
+      for (let cz = startZ - 3; cz <= startZ + 3; cz++) {
+        // Test if (cx, startY, cz) is center of a 3x3 portal with 12 frames around it
+        let frameCount = 0;
+        const coords = [
+          [cx - 1, cz - 2], [cx, cz - 2], [cx + 1, cz - 2], // North
+          [cx - 1, cz + 2], [cx, cz + 2], [cx + 1, cz + 2], // South
+          [cx - 2, cz - 1], [cx - 2, cz], [cx - 2, cz + 1], // West
+          [cx + 2, cz - 1], [cx + 2, cz], [cx + 2, cz + 1], // East
+        ];
+        for (const [fx, fz] of coords) {
+          if (this.world.getBlock(fx, startY, fz) === BLOCK.END_PORTAL_FRAME_EYE) {
+            frameCount++;
+          }
+        }
+        if (frameCount === 12) {
+          // All 12 eyes filled! Fill 3x3 center with END_PORTAL blocks
+          for (let dx = -1; dx <= 1; dx++) {
+            for (let dz = -1; dz <= 1; dz++) {
+              this.world.setBlock(cx + dx, startY, cz + dz, BLOCK.END_PORTAL);
+              this.markBlockDirty(cx + dx, startY, cz + dz);
+            }
+          }
+          this.audio.endPortalActivate();
+          this.callbacks.onNotification?.("The End Portal is open! Leap in to face the Dragon!");
+          this.spawnBlockShards(cx, startY + 1, cz, ["#020617", "#38bdf8", "#818cf8", "#c084fc"], 36);
+          return;
+        }
+      }
+    }
+  }
+
+  throwEyeOfEnder() {
+    this.audio.endermanTeleport();
+    this.callbacks.onNotification?.("The Eye of Ender floats toward the Stronghold...");
+
+    // Target stronghold at chunk (3, 3) -> world (55, 14, 55)
+    const target = new THREE.Vector3(55, 14, 55);
+    const toStronghold = target.clone().sub(this.player.pos);
+    const dist = toStronghold.length();
+
+    if (dist < 12) {
+      this.callbacks.onNotification?.("The Stronghold is directly below you!");
+      return;
+    }
+
+    const dir = new THREE.Vector3(toStronghold.x, 0, toStronghold.z).normalize();
+    const eyeMesh = new THREE.Mesh(
+      new THREE.SphereGeometry(0.2, 8, 8),
+      new THREE.MeshLambertMaterial({ color: 0x059669, emissive: 0x10b981 }),
+    );
+    eyeMesh.position.copy(this.player.pos).add(new THREE.Vector3(0, 1.2, 0));
+    this.scene.add(eyeMesh);
+
+    let progress = 0;
+    const interval = setInterval(() => {
+      progress += 0.05;
+      eyeMesh.position.x += dir.x * 0.45;
+      eyeMesh.position.z += dir.z * 0.45;
+      eyeMesh.position.y += Math.sin(progress * Math.PI) * 0.18;
+
+      if (progress >= 1.0) {
+        clearInterval(interval);
+        this.scene.remove(eyeMesh);
+        if (Math.random() < 0.2) {
+          this.spawnBlockShards(eyeMesh.position.x, eyeMesh.position.y, eyeMesh.position.z, ["#059669", "#10b981"], 8);
+        } else {
+          // Drops on ground
+          this.addItem("eye_of_ender", 1);
+        }
+      }
+    }, 50);
+  }
+
+  teleportDimension(targetDimension: "overworld" | "nether" | "the_end") {
     if (this.currentDimension === targetDimension) return;
 
     for (const record of this.chunkMeshes.values()) {
@@ -2552,8 +2700,13 @@ export class GameEngine {
     this.chunkMeshes.clear();
     this.dirtyChunks.clear();
 
+    if (this.currentDimension === "the_end" && this.dragon) {
+      this.dragon.dispose();
+      this.dragon = null;
+    }
+
     this.currentDimension = targetDimension;
-    this.world = this.currentDimension === "nether" ? this.netherWorld : this.overworld;
+    this.world = this.currentDimension === "nether" ? this.netherWorld : this.currentDimension === "the_end" ? this.endWorld : this.overworld;
     this.mobManager.world = this.world;
     this.mobManager.mobs.forEach((m) => this.scene.remove(m.group));
     this.mobManager.mobs = [];
@@ -2568,11 +2721,23 @@ export class GameEngine {
       destY = 26;
       this.buildPortalFrame(this.netherWorld, destX, destY, destZ);
       this.callbacks.onNotification?.("Entering the Nether Dimension...");
+    } else if (this.currentDimension === "the_end") {
+      destX = 20;
+      destY = 34;
+      destZ = 0;
+      this.dragon = new EnderDragonBoss(this.endWorld, this.scene, this.audio, () => this.handleVictory());
+      this.callbacks.onNotification?.("Entering The End Dimension. Slay the Ender Dragon!");
     } else {
-      destX = Math.round(this.player.pos.x * 8);
-      destZ = Math.round(this.player.pos.z * 8);
-      destY = 32;
-      this.buildPortalFrame(this.overworld, destX, destY, destZ);
+      destX = Math.round(this.player.pos.x);
+      destZ = Math.round(this.player.pos.z);
+      if (destX > 150 || destZ > 150 || destX < -150 || destZ < -150) {
+        const spawn = this.overworld.findSpawn();
+        destX = spawn.x;
+        destY = spawn.y;
+        destZ = spawn.z;
+      } else {
+        destY = 34;
+      }
       this.callbacks.onNotification?.("Returning to the Overworld...");
     }
 
@@ -2600,6 +2765,19 @@ export class GameEngine {
       if (this.weather !== "clear") {
         this.audio.stopRain();
       }
+    } else if (this.currentDimension === "the_end") {
+      this.scene.fog = new THREE.FogExp2(0x130a21, 0.022);
+      this.scene.background = new THREE.Color(0x090514);
+      this.sunMesh.visible = false;
+      this.moonMesh.visible = false;
+      this.starsMesh.visible = true;
+      this.ambientLight.color.setHex(0xb584b5);
+      this.ambientLight.intensity = 0.55;
+      this.sunLight.color.setHex(0x8b5cf6);
+      this.sunLight.intensity = 0.35;
+      if (this.weather !== "clear") {
+        this.audio.stopRain();
+      }
     } else {
       this.scene.fog = new THREE.FogExp2(0x78a7ff, 0.018);
       this.sunMesh.visible = true;
@@ -2609,6 +2787,13 @@ export class GameEngine {
       this.ambientLight.intensity = 0.45;
       this.updateDayNightCycle(0);
     }
+  }
+
+  handleVictory() {
+    this.isVictory = true;
+    if (this.isPointerLocked) document.exitPointerLock();
+    this.callbacks.onVictory?.();
+    this.callbacks.onNotification?.("Victory! You have slain the Ender Dragon!");
   }
 
   spawnSparkleParticles(x: number, y: number, z: number) {
@@ -2950,6 +3135,19 @@ export class GameEngine {
     if (!wasInWater && p.inWater) this.audio.splash();
     if (wasInWater && !p.inWater) this.audio.splash();
 
+    // Check End Portal standing
+    const inEndPortal = feetBlock === BLOCK.END_PORTAL || headBlock === BLOCK.END_PORTAL;
+    if (inEndPortal && this.portalCooldown <= 0) {
+      this.portalCooldown = 4.0;
+      if (this.currentDimension === "the_end") {
+        this.teleportDimension("overworld");
+        this.handleVictory();
+      } else {
+        this.teleportDimension("the_end");
+      }
+      return;
+    }
+
     // Check Nether Portal standing
     const inPortal = feetBlock === BLOCK.NETHER_PORTAL || headBlock === BLOCK.NETHER_PORTAL;
     if (this.portalCooldown > 0) {
@@ -3002,6 +3200,7 @@ export class GameEngine {
       p.sprinting = false;
     }
     let baseSpeed = p.inWater ? 2.8 : inLava ? 1.8 : onSoulSand ? 2.2 : p.sprinting ? 6.8 : 4.4;
+    if (this.isShieldBlocking) baseSpeed *= 0.65;
     const accel = p.onGround ? 28 : p.inWater ? 12 : 7;
     const targetVelX = moveDir.x * baseSpeed;
     const targetVelZ = moveDir.z * baseSpeed;
@@ -3231,6 +3430,14 @@ export class GameEngine {
 
   applyDamage(amount: number) {
     if (this.save.gameMode === "creative" || this.isDead) return;
+
+    // Shield blocking
+    if (this.isShieldBlocking) {
+      this.audio.shieldBlock();
+      this.callbacks.onNotification?.("Blocked attack with Shield!");
+      this.spawnBlockShards(this.player.pos.x, this.player.pos.y + 1.0, this.player.pos.z, ["#e5e7eb", "#9ca3af", "#f59e0b"], 8);
+      return;
+    }
 
     // Apply Armor reduction (up to 80% reduction for 20 armor points) + Protection enchantment
     const armorPoints = this.getArmorPoints();
@@ -3498,6 +3705,11 @@ export class GameEngine {
         },
       );
 
+      // 9.5) Ender Dragon Boss Simulation
+      if (this.currentDimension === "the_end" && this.dragon) {
+        this.dragon.update(dt, this.player.pos, (dmg) => this.applyDamage(dmg));
+      }
+
       // 10) Weather, XP Orbs, Furnace & Crop Simulation
       this.updateWeather(dt);
       this.updateXpOrbs(dt);
@@ -3544,7 +3756,16 @@ export class GameEngine {
 
     const wx = Math.floor(this.player.pos.x);
     const wz = Math.floor(this.player.pos.z);
-    const biome = this.currentDimension === "nether" ? "Nether Wastes" : this.world.getBiomeAt(wx, wz).name;
+    const biome = this.currentDimension === "nether" ? "Nether Wastes" : this.currentDimension === "the_end" ? "The End" : this.world.getBiomeAt(wx, wz).name;
+
+    const boss =
+      this.currentDimension === "the_end" && this.dragon && this.dragon.alive
+        ? {
+            name: "Ender Dragon",
+            health: Math.round(this.dragon.health),
+            maxHealth: this.dragon.maxHealth,
+          }
+        : null;
 
     // Compass facing
     let facing = "South";
@@ -3601,6 +3822,8 @@ export class GameEngine {
         : null,
       crosshairActive: this.targetBlock !== null,
       hurtFlash: this.hurtFlash,
+      boss,
+      isBlocking: this.isShieldBlocking,
     });
   }
 
@@ -3625,6 +3848,7 @@ export class GameEngine {
     this.save.dimension = this.currentDimension;
     this.save.edits = this.overworld.exportEdits();
     this.save.netherEdits = this.netherWorld.exportEdits();
+    this.save.endEdits = this.endWorld.exportEdits();
     saveWorldSave(this.save);
     if (this.callbacks.onWorldSaved) {
       this.callbacks.onWorldSaved();
@@ -3731,6 +3955,10 @@ export class GameEngine {
     this.atlas.dispose();
     this.mobManager.dispose();
     this.playerModel.dispose();
+    if (this.dragon) {
+      this.dragon.dispose();
+      this.dragon = null;
+    }
 
     if (this.precipPoints) {
       this.scene.remove(this.precipPoints);

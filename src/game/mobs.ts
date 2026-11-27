@@ -3,7 +3,7 @@ import { type InfiniteWorld } from "./world";
 import { BLOCK, BLOCK_DEFS, type ItemId, type VillagerProfession, type VillagerTrade, getVillagerTrades } from "./blocks";
 import { type GameAudio } from "./audio";
 
-export type MobType = "zombie" | "skeleton" | "creeper" | "pig" | "cow" | "sheep" | "pigman" | "ghast" | "villager" | "enderman" | "iron_golem";
+export type MobType = "zombie" | "skeleton" | "creeper" | "pig" | "cow" | "sheep" | "pigman" | "ghast" | "villager" | "enderman" | "iron_golem" | "spider";
 
 export interface MobEntity {
   id: string;
@@ -45,6 +45,7 @@ export interface MobEntity {
     legBL?: THREE.Object3D;
     legBR?: THREE.Object3D;
     tentacles?: THREE.Object3D[];
+    spiderLegs?: THREE.Object3D[];
   };
   originalColors: Map<THREE.Mesh, THREE.Color>;
 }
@@ -122,6 +123,10 @@ export class MobManager {
   private matGolemEyes = new THREE.MeshLambertMaterial({ color: 0xdc2626 });
   private matGolemNose = new THREE.MeshLambertMaterial({ color: 0x92400e });
   private matPearl = new THREE.MeshLambertMaterial({ color: 0x0f766e, emissive: 0x115e59 });
+  private matSpiderBody = new THREE.MeshLambertMaterial({ color: 0x27272a });
+  private matSpiderAbdomen = new THREE.MeshLambertMaterial({ color: 0x18181b });
+  private matSpiderEyes = new THREE.MeshLambertMaterial({ color: 0xef4444, emissive: 0x991b1b });
+  private matSpiderLegs = new THREE.MeshLambertMaterial({ color: 0x3f3f46 });
 
   constructor(world: InfiniteWorld, scene: THREE.Scene, audio: GameAudio) {
     this.world = world;
@@ -194,6 +199,11 @@ export class MobManager {
         limbs = this.buildIronGolemModel(group, originalColors);
         maxHealth = 100;
         isHostile = false; // Friendly to player, hostile to monsters
+        break;
+      case "spider":
+        limbs = this.buildSpiderModel(group, originalColors);
+        maxHealth = 16;
+        isHostile = true;
         break;
     }
 
@@ -798,6 +808,72 @@ export class MobManager {
     return { head, body, leftArm, rightArm, leftLeg, rightLeg };
   }
 
+  private buildSpiderModel(group: THREE.Group, colors: Map<THREE.Mesh, THREE.Color>) {
+    // Head: 0.48 x 0.38 x 0.48
+    const head = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.38, 0.48), this.matSpiderBody);
+    head.position.set(0, 0.38, 0.46);
+    this.registerMesh(head, colors);
+    group.add(head);
+
+    // Glowing red eyes (2 pairs of eyes)
+    const eyeMat = this.matSpiderEyes;
+    const eye1 = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 0.02), eyeMat);
+    eye1.position.set(-0.12, 0.4, 0.71);
+    group.add(eye1);
+    const eye2 = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 0.02), eyeMat);
+    eye2.position.set(0.12, 0.4, 0.71);
+    group.add(eye2);
+    const eye3 = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.05, 0.02), eyeMat);
+    eye3.position.set(-0.18, 0.36, 0.71);
+    group.add(eye3);
+    const eye4 = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.05, 0.02), eyeMat);
+    eye4.position.set(0.18, 0.36, 0.71);
+    group.add(eye4);
+
+    // Thorax (center)
+    const body = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.36, 0.48), this.matSpiderBody);
+    body.position.set(0, 0.4, 0.08);
+    this.registerMesh(body, colors);
+    group.add(body);
+
+    // Large bulbous abdomen (rear)
+    const abdomen = new THREE.Mesh(new THREE.BoxGeometry(0.72, 0.55, 0.85), this.matSpiderAbdomen);
+    abdomen.position.set(0, 0.52, -0.52);
+    this.registerMesh(abdomen, colors);
+    group.add(abdomen);
+
+    // 8 Legs (4 on left, 4 on right)
+    const spiderLegs: THREE.Object3D[] = [];
+    const legGeo = new THREE.BoxGeometry(0.72, 0.09, 0.09);
+    for (let i = 0; i < 4; i++) {
+      const zOffset = 0.22 - i * 0.15;
+
+      // Left leg pivot
+      const leftPivot = new THREE.Group();
+      leftPivot.position.set(-0.21, 0.38, zOffset);
+      const legMeshL = new THREE.Mesh(legGeo, this.matSpiderLegs);
+      legMeshL.position.set(-0.32, -0.05, 0);
+      legMeshL.rotation.z = 0.35;
+      this.registerMesh(legMeshL, colors);
+      leftPivot.add(legMeshL);
+      group.add(leftPivot);
+      spiderLegs.push(leftPivot);
+
+      // Right leg pivot
+      const rightPivot = new THREE.Group();
+      rightPivot.position.set(0.21, 0.38, zOffset);
+      const legMeshR = new THREE.Mesh(legGeo, this.matSpiderLegs);
+      legMeshR.position.set(0.32, -0.05, 0);
+      legMeshR.rotation.z = -0.35;
+      this.registerMesh(legMeshR, colors);
+      rightPivot.add(legMeshR);
+      group.add(rightPivot);
+      spiderLegs.push(rightPivot);
+    }
+
+    return { head, body, spiderLegs };
+  }
+
   teleportEnderman(mob: MobEntity, nearPos?: THREE.Vector3): boolean {
     const center = nearPos || mob.pos;
     for (let attempts = 0; attempts < 20; attempts++) {
@@ -1053,15 +1129,25 @@ export class MobManager {
             }
           } else if (mob.state === "chase") {
             // Chase player forward
-            const speed = mob.type === "zombie" ? 2.8 : mob.type === "creeper" ? 3.4 : mob.type === "pigman" ? 3.6 : mob.type === "enderman" ? 4.8 : 3.0;
+            const speed = mob.type === "spider" ? 4.2 : mob.type === "zombie" ? 2.8 : mob.type === "creeper" ? 3.4 : mob.type === "pigman" ? 3.6 : mob.type === "enderman" ? 4.8 : 3.0;
             mob.vel.x = Math.sin(mob.yaw) * speed;
             mob.vel.z = Math.cos(mob.yaw) * speed;
+
+            // Spider pounce leap attack
+            if (mob.type === "spider" && distToPlayer < 4.5 && mob.onGround && mob.attackCooldown <= 0) {
+              mob.vel.y = 4.2;
+              mob.vel.x = Math.sin(mob.yaw) * 5.2;
+              mob.vel.z = Math.cos(mob.yaw) * 5.2;
+              mob.attackCooldown = 1.6;
+              this.audio.spiderHiss();
+            }
 
             // Melee contact attack on player
             if (distToPlayer < 1.4 && mob.attackCooldown <= 0 && mob.type !== "creeper") {
               mob.attackCooldown = 1.1;
-              const dmg = mob.type === "enderman" ? 7 : mob.type === "pigman" ? 5 : mob.type === "zombie" ? 3 : 2;
+              const dmg = mob.type === "enderman" ? 7 : mob.type === "pigman" ? 5 : mob.type === "spider" ? 3 : mob.type === "zombie" ? 3 : 2;
               onPlayerDamage(dmg);
+              if (mob.type === "spider") this.audio.spiderHiss();
               if (mob.type === "enderman" && Math.random() < 0.45) {
                 this.teleportEnderman(mob, playerPos);
               }
@@ -1198,9 +1284,23 @@ export class MobManager {
         if (mob.limbs.legFR) mob.limbs.legFR.rotation.x = -swing;
         if (mob.limbs.legBL) mob.limbs.legBL.rotation.x = -swing;
         if (mob.limbs.legBR) mob.limbs.legBR.rotation.x = swing;
+        if (mob.limbs.spiderLegs) {
+          mob.limbs.spiderLegs.forEach((leg, idx) => {
+            const side = idx % 2 === 0 ? 1 : -1;
+            const phase = Math.floor(idx / 2) * 0.7;
+            leg.rotation.y = Math.sin(walkAnimTime * 12 + phase) * 0.35 * side;
+            leg.rotation.z = Math.sin(walkAnimTime * 12 + phase) * 0.2 * side;
+          });
+        }
       } else {
         if (mob.limbs.leftLeg) mob.limbs.leftLeg.rotation.x = 0;
         if (mob.limbs.rightLeg) mob.limbs.rightLeg.rotation.x = 0;
+        if (mob.limbs.spiderLegs) {
+          mob.limbs.spiderLegs.forEach((leg) => {
+            leg.rotation.y = 0;
+            leg.rotation.z = 0;
+          });
+        }
       }
     }
 
@@ -1360,6 +1460,10 @@ export class MobManager {
         case "iron_golem":
           drops.push({ item: "iron_ingot", count: 3 + Math.floor(Math.random() * 3) });
           drops.push({ item: "poppy", count: 1 + Math.floor(Math.random() * 2) });
+          break;
+        case "spider":
+          drops.push({ item: "string", count: 1 + Math.floor(Math.random() * 2) });
+          if (Math.random() < 0.6) drops.push({ item: "spider_eye", count: 1 });
           break;
       }
 
@@ -1563,7 +1667,7 @@ export class MobManager {
         if (!isDay || y < 22) {
           // Nighttime surface or underground dark cave: spawn hostile mob!
           const r = Math.random();
-          const type: MobType = r < 0.38 ? "zombie" : r < 0.65 ? "skeleton" : r < 0.86 ? "creeper" : "enderman";
+          const type: MobType = r < 0.28 ? "zombie" : r < 0.52 ? "skeleton" : r < 0.72 ? "spider" : r < 0.88 ? "creeper" : "enderman";
           this.spawnMob(type, sx + 0.5, y + 1.05, sz + 0.5);
         } else if (b === BLOCK.GRASS) {
           // Daylight surface grass: spawn peaceful animal!

@@ -774,4 +774,216 @@ export class GameAudio {
     oscRing.start(t0);
     oscRing.stop(t0 + 0.4);
   }
+
+  spiderHiss() {
+    if (!this.ctx || !this.master || this.muted) return;
+    const ctx = this.ctx;
+    const master = this.master;
+    const t0 = ctx.currentTime;
+
+    // Filtered noise with stutter modulation
+    const len = Math.floor(ctx.sampleRate * 0.35);
+    const buffer = ctx.createBuffer(1, len, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < len; i++) {
+      const stutter = (Math.sin(i * 0.05) > 0 ? 1 : 0.4) * (1 - i / len);
+      data[i] = (Math.random() * 2 - 1) * stutter;
+    }
+    const src = ctx.createBufferSource();
+    src.buffer = buffer;
+
+    const filter = ctx.createBiquadFilter();
+    filter.type = "bandpass";
+    filter.frequency.setValueAtTime(2400, t0);
+    filter.frequency.exponentialRampToValueAtTime(1400, t0 + 0.35);
+    filter.Q.value = 3.5;
+
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.001, t0);
+    gain.gain.exponentialRampToValueAtTime(0.18, t0 + 0.04);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.35);
+
+    src.connect(filter);
+    filter.connect(gain);
+    gain.connect(master);
+    src.start(t0);
+  }
+
+  dragonRoar() {
+    if (!this.ctx || !this.master || this.muted) return;
+    const ctx = this.ctx;
+    const master = this.master;
+    const t0 = ctx.currentTime;
+
+    // Deep sub bass roar
+    const osc1 = ctx.createOscillator();
+    const osc2 = ctx.createOscillator();
+    osc1.type = "sawtooth";
+    osc2.type = "triangle";
+    osc1.frequency.setValueAtTime(75, t0);
+    osc1.frequency.exponentialRampToValueAtTime(32, t0 + 1.2);
+    osc2.frequency.setValueAtTime(78, t0);
+    osc2.frequency.exponentialRampToValueAtTime(34, t0 + 1.2);
+
+    const filter = ctx.createBiquadFilter();
+    filter.type = "lowpass";
+    filter.frequency.setValueAtTime(450, t0);
+    filter.frequency.exponentialRampToValueAtTime(120, t0 + 1.2);
+    filter.Q.value = 4.0;
+
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.001, t0);
+    gain.gain.exponentialRampToValueAtTime(0.35, t0 + 0.1);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 1.25);
+
+    osc1.connect(filter);
+    osc2.connect(filter);
+    filter.connect(gain);
+    gain.connect(master);
+
+    osc1.start(t0);
+    osc2.start(t0);
+    osc1.stop(t0 + 1.3);
+    osc2.stop(t0 + 1.3);
+
+    // Cavernous noise rasp
+    this.noise(0.9, 0.22, 600, 1.5, 0.05);
+  }
+
+  dragonFlap() {
+    if (!this.ctx || !this.master || this.muted) return;
+    const ctx = this.ctx;
+    const master = this.master;
+    const t0 = ctx.currentTime;
+
+    const osc = ctx.createOscillator();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(85, t0);
+    osc.frequency.exponentialRampToValueAtTime(28, t0 + 0.26);
+
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.001, t0);
+    gain.gain.exponentialRampToValueAtTime(0.25, t0 + 0.04);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.28);
+
+    osc.connect(gain);
+    gain.connect(master);
+    osc.start(t0);
+    osc.stop(t0 + 0.3);
+
+    this.noise(0.24, 0.16, 320, 0.7, 0.02);
+  }
+
+  crystalExplode() {
+    if (!this.ctx || !this.master || this.muted) return;
+    const ctx = this.ctx;
+    const master = this.master;
+    const t0 = ctx.currentTime;
+
+    // High crystalline bell ring
+    [1100, 1650, 2200].forEach((freq, idx) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(freq, t0 + idx * 0.02);
+      osc.frequency.exponentialRampToValueAtTime(freq * 0.8, t0 + 0.6);
+      gain.gain.setValueAtTime(0.12, t0 + idx * 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.6);
+      osc.connect(gain);
+      gain.connect(master);
+      osc.start(t0 + idx * 0.02);
+      osc.stop(t0 + 0.65);
+    });
+
+    // Heavy concussive burst
+    this.noise(0.65, 0.35, 280, 0.9, 0.01);
+  }
+
+  shieldBlock() {
+    if (!this.ctx || !this.master || this.muted) return;
+    const ctx = this.ctx;
+    const master = this.master;
+    const t0 = ctx.currentTime;
+
+    // Heavy wood impact clack
+    const osc = ctx.createOscillator();
+    osc.type = "triangle";
+    osc.frequency.setValueAtTime(260, t0);
+    osc.frequency.exponentialRampToValueAtTime(60, t0 + 0.12);
+
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.3, t0);
+    gain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.14);
+
+    osc.connect(gain);
+    gain.connect(master);
+    osc.start(t0);
+    osc.stop(t0 + 0.15);
+
+    // Metal deflection ping
+    const ping = ctx.createOscillator();
+    const pingGain = ctx.createGain();
+    ping.type = "sine";
+    ping.frequency.setValueAtTime(1400, t0);
+    ping.frequency.exponentialRampToValueAtTime(1200, t0 + 0.2);
+    pingGain.gain.setValueAtTime(0.18, t0);
+    pingGain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.22);
+    ping.connect(pingGain);
+    pingGain.connect(master);
+    ping.start(t0);
+    ping.stop(t0 + 0.25);
+  }
+
+  endPortalActivate() {
+    if (!this.ctx || !this.master || this.muted) return;
+    const ctx = this.ctx;
+    const master = this.master;
+    const t0 = ctx.currentTime;
+
+    // Resonant celestial hum & portal open chord
+    [220, 330, 440, 550, 660].forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sine";
+      const startT = t0 + i * 0.08;
+      osc.frequency.setValueAtTime(freq, startT);
+      osc.frequency.exponentialRampToValueAtTime(freq * 1.5, startT + 1.2);
+      gain.gain.setValueAtTime(0.001, startT);
+      gain.gain.exponentialRampToValueAtTime(0.12, startT + 0.15);
+      gain.gain.exponentialRampToValueAtTime(0.0001, startT + 1.4);
+      osc.connect(gain);
+      gain.connect(master);
+      osc.start(startT);
+      osc.stop(startT + 1.5);
+    });
+  }
+
+  victoryFanfare() {
+    if (!this.ctx || !this.master || this.muted) return;
+    const ctx = this.ctx;
+    const master = this.master;
+    const t0 = ctx.currentTime;
+
+    // Triumphant fanfare arpeggio: C4, E4, G4, C5, E5, G5, C6
+    const notes = [261.63, 329.63, 392.0, 523.25, 659.25, 783.99, 1046.5];
+    notes.forEach((freq, idx) => {
+      const noteTime = t0 + idx * 0.14;
+      const isLast = idx === notes.length - 1;
+      const dur = isLast ? 1.6 : 0.3;
+
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = isLast ? "sawtooth" : "triangle";
+      osc.frequency.setValueAtTime(freq, noteTime);
+
+      gain.gain.setValueAtTime(0.001, noteTime);
+      gain.gain.exponentialRampToValueAtTime(0.24, noteTime + 0.03);
+      gain.gain.exponentialRampToValueAtTime(0.0001, noteTime + dur);
+
+      osc.connect(gain);
+      gain.connect(master);
+      osc.start(noteTime);
+      osc.stop(noteTime + dur + 0.05);
+    });
+  }
 }

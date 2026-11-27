@@ -57,6 +57,13 @@ export const BLOCK = {
   BOOKSHELF: 55,
   LAPIS_ORE: 56,
   EMERALD_ORE: 57,
+  END_STONE: 58,
+  END_PORTAL_FRAME: 59,
+  END_PORTAL_FRAME_EYE: 60,
+  END_PORTAL: 61,
+  DRAGON_EGG: 62,
+  PURPUR_BLOCK: 63,
+  END_ROD: 64,
 } as const;
 
 export type BlockNum = (typeof BLOCK)[keyof typeof BLOCK];
@@ -231,7 +238,17 @@ export type ItemId =
   | "item_book"
   | "block_emerald_ore"
   | "item_emerald"
-  | "ender_pearl";
+  | "ender_pearl"
+  | "block_end_stone"
+  | "block_end_portal_frame"
+  | "block_purpur"
+  | "block_end_rod"
+  | "dragon_egg"
+  | "spider_eye"
+  | "blaze_rod"
+  | "blaze_powder"
+  | "eye_of_ender"
+  | "shield";
 
 export type ToolKind = "pickaxe" | "axe" | "shovel" | "sword" | "hoe" | "bow";
 export type ArmorSlot = "head" | "chest" | "legs" | "feet";
@@ -976,6 +993,84 @@ export const BLOCK_DEFS: Record<BlockNum, BlockDef> = {
     sound: "stone",
     colors: { top: "#10b981", left: "#727880", right: "#5b6068" },
   },
+  [BLOCK.END_STONE]: {
+    id: BLOCK.END_STONE,
+    name: "End Stone",
+    hardness: 3.0,
+    preferredTool: "pickaxe",
+    drop: "block_end_stone",
+    shards: ["#dfdf9f", "#e6e6b8", "#c8c880", "#dedea0"],
+    solid: true,
+    transparent: false,
+    sound: "stone",
+    colors: { top: "#dfdf9f", left: "#c8c880", right: "#b8b870" },
+  },
+  [BLOCK.END_PORTAL_FRAME]: {
+    id: BLOCK.END_PORTAL_FRAME,
+    name: "End Portal Frame",
+    hardness: -1,
+    drop: "block_end_portal_frame",
+    shards: ["#1e3d36", "#5a8f76", "#2c5b4d"],
+    solid: true,
+    transparent: false,
+    sound: "stone",
+    colors: { top: "#5a8f76", left: "#2c5b4d", right: "#1e3d36" },
+  },
+  [BLOCK.END_PORTAL_FRAME_EYE]: {
+    id: BLOCK.END_PORTAL_FRAME_EYE,
+    name: "End Portal Frame (Active)",
+    hardness: -1,
+    drop: "block_end_portal_frame",
+    shards: ["#1e3d36", "#5a8f76", "#0f766e", "#10b981"],
+    solid: true,
+    transparent: false,
+    sound: "stone",
+    colors: { top: "#0f766e", left: "#2c5b4d", right: "#1e3d36" },
+  },
+  [BLOCK.END_PORTAL]: {
+    id: BLOCK.END_PORTAL,
+    name: "End Portal",
+    hardness: -1,
+    solid: false,
+    transparent: true,
+    shards: ["#020617", "#38bdf8", "#818cf8"],
+    sound: "portal",
+    colors: { top: "#020617", left: "#020617", right: "#020617" },
+  },
+  [BLOCK.DRAGON_EGG]: {
+    id: BLOCK.DRAGON_EGG,
+    name: "Dragon Egg",
+    hardness: 3.0,
+    drop: "dragon_egg",
+    shards: ["#0f0f15", "#4c1d95", "#8b5cf6"],
+    solid: true,
+    transparent: true,
+    sound: "stone",
+    colors: { top: "#1e1b4b", left: "#0f0f15", right: "#09090b" },
+  },
+  [BLOCK.PURPUR_BLOCK]: {
+    id: BLOCK.PURPUR_BLOCK,
+    name: "Purpur Block",
+    hardness: 1.5,
+    preferredTool: "pickaxe",
+    drop: "block_purpur",
+    shards: ["#a878a8", "#8b578b", "#c293c2"],
+    solid: true,
+    transparent: false,
+    sound: "stone",
+    colors: { top: "#a878a8", left: "#8b578b", right: "#704270" },
+  },
+  [BLOCK.END_ROD]: {
+    id: BLOCK.END_ROD,
+    name: "End Rod",
+    hardness: 0.5,
+    drop: "block_end_rod",
+    shards: ["#ffffff", "#e0e7ff", "#fef08a"],
+    solid: false,
+    transparent: true,
+    sound: "glass",
+    colors: { top: "#ffffff", left: "#e0e7ff", right: "#cbd5e1" },
+  },
 };
 
 export interface FoodDef {
@@ -1435,6 +1530,82 @@ export const ITEMS: Record<ItemId, ItemDef> = {
     color: "#0f766e",
     category: "material",
   },
+  block_end_stone: {
+    id: "block_end_stone",
+    name: "End Stone",
+    short: "E.STONE",
+    blockId: BLOCK.END_STONE,
+    color: "#dfdf9f",
+    category: "block",
+  },
+  block_end_portal_frame: {
+    id: "block_end_portal_frame",
+    name: "End Portal Frame",
+    short: "FRAME",
+    blockId: BLOCK.END_PORTAL_FRAME,
+    color: "#5a8f76",
+    category: "block",
+  },
+  block_purpur: {
+    id: "block_purpur",
+    name: "Purpur Block",
+    short: "PURPUR",
+    blockId: BLOCK.PURPUR_BLOCK,
+    color: "#a878a8",
+    category: "block",
+  },
+  block_end_rod: {
+    id: "block_end_rod",
+    name: "End Rod",
+    short: "E.ROD",
+    blockId: BLOCK.END_ROD,
+    color: "#fef08a",
+    category: "block",
+  },
+  dragon_egg: {
+    id: "dragon_egg",
+    name: "Dragon Egg",
+    short: "EGG",
+    blockId: BLOCK.DRAGON_EGG,
+    color: "#581c87",
+    category: "block",
+  },
+  spider_eye: {
+    id: "spider_eye",
+    name: "Spider Eye",
+    short: "S.EYE",
+    color: "#881337",
+    category: "material",
+  },
+  blaze_rod: {
+    id: "blaze_rod",
+    name: "Blaze Rod",
+    short: "ROD",
+    color: "#f59e0b",
+    category: "material",
+  },
+  blaze_powder: {
+    id: "blaze_powder",
+    name: "Blaze Powder",
+    short: "POWDER",
+    color: "#fbbf24",
+    category: "material",
+  },
+  eye_of_ender: {
+    id: "eye_of_ender",
+    name: "Eye of Ender",
+    short: "EYE",
+    color: "#059669",
+    category: "material",
+  },
+  shield: {
+    id: "shield",
+    name: "Shield",
+    short: "SHIELD",
+    color: "#9ca3af",
+    category: "tool",
+    defense: 4,
+  },
 };
 
 export interface Recipe {
@@ -1497,6 +1668,11 @@ export const RECIPES: Recipe[] = [
   { id: "book", out: "item_book", count: 1, inputs: [{ item: "wheat", count: 3 }, { item: "leather", count: 1 }], note: "Spell & enchanting book" },
   { id: "bookshelf", out: "block_bookshelf", count: 1, inputs: [{ item: "block_planks", count: 6 }, { item: "item_book", count: 3 }], note: "Boosts enchanting table power" },
   { id: "enchant_table", out: "block_enchanting_table", count: 1, inputs: [{ item: "block_obsidian", count: 4 }, { item: "diamond", count: 2 }, { item: "item_book", count: 1 }], note: "Enchant tools & armor" },
+  { id: "blaze_powder", out: "blaze_powder", count: 2, inputs: [{ item: "blaze_rod", count: 1 }], note: "Crafting ingredient" },
+  { id: "eye_of_ender", out: "eye_of_ender", count: 1, inputs: [{ item: "ender_pearl", count: 1 }, { item: "blaze_powder", count: 1 }], note: "Locates & activates End Portals" },
+  { id: "shield", out: "shield", count: 1, inputs: [{ item: "block_planks", count: 6 }, { item: "iron_ingot", count: 1 }], note: "Right-click to block damage" },
+  { id: "purpur_block", out: "block_purpur", count: 4, inputs: [{ item: "block_end_stone", count: 4 }], note: "End city architecture" },
+  { id: "end_rod", out: "block_end_rod", count: 4, inputs: [{ item: "blaze_rod", count: 1 }, { item: "quartz", count: 1 }], note: "Glowing End rod light" },
 ];
 
 export interface SmeltingRecipe {
@@ -1600,6 +1776,17 @@ export const CREATIVE_CATALOG: ItemId[] = [
   "item_book",
   "block_emerald_ore",
   "item_emerald",
+  "ender_pearl",
+  "block_end_stone",
+  "block_end_portal_frame",
+  "block_purpur",
+  "block_end_rod",
+  "dragon_egg",
+  "spider_eye",
+  "blaze_rod",
+  "blaze_powder",
+  "eye_of_ender",
+  "shield",
 ];
 
 export const DEFAULT_CREATIVE_HOTBAR: ItemId[] = [

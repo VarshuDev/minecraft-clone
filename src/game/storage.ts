@@ -51,11 +51,12 @@ export interface WorldSave {
   seed: number;
   gameMode: GameModeId;
   dayTime: number; // 0..24000 (Minecraft day ticks)
-  dimension?: "overworld" | "nether";
+  dimension?: "overworld" | "nether" | "the_end";
   weather?: "clear" | "rain" | "thunder";
   player: PlayerSave;
   edits: Record<string, number>;
   netherEdits?: Record<string, number>;
+  endEdits?: Record<string, number>;
   chests?: Record<string, Array<{ item: ItemId; count: number } | null>>;
   furnaces?: Record<string, FurnaceData>;
   createdAt: number;

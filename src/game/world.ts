@@ -6,7 +6,7 @@ export const WORLD_HEIGHT = 64;
 export const SEA_LEVEL = 22;
 
 export type BiomeName = "Plains" | "Oak Forest" | "Desert" | "Snowy Peaks" | "Ocean";
-export type Dimension = "overworld" | "nether";
+export type Dimension = "overworld" | "nether" | "the_end";
 
 export const chunkCoord = (v: number) => Math.floor(v / CHUNK_SIZE);
 export const chunkKey = (cx: number, cz: number) => `${cx}|${cz}`;
@@ -112,6 +112,9 @@ export class InfiniteWorld {
 
     if (this.dimension === "nether") {
       return this.generateNetherChunk(cx, cz);
+    }
+    if (this.dimension === "the_end") {
+      return this.generateEndChunk(cx, cz);
     }
 
     const data = new Uint8Array(CHUNK_SIZE * WORLD_HEIGHT * CHUNK_SIZE);
@@ -244,6 +247,11 @@ export class InfiniteWorld {
       this.buildVillageChunk(data, cx, cz, baseX, baseZ, heights);
     }
 
+    // 2.6) Stronghold End Portal Room
+    if (this.isStrongholdChunk(cx, cz)) {
+      this.buildStrongholdChunk(data, cx, cz, baseX, baseZ);
+    }
+
     // 3) Re-apply any saved player edits in this chunk
     const edits = this.editsByChunk.get(key);
     if (edits) {
@@ -335,6 +343,115 @@ export class InfiniteWorld {
               break;
             }
           }
+        }
+      }
+    }
+
+    // Re-apply any saved player edits in this chunk
+    const edits = this.editsByChunk.get(key);
+    if (edits) {
+      for (const [wx, y, wz, b] of edits) {
+        if (y >= 0 && y < WORLD_HEIGHT) {
+          data[localIdx(wx - baseX, y, wz - baseZ)] = b;
+        }
+      }
+    }
+
+    this.chunks.set(key, data);
+    return data;
+  }
+
+  private generateEndChunk(cx: number, cz: number): Uint8Array {
+    const key = chunkKey(cx, cz);
+    const data = new Uint8Array(CHUNK_SIZE * WORLD_HEIGHT * CHUNK_SIZE);
+    const baseX = cx * CHUNK_SIZE;
+    const baseZ = cz * CHUNK_SIZE;
+
+    const setB = (lx: number, y: number, lz: number, b: BlockNum) => {
+      if (lx >= 0 && lx < CHUNK_SIZE && lz >= 0 && lz < CHUNK_SIZE && y >= 0 && y < WORLD_HEIGHT) {
+        data[localIdx(lx, y, lz)] = b;
+      }
+    };
+
+    // 1) Central End Stone Island
+    for (let lx = 0; lx < CHUNK_SIZE; lx++) {
+      const wx = baseX + lx;
+      for (let lz = 0; lz < CHUNK_SIZE; lz++) {
+        const wz = baseZ + lz;
+        const dist = Math.sqrt(wx * wx + wz * wz);
+
+        if (dist <= 58) {
+          const centerFactor = Math.cos((dist / 58) * (Math.PI / 2));
+          const noiseH = this.detailNoise.noise2(wx * 0.08, wz * 0.08) * 3.5;
+          const noiseB = this.detailNoise.noise2(wx * 0.05 + 23, wz * 0.05 - 17) * 4.0;
+          const surfaceY = Math.round(33 + centerFactor * 5 + noiseH);
+          const bottomY = Math.round(26 - centerFactor * 9 - noiseB);
+
+          for (let y = Math.max(1, bottomY); y <= Math.min(WORLD_HEIGHT - 2, surfaceY); y++) {
+            data[localIdx(lx, y, lz)] = BLOCK.END_STONE;
+          }
+        }
+      }
+    }
+
+    // 2) Obsidian Pillars (8 Pillars arranged in a circle at radius 28)
+    const pillarRadius = 28;
+    for (let i = 0; i < 8; i++) {
+      const ang = (i / 8) * Math.PI * 2;
+      const px = Math.round(Math.cos(ang) * pillarRadius);
+      const pz = Math.round(Math.sin(ang) * pillarRadius);
+      const pillarTopY = 48 + (i % 3) * 6;
+
+      for (let dx = -1; dx <= 1; dx++) {
+        for (let dz = -1; dz <= 1; dz++) {
+          const wx = px + dx;
+          const wz = pz + dz;
+          const lx = wx - baseX;
+          const lz = wz - baseZ;
+          if (lx >= 0 && lx < CHUNK_SIZE && lz >= 0 && lz < CHUNK_SIZE) {
+            for (let y = 30; y <= pillarTopY; y++) {
+              setB(lx, y, lz, BLOCK.OBSIDIAN);
+            }
+            // Bedrock cap on center of top
+            if (dx === 0 && dz === 0) {
+              setB(lx, pillarTopY, lz, BLOCK.BEDROCK);
+            }
+          }
+        }
+      }
+    }
+
+    // 3) Central Bedrock Fountain & Exit Portal structure at (0, 33, 0)
+    for (let dx = -2; dx <= 2; dx++) {
+      for (let dz = -2; dz <= 2; dz++) {
+        const lx = dx - baseX;
+        const lz = dz - baseZ;
+        if (lx >= 0 && lx < CHUNK_SIZE && lz >= 0 && lz < CHUNK_SIZE) {
+          const r = Math.max(Math.abs(dx), Math.abs(dz));
+          if (r === 2) {
+            setB(lx, 34, lz, BLOCK.BEDROCK);
+            setB(lx, 33, lz, BLOCK.BEDROCK);
+          } else {
+            setB(lx, 33, lz, BLOCK.BEDROCK);
+          }
+          if (dx === 0 && dz === 0) {
+            setB(lx, 34, lz, BLOCK.BEDROCK);
+            setB(lx, 35, lz, BLOCK.BEDROCK);
+            setB(lx, 36, lz, BLOCK.TORCH);
+          }
+        }
+      }
+    }
+
+    // 4) Spawn Obsidian Platform at (20, 33, 0)
+    for (let dx = -2; dx <= 2; dx++) {
+      for (let dz = -2; dz <= 2; dz++) {
+        const lx = 20 + dx - baseX;
+        const lz = dz - baseZ;
+        if (lx >= 0 && lx < CHUNK_SIZE && lz >= 0 && lz < CHUNK_SIZE) {
+          setB(lx, 33, lz, BLOCK.OBSIDIAN);
+          setB(lx, 34, lz, BLOCK.AIR);
+          setB(lx, 35, lz, BLOCK.AIR);
         }
       }
     }
@@ -562,7 +679,68 @@ export class InfiniteWorld {
     }
   }
 
+  isStrongholdChunk(cx: number, cz: number): boolean {
+    if (this.dimension !== "overworld") return false;
+    return cx === 3 && cz === 3;
+  }
+
+  private buildStrongholdChunk(data: Uint8Array, _cx: number, _cz: number, _baseX: number, _baseZ: number) {
+    const setB = (lx: number, y: number, lz: number, b: BlockNum) => {
+      if (lx >= 0 && lx < CHUNK_SIZE && lz >= 0 && lz < CHUNK_SIZE && y >= 0 && y < WORLD_HEIGHT) {
+        data[localIdx(lx, y, lz)] = b;
+      }
+    };
+
+    // Hollow stone brick room: lx 3..12, lz 3..12, y 12..18
+    for (let lx = 3; lx <= 12; lx++) {
+      for (let lz = 3; lz <= 12; lz++) {
+        for (let y = 12; y <= 18; y++) {
+          const isFloor = y === 12;
+          const isCeil = y === 18;
+          const isWall = lx === 3 || lx === 12 || lz === 3 || lz === 12;
+          if (isFloor || isCeil || isWall) {
+            setB(lx, y, lz, BLOCK.STONE_BRICKS);
+          } else {
+            setB(lx, y, lz, BLOCK.AIR);
+          }
+        }
+      }
+    }
+
+    // Torches on walls
+    setB(4, 15, 7, BLOCK.TORCH);
+    setB(11, 15, 7, BLOCK.TORCH);
+    setB(7, 15, 4, BLOCK.TORCH);
+    setB(7, 15, 11, BLOCK.TORCH);
+
+    // Center 5x5 Lava pit at Y=13
+    for (let lx = 5; lx <= 9; lx++) {
+      for (let lz = 5; lz <= 9; lz++) {
+        setB(lx, 13, lz, BLOCK.LAVA);
+      }
+    }
+
+    // 3x3 ring of 12 End Portal Frames at Y=14 over the lava pit!
+    const frameCoords = [
+      [6, 14, 5], [7, 14, 5], [8, 14, 5],
+      [6, 14, 9], [7, 14, 9], [8, 14, 9],
+      [5, 14, 6], [5, 14, 7], [5, 14, 8],
+      [9, 14, 6], [9, 14, 7], [9, 14, 8],
+    ];
+
+    frameCoords.forEach(([fx, fy, fz], idx) => {
+      // Pre-insert eyes into a couple frames for authenticity
+      const hasEye = idx === 1 || idx === 7;
+      setB(fx, fy, fz, hasEye ? BLOCK.END_PORTAL_FRAME_EYE : BLOCK.END_PORTAL_FRAME);
+    });
+  }
+
   findSpawn(): { x: number; y: number; z: number } {
+    if (this.dimension === "the_end") {
+      this.ensureChunk(1, 0);
+      return { x: 20.5, y: 34.05, z: 0.5 };
+    }
+
     if (this.dimension === "nether") {
       // Find a safe solid block above lava with 2 air blocks above it
       for (let r = 0; r <= 32; r += 2) {

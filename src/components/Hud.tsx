@@ -113,7 +113,11 @@ export function Hud({
           <span className="rounded border border-black/40 bg-black/60 px-2 py-1 text-[10px] tracking-wider text-white shadow">
             {hud.gameMode.toUpperCase()}
           </span>
-          {hud.debug.biome === "Nether Wastes" ? (
+          {hud.debug.biome === "The End" ? (
+            <span className="rounded border border-purple-500/80 bg-purple-950/80 px-2 py-1 text-[9px] font-bold text-purple-300 shadow">
+              🌌 THE END
+            </span>
+          ) : hud.debug.biome === "Nether Wastes" ? (
             <span className="rounded border border-red-500/80 bg-red-950/80 px-2 py-1 text-[9px] font-bold text-red-300 shadow">
               🔥 NETHER
             </span>
@@ -199,6 +203,40 @@ export function Hud({
           </button>
         </div>
       </header>
+
+      {/* Ender Dragon Boss Health Bar */}
+      {hud.boss && (
+        <div className="pointer-events-none absolute left-1/2 top-14 -translate-x-1/2 flex flex-col items-center gap-1">
+          <div className="flex items-center gap-2">
+            <span className="text-[12px] font-bold tracking-wider text-fuchsia-300 drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
+              🐉 {hud.boss.name.toUpperCase()}
+            </span>
+            <span className="text-[10px] text-fuchsia-200/80">
+              {hud.boss.health} / {hud.boss.maxHealth}
+            </span>
+          </div>
+          <div className="relative h-4 w-72 sm:w-96 overflow-hidden rounded border-2 border-black/80 bg-black/75 shadow-[0_4px_12px_rgba(0,0,0,0.8)]">
+            <div
+              className="h-full bg-gradient-to-r from-purple-600 via-fuchsia-500 to-pink-500 transition-all duration-200"
+              style={{ width: `${Math.max(0, Math.min(100, (hud.boss.health / hud.boss.maxHealth) * 100))}%` }}
+            />
+            {/* Health segment notches */}
+            <div className="absolute inset-0 flex justify-between px-2 pointer-events-none opacity-40">
+              {Array.from({ length: 9 }).map((_, i) => (
+                <div key={i} className="h-full w-[1px] bg-black" />
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Shield Blocking Indicator */}
+      {hud.isBlocking && (
+        <div className="pointer-events-none absolute bottom-28 left-1/2 -translate-x-1/2 flex items-center gap-2 rounded border border-gray-400 bg-black/80 px-3 py-1 shadow-lg">
+          <span className="text-sm">🛡️</span>
+          <span className="text-[10px] font-bold tracking-wider text-gray-200">BLOCKING</span>
+        </div>
+      )}
 
       {/* F3 Debug Overlay */}
       {hud.isF3Open && (
